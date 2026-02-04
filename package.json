@@ -7,9 +7,10 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces",
-    "dev": "npm run dev:dashboard & npm run dev:indexer",
+    "dev": "npm run dev:dashboard & npm run dev:indexer & npm run dev:discovery",
     "dev:dashboard": "npm run dev --workspace=apps/dashboard",
     "dev:indexer": "npm run dev --workspace=apps/indexer",
+    "dev:discovery": "npm run dev --workspace=apps/discovery",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "vitest"
   },

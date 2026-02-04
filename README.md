@@ -31,6 +31,7 @@ Monetize APIs with micropayments. Control agent spending. Own the transaction gr
 | `@agentcommerce/shared` | Shared types, utilities, chain configs |
 | `apps/dashboard` | Next.js dashboard for agent funding, budgets, and analytics |
 | `apps/indexer` | Transaction indexer API (Hono + PostgreSQL) |
+| `apps/discovery` | Tool discovery API — search and find paid APIs |
 
 ## Quick Start
 
@@ -153,7 +154,8 @@ agentcommerce/
 │           └── policy-engine.ts # Budget, ACL, and rate limit enforcement
 ├── apps/
 │   ├── dashboard/           # Next.js analytics dashboard
-│   └── indexer/             # Transaction indexer API
+│   ├── indexer/             # Transaction indexer API
+│   └── discovery/           # Tool discovery API
 ├── examples/
 │   ├── seller-express/      # Express API with x402 payments
 │   └── buyer-agent/         # AI agent with budget controls
@@ -190,7 +192,7 @@ npm run dev
 - [x] Shared types and utilities
 - [x] Transaction indexer (PostgreSQL + Hono API)
 - [x] Dashboard (Next.js)
-- [ ] Discovery API (agent-queryable tool registry)
+- [x] Discovery API (agent-queryable tool registry)
 - [ ] Self-hosted facilitator
 - [ ] MCP server integration helpers
 - [ ] LangChain / CrewAI / AutoGen adapters
