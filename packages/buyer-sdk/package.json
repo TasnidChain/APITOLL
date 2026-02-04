@@ -1,0 +1,24 @@
+{
+  "name": "@agentcommerce/buyer-sdk",
+  "version": "0.1.0",
+  "description": "x402 payment client for AI agents. Auto-handles 402 responses with budget controls and spend tracking.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest"
+  },
+  "keywords": ["x402", "agent", "micropayments", "usdc", "budget", "spend-management"],
+  "dependencies": {
+    "@agentcommerce/shared": "workspace:*",
+    "@x402/core": "^0.2.0",
+    "@x402/evm": "^0.2.0",
+    "@x402/svm": "^0.2.0",
+    "@x402/fetch": "^0.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

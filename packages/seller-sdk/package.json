@@ -1,0 +1,32 @@
+{
+  "name": "@agentcommerce/seller-sdk",
+  "version": "0.1.0",
+  "description": "x402 payment middleware for API and MCP tool monetization. Add per-request micropayments in 3 lines of code.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest"
+  },
+  "keywords": ["x402", "micropayments", "agent", "mcp", "usdc", "stablecoin", "api-monetization"],
+  "dependencies": {
+    "@agentcommerce/shared": "workspace:*",
+    "@x402/core": "^0.2.0",
+    "@x402/evm": "^0.2.0",
+    "@x402/svm": "^0.2.0"
+  },
+  "peerDependencies": {
+    "express": ">=4.0.0",
+    "hono": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "express": { "optional": true },
+    "hono": { "optional": true }
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/express": "^4.17.0",
+    "vitest": "^1.6.0"
+  }
+}

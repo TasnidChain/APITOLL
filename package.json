@@ -1,0 +1,20 @@
+{
+  "name": "agentcommerce",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev:dashboard": "npm run dev --workspace=apps/dashboard",
+    "lint": "eslint . --ext .ts,.tsx",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0",
+    "eslint": "^9.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
