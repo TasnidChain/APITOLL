@@ -33,6 +33,7 @@ Monetize APIs with micropayments. Control agent spending. Own the transaction gr
 | `apps/indexer` | Transaction indexer API (Hono + PostgreSQL) |
 | `apps/discovery` | Tool discovery API — search and find paid APIs |
 | `@agentcommerce/mcp-server` | Monetize MCP tools with x402 payments |
+| `@agentcommerce/langchain` | LangChain & CrewAI adapters for paid tools |
 
 ## Quick Start
 
@@ -126,6 +127,36 @@ server.paidTool(
 );
 ```
 
+### LangChain/CrewAI: Use Paid Tools
+
+```bash
+npm install @agentcommerce/langchain
+```
+
+```typescript
+import { createPaidTool, createPaidAgentExecutor } from "@agentcommerce/langchain";
+
+// Create a paid tool
+const weatherTool = createPaidTool({
+  name: "get_weather",
+  description: "Get weather forecast",
+  endpoint: "https://api.weather.pro/forecast",
+  price: 0.005,
+  chains: ["base"],
+});
+
+// Create executor with wallet
+const executor = createPaidAgentExecutor([weatherTool], {
+  name: "MyAgent",
+  chain: "base",
+  policies: [{ type: "budget", dailyCap: 10 }],
+  signer: mySignerFunction,
+});
+
+// Use with LangChain - payments handled automatically
+const result = await executor.executeTool("get_weather", { city: "NYC" });
+```
+
 ## How It Works
 
 ```
@@ -184,10 +215,14 @@ agentcommerce/
 │   │   └── src/
 │   │       ├── agent-wallet.ts  # Main AgentWallet class with auto-402 handling
 │   │       └── policy-engine.ts # Budget, ACL, and rate limit enforcement
-│   └── mcp-server/          # MCP server with paid tools support
+│   ├── mcp-server/          # MCP server with paid tools support
+│   │   └── src/
+│   │       ├── server.ts    # PaidMCPServer class
+│   │       └── adapters.ts  # Express, Hono, stdio adapters
+│   └── langchain/           # LangChain/CrewAI adapters
 │       └── src/
-│           ├── server.ts    # PaidMCPServer class
-│           └── adapters.ts  # Express, Hono, stdio adapters
+│           ├── paid-tool.ts # PaidTool class
+│           └── crewai.ts    # CrewAI integration
 ├── apps/
 │   ├── dashboard/           # Next.js analytics dashboard
 │   ├── indexer/             # Transaction indexer API
@@ -195,7 +230,8 @@ agentcommerce/
 ├── examples/
 │   ├── seller-express/      # Express API with x402 payments
 │   ├── buyer-agent/         # AI agent with budget controls
-│   └── mcp-server/          # Paid MCP server example
+│   ├── mcp-server/          # Paid MCP server example
+│   └── langchain-agent/     # LangChain/CrewAI examples
 └── infra/                   # Transaction indexer, DB schema
 ```
 
@@ -231,8 +267,8 @@ npm run dev
 - [x] Dashboard (Next.js)
 - [x] Discovery API (agent-queryable tool registry)
 - [x] MCP server integration helpers
+- [x] LangChain / CrewAI adapters
 - [ ] Self-hosted facilitator
-- [ ] LangChain / CrewAI / AutoGen adapters
 
 ## Built on
 

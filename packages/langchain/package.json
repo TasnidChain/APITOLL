@@ -1,0 +1,47 @@
+{
+  "name": "@agentcommerce/langchain",
+  "version": "0.1.0",
+  "description": "LangChain and CrewAI adapters for AgentCommerce paid tools",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@agentcommerce/shared": "*",
+    "@agentcommerce/buyer-sdk": "*"
+  },
+  "peerDependencies": {
+    "@langchain/core": ">=0.1.0",
+    "langchain": ">=0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@langchain/core": {
+      "optional": true
+    },
+    "langchain": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  },
+  "keywords": [
+    "langchain",
+    "crewai",
+    "ai-agents",
+    "x402",
+    "payments",
+    "tools"
+  ],
+  "license": "MIT"
+}
