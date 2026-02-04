@@ -1,0 +1,38 @@
+{
+  "name": "@agentcommerce/mcp-server",
+  "version": "0.1.0",
+  "description": "Monetize MCP tools with x402 payments",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@agentcommerce/shared": "*",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "@modelcontextprotocol/sdk": ">=1.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "x402",
+    "payments",
+    "ai-tools",
+    "monetization"
+  ],
+  "license": "MIT"
+}

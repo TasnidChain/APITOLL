@@ -32,6 +32,7 @@ Monetize APIs with micropayments. Control agent spending. Own the transaction gr
 | `apps/dashboard` | Next.js dashboard for agent funding, budgets, and analytics |
 | `apps/indexer` | Transaction indexer API (Hono + PostgreSQL) |
 | `apps/discovery` | Tool discovery API — search and find paid APIs |
+| `@agentcommerce/mcp-server` | Monetize MCP tools with x402 payments |
 
 ## Quick Start
 
@@ -94,6 +95,37 @@ const agent = createAgentWallet({
 const data = await agent.fetch("https://api.weather.pro/forecast");
 ```
 
+### MCP Server: Monetize Tools
+
+```bash
+npm install @agentcommerce/mcp-server
+```
+
+```typescript
+import { z } from "zod";
+import { createPaidMCPServer } from "@agentcommerce/mcp-server";
+
+const server = createPaidMCPServer({
+  walletAddress: "0xYourWallet",
+});
+
+// Free tool
+server.tool("get_time", "Get current time", z.object({}), async () => {
+  return { time: new Date().toISOString() };
+});
+
+// Paid tool - $0.01 per call
+server.paidTool(
+  "analyze_data",
+  "AI-powered data analysis",
+  z.object({ data: z.string() }),
+  { price: 0.01, chains: ["base", "solana"] },
+  async ({ data }) => {
+    return { analysis: "..." };
+  }
+);
+```
+
 ## How It Works
 
 ```
@@ -148,17 +180,22 @@ agentcommerce/
 │   │       ├── analytics.ts         # Transaction reporting to platform
 │   │       ├── middleware-express.ts # Express middleware
 │   │       └── middleware-hono.ts   # Hono middleware
-│   └── buyer-sdk/           # Agent wallet with policy enforcement
+│   ├── buyer-sdk/           # Agent wallet with policy enforcement
+│   │   └── src/
+│   │       ├── agent-wallet.ts  # Main AgentWallet class with auto-402 handling
+│   │       └── policy-engine.ts # Budget, ACL, and rate limit enforcement
+│   └── mcp-server/          # MCP server with paid tools support
 │       └── src/
-│           ├── agent-wallet.ts  # Main AgentWallet class with auto-402 handling
-│           └── policy-engine.ts # Budget, ACL, and rate limit enforcement
+│           ├── server.ts    # PaidMCPServer class
+│           └── adapters.ts  # Express, Hono, stdio adapters
 ├── apps/
 │   ├── dashboard/           # Next.js analytics dashboard
 │   ├── indexer/             # Transaction indexer API
 │   └── discovery/           # Tool discovery API
 ├── examples/
 │   ├── seller-express/      # Express API with x402 payments
-│   └── buyer-agent/         # AI agent with budget controls
+│   ├── buyer-agent/         # AI agent with budget controls
+│   └── mcp-server/          # Paid MCP server example
 └── infra/                   # Transaction indexer, DB schema
 ```
 
@@ -193,8 +230,8 @@ npm run dev
 - [x] Transaction indexer (PostgreSQL + Hono API)
 - [x] Dashboard (Next.js)
 - [x] Discovery API (agent-queryable tool registry)
+- [x] MCP server integration helpers
 - [ ] Self-hosted facilitator
-- [ ] MCP server integration helpers
 - [ ] LangChain / CrewAI / AutoGen adapters
 
 ## Built on
