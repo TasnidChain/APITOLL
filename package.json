@@ -14,6 +14,9 @@
     "lint": "eslint . --ext .ts,.tsx",
     "test": "vitest"
   },
+  "dependencies": {
+    "convex": "^1.10.0"
+  },
   "devDependencies": {
     "typescript": "^5.4.0",
     "vitest": "^1.6.0",
