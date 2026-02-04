@@ -30,6 +30,7 @@ Monetize APIs with micropayments. Control agent spending. Own the transaction gr
 | `@agentcommerce/buyer-sdk` | Agent wallet with auto 402 handling, budget policies, spend tracking |
 | `@agentcommerce/shared` | Shared types, utilities, chain configs |
 | `apps/dashboard` | Next.js dashboard for agent funding, budgets, and analytics |
+| `apps/indexer` | Transaction indexer API (Hono + PostgreSQL) |
 
 ## Quick Start
 
@@ -151,7 +152,8 @@ agentcommerce/
 │           ├── agent-wallet.ts  # Main AgentWallet class with auto-402 handling
 │           └── policy-engine.ts # Budget, ACL, and rate limit enforcement
 ├── apps/
-│   └── dashboard/           # Next.js analytics dashboard
+│   ├── dashboard/           # Next.js analytics dashboard
+│   └── indexer/             # Transaction indexer API
 ├── examples/
 │   ├── seller-express/      # Express API with x402 payments
 │   └── buyer-agent/         # AI agent with budget controls
@@ -162,7 +164,7 @@ agentcommerce/
 
 ```bash
 # Clone
-git clone https://github.com/agentcommerce/agentcommerce.git
+git clone https://github.com/TasnidChain/AgentCommerce.git
 cd agentcommerce
 
 # Install
@@ -176,6 +178,9 @@ npx ts-node examples/seller-express/server.ts
 
 # Run example agent (in another terminal)
 npx ts-node examples/buyer-agent/research-bot.ts
+
+# Run the full stack (dashboard + indexer)
+npm run dev
 ```
 
 ## Roadmap
@@ -183,8 +188,8 @@ npx ts-node examples/buyer-agent/research-bot.ts
 - [x] Seller SDK (Express + Hono middleware)
 - [x] Buyer SDK (Agent wallet + policy engine)
 - [x] Shared types and utilities
-- [ ] Transaction indexer (PostgreSQL + Redis)
-- [ ] Dashboard (Next.js)
+- [x] Transaction indexer (PostgreSQL + Hono API)
+- [x] Dashboard (Next.js)
 - [ ] Discovery API (agent-queryable tool registry)
 - [ ] Self-hosted facilitator
 - [ ] MCP server integration helpers
