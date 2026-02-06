@@ -1,5 +1,5 @@
 /**
- * Structured logging module for AgentCommerce.
+ * Structured logging module for Apitoll.
  * Outputs JSON logs in production, pretty logs in development.
  * Compatible with common log aggregation tools (Datadog, Grafana, etc.)
  */

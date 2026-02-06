@@ -6,7 +6,7 @@ import {
   findEndpointConfig,
   getEndpointFeeBreakdown,
 } from "./payment";
-import { DEFAULT_CHAIN_CONFIGS, type EndpointConfig, type ChainConfig, type SupportedChain } from "@agentcommerce/shared";
+import { DEFAULT_CHAIN_CONFIGS, type EndpointConfig, type ChainConfig, type SupportedChain } from "@apitoll/shared";
 
 const TEST_WALLET = "0x1234567890abcdef1234567890abcdef12345678";
 const CHAIN_CONFIGS: Record<SupportedChain, ChainConfig> = DEFAULT_CHAIN_CONFIGS;

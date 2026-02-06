@@ -1,5 +1,5 @@
 {
-  "name": "@agentcommerce/indexer",
+  "name": "@apitoll/indexer",
   "version": "0.1.0-beta.1",
   "private": true,
   "scripts": {
@@ -12,7 +12,7 @@
     "hono": "^4.0.0",
     "@hono/node-server": "^1.8.0",
     "postgres": "^3.4.3",
-    "@agentcommerce/shared": "*",
+    "@apitoll/shared": "*",
     "zod": "^3.22.0"
   },
   "devDependencies": {

@@ -1,7 +1,7 @@
 {
-  "name": "@agentcommerce/dashboard",
+  "name": "@apitoll/dashboard",
   "version": "0.1.0-beta.1",
-  "description": "AgentCommerce Dashboard - unified platform for agents, sellers, and transactions",
+  "description": "Apitoll Dashboard - unified platform for agents, sellers, and transactions",
   "private": true,
   "license": "MIT",
   "main": "dist/index.js",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TasnidChain/AgentCommerce"
+    "url": "https://github.com/TasnidChain/Apitoll"
   },
   "scripts": {
     "dev": "next dev",
@@ -27,7 +27,7 @@
     "clsx": "^2.1.0",
     "tailwind-merge": "^2.2.0",
     "convex": "^1.10.0",
-    "@agentcommerce/shared": "file:../packages/shared"
+    "@apitoll/shared": "file:../packages/shared"
   },
   "devDependencies": {
     "@types/node": "^20",

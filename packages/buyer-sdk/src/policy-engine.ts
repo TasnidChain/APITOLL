@@ -7,7 +7,7 @@ import {
   checkBudgetPolicy,
   findBudgetPolicy,
   isVendorAllowed,
-} from "@agentcommerce/shared";
+} from "@apitoll/shared";
 
 export interface PolicyCheckResult {
   allowed: boolean;

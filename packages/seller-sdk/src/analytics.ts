@@ -1,4 +1,4 @@
-import { type Transaction, type PaymentReceipt, type FeeBreakdown, generateId, computeHmacSignature } from "@agentcommerce/shared";
+import { type Transaction, type PaymentReceipt, type FeeBreakdown, generateId, computeHmacSignature } from "@apitoll/shared";
 
 const PLATFORM_API_URL = "https://api.agentcommerce.xyz";
 
@@ -40,7 +40,7 @@ interface TransactionWithFee extends Transaction {
 }
 
 /**
- * Analytics reporter that sends transaction data to the AgentCommerce platform.
+ * Analytics reporter that sends transaction data to the Apitoll platform.
  * Now includes platform fee tracking for revenue reporting.
  * Falls back to local logging if no API key is configured.
  */

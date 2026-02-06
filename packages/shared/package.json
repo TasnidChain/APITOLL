@@ -1,7 +1,7 @@
 {
-  "name": "@agentcommerce/shared",
+  "name": "@apitoll/shared",
   "version": "0.1.0-beta.1",
-  "description": "Shared types and utilities for AgentCommerce packages",
+  "description": "Shared types and utilities for Apitoll packages",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

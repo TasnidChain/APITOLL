@@ -1,7 +1,7 @@
 {
-  "name": "@agentcommerce/llm-council",
+  "name": "@apitoll/llm-council",
   "version": "1.0.0",
-  "description": "3-stage LLM orchestration service for AgentCommerce",
+  "description": "3-stage LLM orchestration service for Apitoll",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

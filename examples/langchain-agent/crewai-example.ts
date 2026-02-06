@@ -2,7 +2,7 @@
  * Example: CrewAI with Paid Tools
  *
  * This example shows how to create a CrewAI crew with agents
- * that can use paid tools via AgentCommerce.
+ * that can use paid tools via Apitoll.
  */
 
 import {
@@ -10,7 +10,7 @@ import {
   toCrewAITools,
   createCrewAIAgent,
   PaidTool,
-} from '@agentcommerce/langchain'
+} from '@apitoll/langchain'
 
 // ═══════════════════════════════════════════════════
 // Wallet Configuration
@@ -121,7 +121,7 @@ const analystAgent = createCrewAIAgent({
 
 async function main() {
   console.log('╔═══════════════════════════════════════════════════╗')
-  console.log('║   CrewAI + AgentCommerce Example                  ║')
+  console.log('║   CrewAI + Apitoll Example                  ║')
   console.log('╚═══════════════════════════════════════════════════╝')
 
   console.log('\n📋 Researcher Agent Config:')

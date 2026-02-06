@@ -1,7 +1,7 @@
 /**
  * Example: LangChain Agent with Paid Tools
  *
- * This example shows how to use AgentCommerce paid tools with LangChain.
+ * This example shows how to use Apitoll paid tools with LangChain.
  * The agent can use paid APIs and automatically handle x402 payments.
  */
 
@@ -11,7 +11,7 @@ import {
   discoverToolsForTask,
   createAutoDiscoverAgent,
   PaidTool,
-} from '@agentcommerce/langchain'
+} from '@apitoll/langchain'
 
 // ═══════════════════════════════════════════════════
 // Wallet Configuration
@@ -153,7 +153,7 @@ async function langchainIntegrationExample() {
 
 import { ChatOpenAI } from "@langchain/openai";
 import { AgentExecutor, createOpenAIToolsAgent } from "langchain/agents";
-import { createPaidTool, createPaidAgentExecutor } from "@agentcommerce/langchain";
+import { createPaidTool, createPaidAgentExecutor } from "@apitoll/langchain";
 
 // Create paid tools
 const weatherTool = createPaidTool({
@@ -188,7 +188,7 @@ const result = await paidExecutor.executeTool(toolName, args);
 
 async function main() {
   console.log('╔═══════════════════════════════════════════════════╗')
-  console.log('║   LangChain + AgentCommerce Example               ║')
+  console.log('║   LangChain + Apitoll Example               ║')
   console.log('╚═══════════════════════════════════════════════════╝')
 
   await manualToolExample()

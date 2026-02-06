@@ -1,5 +1,5 @@
 {
-  "name": "@agentcommerce/seller-sdk",
+  "name": "@apitoll/seller-sdk",
   "version": "0.1.0-beta.1",
   "description": "x402 payment middleware for API and MCP tool monetization. Add per-request micropayments in 3 lines of code.",
   "license": "MIT",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TasnidChain/AgentCommerce"
+    "url": "https://github.com/TasnidChain/Apitoll"
   },
   "publishConfig": {
     "access": "public"
@@ -23,7 +23,7 @@
   },
   "keywords": ["x402", "micropayments", "agent", "mcp", "usdc", "stablecoin", "api-monetization"],
   "dependencies": {
-    "@agentcommerce/shared": "file:../shared"
+    "@apitoll/shared": "file:../shared"
   },
   "peerDependencies": {
     "express": ">=4.0.0",

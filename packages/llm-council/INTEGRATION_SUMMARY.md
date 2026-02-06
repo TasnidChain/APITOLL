@@ -2,7 +2,7 @@
 
 ## Project Completion Status
 
-✅ **COMPLETED** - LLM Council (Python FastAPI → TypeScript/Node) fully ported with AgentCommerce marketplace integration.
+✅ **COMPLETED** - LLM Council (Python FastAPI → TypeScript/Node) fully ported with Apitoll marketplace integration.
 
 ---
 
@@ -130,7 +130,7 @@ GET    /                     Service info
 
 ---
 
-## Integration Points with AgentCommerce
+## Integration Points with Apitoll
 
 ### 1. Service Registration
 
@@ -157,7 +157,7 @@ marketplace.startMetricsReporting(300000, () => {
 ### 2. Buyer Integration
 
 ```typescript
-// Use LLM Council from AgentCommerce marketplace
+// Use LLM Council from Apitoll marketplace
 import axios from 'axios';
 
 const response = await axios.post(
@@ -181,7 +181,7 @@ const response = await axios.post(
 
 ### 4. Workspace Integration
 
-LLM Council is now available in the main AgentCommerce workspace at:
+LLM Council is now available in the main Apitoll workspace at:
 ```
 /Users/rizqos/Downloads/agentcommerce/packages/llm-council/
 ```
@@ -435,7 +435,7 @@ Deployment Targets:   6+ (Docker, AWS, GCP, Heroku, etc.)
 
 ## Questions or Issues?
 
-The LLM Council service is production-ready and fully integrated with AgentCommerce. 
+The LLM Council service is production-ready and fully integrated with Apitoll. 
 
 For questions, refer to:
 - 📖 README.md - Getting started

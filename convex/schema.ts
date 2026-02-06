@@ -37,6 +37,78 @@ const walletAddressValidator = v.custom<string>((addr) => {
   return addr;
 });
 
+// ═══════════════════════════════════════════════════
+// Typed JSON Schema Validators (replacing v.any())
+// ═══════════════════════════════════════════════════
+
+/**
+ * Budget policy rules: { dailyLimit, perTransactionLimit, monthlyLimit }
+ */
+const budgetRulesValidator = v.object({
+  dailyLimit: v.optional(v.number()),
+  perTransactionLimit: v.optional(v.number()),
+  monthlyLimit: v.optional(v.number()),
+});
+
+/**
+ * Vendor ACL rules: { allowedVendors, blockedVendors }
+ */
+const vendorAclRulesValidator = v.object({
+  allowedVendors: v.optional(v.array(v.string())),
+  blockedVendors: v.optional(v.array(v.string())),
+});
+
+/**
+ * Rate limit rules: { maxRequestsPerMinute, maxRequestsPerHour }
+ */
+const rateLimitRulesValidator = v.object({
+  maxRequestsPerMinute: v.optional(v.number()),
+  maxRequestsPerHour: v.optional(v.number()),
+});
+
+/**
+ * Policy config stored on agents — union of all policy types
+ */
+const policyConfigValidator = v.object({
+  type: v.union(v.literal("budget"), v.literal("vendor_acl"), v.literal("rate_limit")),
+  budget: v.optional(budgetRulesValidator),
+  vendorAcl: v.optional(vendorAclRulesValidator),
+  rateLimit: v.optional(rateLimitRulesValidator),
+});
+
+/**
+ * JSON Schema representation for endpoint input/output schemas.
+ * Flexible enough to represent OpenAPI-style schemas.
+ */
+const jsonSchemaValidator = v.object({
+  type: v.optional(v.string()),
+  properties: v.optional(v.any()), // nested JSON schema properties are inherently recursive
+  required: v.optional(v.array(v.string())),
+  description: v.optional(v.string()),
+  items: v.optional(v.any()), // for array types
+  example: v.optional(v.any()),
+});
+
+/**
+ * MCP tool specification
+ */
+const mcpToolSpecValidator = v.object({
+  name: v.string(),
+  description: v.optional(v.string()),
+  inputSchema: v.optional(jsonSchemaValidator),
+  outputSchema: v.optional(jsonSchemaValidator),
+});
+
+/**
+ * Alert threshold config — varies by rule type
+ */
+const alertThresholdValidator = v.object({
+  percentage: v.optional(v.number()),   // e.g., 80 for 80% of budget
+  amount: v.optional(v.number()),       // absolute amount threshold
+  rate: v.optional(v.number()),         // failure rate percentage
+  windowMinutes: v.optional(v.number()), // time window for rate calculations
+});
+
 export default defineSchema({
   // ═══════════════════════════════════════════════════
   // Organizations (multi-tenant) — with Stripe billing
@@ -70,7 +142,7 @@ export default defineSchema({
     chain: v.union(v.literal("base"), v.literal("solana")),
     balance: v.number(),
     status: v.union(v.literal("active"), v.literal("paused"), v.literal("depleted")),
-    policiesJson: v.array(v.any()),
+    policiesJson: v.array(policyConfigValidator),
   })
     .index("by_org", ["orgId"])
     .index("by_wallet", ["walletAddress"]),
@@ -99,8 +171,8 @@ export default defineSchema({
     chains: v.array(v.string()),
     description: v.optional(v.string()),
     category: v.optional(v.string()),
-    inputSchema: v.optional(v.any()),
-    outputSchema: v.optional(v.any()),
+    inputSchema: v.optional(jsonSchemaValidator),
+    outputSchema: v.optional(jsonSchemaValidator),
     isActive: v.boolean(),
     totalCalls: v.number(),
     totalRevenue: v.number(),
@@ -159,9 +231,9 @@ export default defineSchema({
     chains: v.array(v.string()),
     category: v.string(),
     tags: v.array(v.string()),
-    inputSchema: v.optional(v.any()),
-    outputSchema: v.optional(v.any()),
-    mcpToolSpec: v.optional(v.any()),
+    inputSchema: v.optional(jsonSchemaValidator),
+    outputSchema: v.optional(jsonSchemaValidator),
+    mcpToolSpec: v.optional(mcpToolSpecValidator),
     totalCalls: v.number(),
     avgLatencyMs: v.number(),
     rating: v.number(),
@@ -210,7 +282,7 @@ export default defineSchema({
       v.literal("vendor_acl"),
       v.literal("rate_limit")
     ),
-    rulesJson: v.any(),
+    rulesJson: v.union(budgetRulesValidator, vendorAclRulesValidator, rateLimitRulesValidator),
     isActive: v.boolean(),
   })
     .index("by_org", ["orgId"])
@@ -229,7 +301,7 @@ export default defineSchema({
       v.literal("high_failure_rate"),
       v.literal("anomalous_spend")
     ),
-    thresholdJson: v.any(),
+    thresholdJson: alertThresholdValidator,
     webhookUrl: v.optional(v.string()),
     isActive: v.boolean(),
     lastTriggered: v.optional(v.number()),

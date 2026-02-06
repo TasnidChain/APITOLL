@@ -13,7 +13,7 @@
  */
 
 import { z } from 'zod'
-import { createPaidMCPServer, toExpressRouter, runStdio } from '@agentcommerce/mcp-server'
+import { createPaidMCPServer, toExpressRouter, runStdio } from '@apitoll/mcp-server'
 
 // ═══════════════════════════════════════════════════
 // Create the MCP Server

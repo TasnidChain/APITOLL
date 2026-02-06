@@ -110,6 +110,10 @@ export interface Agent {
   status: 'active' | 'paused' | 'depleted'
   policies_json: unknown[]
   created_at: string
+  // Computed stats from dashboard API
+  daily_spend?: number
+  daily_limit?: number
+  total_transactions?: number
 }
 
 export async function fetchAgents(): Promise<Agent[]> {
@@ -139,6 +143,10 @@ export interface Seller {
   name: string
   wallet_address: string
   created_at: string
+  // Computed stats from dashboard API
+  total_revenue?: number
+  total_calls?: number
+  endpoint_count?: number
 }
 
 export async function fetchSellers(): Promise<Seller[]> {

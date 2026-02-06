@@ -13,7 +13,7 @@ import {
   generateId,
   calculateFeeBreakdown,
   getPlatformWallet,
-} from "@agentcommerce/shared";
+} from "@apitoll/shared";
 
 // ─── Payment Requirement Builder ────────────────────────────────
 

@@ -9,7 +9,7 @@ Complete examples of how to use the LLM Council Orchestrator.
 3. [Technical Analysis](#technical-analysis)
 4. [Business Strategy](#business-strategy)
 5. [Content Generation](#content-generation)
-6. [Integration with AgentCommerce](#integration-with-agentcommerce)
+6. [Integration with Apitoll](#integration-with-agentcommerce)
 
 ---
 
@@ -289,12 +289,12 @@ whitepaper.stages.forEach((stage) => {
 
 ---
 
-## Integration with AgentCommerce
+## Integration with Apitoll
 
 ### Example 1: Using LLM Council as a Service
 
 ```typescript
-// In your AgentCommerce agent
+// In your Apitoll agent
 import axios from "axios";
 
 async function analyzeFeedback(userFeedback: string[]) {

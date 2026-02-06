@@ -3,6 +3,37 @@ import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
 import { ethers } from "ethers";
 
+// ─── Environment Variable Validation ─────────────────────────────────
+// Fail fast if critical environment variables are missing
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(
+      `Missing required environment variable: ${name}. ` +
+      `Set it in your Convex dashboard or .env file.`
+    );
+  }
+  return value;
+}
+
+function validateEnvOnStartup() {
+  const required = [
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "EXECUTOR_PRIVATE_KEY",
+  ];
+  const missing = required.filter((name) => !process.env[name]);
+  if (missing.length > 0) {
+    console.error(
+      `⚠️  Apitoll: Missing required environment variables: ${missing.join(", ")}. ` +
+      `Some features will be unavailable.`
+    );
+  }
+}
+
+validateEnvOnStartup();
+
 const http = httpRouter();
 
 // ─── USDC Transfer Function ────────────────────────────────────────
@@ -19,8 +50,11 @@ async function transferUSDC(walletAddress: string, amountUSDC: number): Promise<
     throw new Error("Cannot transfer to zero address");
   }
 
-  const provider = new ethers.JsonRpcProvider(process.env.BASE_RPC_URL || "https://mainnet.base.org");
-  const wallet = new ethers.Wallet(process.env.EXECUTOR_PRIVATE_KEY || "", provider);
+  const rpcUrl = process.env.BASE_RPC_URL || "https://mainnet.base.org";
+  const executorKey = requireEnv("EXECUTOR_PRIVATE_KEY");
+
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  const wallet = new ethers.Wallet(executorKey, provider);
   const usdc = new ethers.Contract(USDC_ADDRESS_BASE, USDC_ABI, wallet);
 
   try {
@@ -613,7 +647,8 @@ http.route({
     }
 
     // SECURITY FIX: Create real Stripe PaymentIntent instead of placeholder
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const stripeKey = requireEnv("STRIPE_SECRET_KEY");
+    const stripe = require('stripe')(stripeKey);
     
     let paymentIntent;
     try {
@@ -630,7 +665,7 @@ http.route({
       });
     } catch (stripeError: any) {
       console.error('Stripe PaymentIntent creation failed:', stripeError);
-      return errorResponse(`Failed to create payment: ${stripeError.message}`, 500, request);
+      return errorResponse("Failed to create payment. Please try again later.", 500, request);
     }
 
     const result = await ctx.runMutation(api.deposits.create, {
@@ -777,7 +812,26 @@ http.route({
             depositId: deposit._id,
             status: "processing",
           });
-          // In production: trigger USDC transfer to wallet here
+
+          // Transfer USDC to the user's wallet
+          try {
+            const transferResult = await transferUSDC(
+              deposit.walletAddress,
+              deposit.usdcAmount
+            );
+
+            await ctx.runMutation(api.deposits.updateStatus, {
+              depositId: deposit._id,
+              status: "completed",
+              txHash: transferResult.txHash,
+            });
+          } catch (transferError: any) {
+            console.error("USDC transfer failed for deposit:", deposit._id, transferError);
+            await ctx.runMutation(api.deposits.updateStatus, {
+              depositId: deposit._id,
+              status: "failed",
+            });
+          }
         }
         break;
       }

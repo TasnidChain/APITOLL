@@ -8,7 +8,7 @@ import { PWAInstallButton, PWAServiceWorker } from '@/components/pwa'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'AgentCommerce Dashboard',
+  title: 'Apitoll Dashboard',
   description: 'Monitor and manage your x402 agent payments, transactions, and seller ecosystem',
   manifest: '/manifest.json',
   appleWebApp: {

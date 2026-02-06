@@ -2,14 +2,14 @@
 
 ## Service Registration
 
-This document contains the service definition for listing the LLM Council Orchestrator on the AgentCommerce marketplace.
+This document contains the service definition for listing the LLM Council Orchestrator on the Apitoll marketplace.
 
 ### Required Listing Fields
 
 **Service ID**: `llm-council`  
 **Service Name**: LLM Council Orchestrator  
 **Version**: 1.0.0  
-**Provider**: AgentCommerce Core
+**Provider**: Apitoll Core
 
 ### Description
 

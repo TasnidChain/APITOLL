@@ -1,5 +1,5 @@
 {
-  "name": "@agentcommerce/buyer-sdk",
+  "name": "@apitoll/buyer-sdk",
   "version": "0.1.0-beta.1",
   "description": "x402 payment client for AI agents. Auto-handles 402 responses with budget controls and spend tracking.",
   "license": "MIT",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TasnidChain/AgentCommerce"
+    "url": "https://github.com/TasnidChain/Apitoll"
   },
   "publishConfig": {
     "access": "public"
@@ -23,7 +23,7 @@
   },
   "keywords": ["x402", "agent", "micropayments", "usdc", "budget", "spend-management"],
   "dependencies": {
-    "@agentcommerce/shared": "file:../shared"
+    "@apitoll/shared": "file:../shared"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

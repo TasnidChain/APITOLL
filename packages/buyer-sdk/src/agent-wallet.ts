@@ -7,7 +7,7 @@ import {
   type PaymentReceipt,
   generateId,
   usdcFromSmallestUnit,
-} from "@agentcommerce/shared";
+} from "@apitoll/shared";
 import { PolicyEngine, type PolicyCheckResult } from "./policy-engine";
 
 // ─── Types ──────────────────────────────────────────────────────

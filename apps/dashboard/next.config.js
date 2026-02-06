@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@agentcommerce/shared'],
+  transpilePackages: ['@apitoll/shared'],
 }
 
 module.exports = nextConfig

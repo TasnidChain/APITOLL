@@ -27,4 +27,4 @@ export type {
   PaymentRequirement,
   SupportedChain,
   SpendSummary,
-} from "@agentcommerce/shared";
+} from "@apitoll/shared";

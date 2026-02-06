@@ -35,7 +35,7 @@ export function Sidebar() {
     <div className="flex h-full w-64 flex-col border-r bg-card">
       <div className="flex h-16 items-center gap-2 border-b px-6">
         <Zap className="h-6 w-6 text-primary" />
-        <span className="text-lg font-semibold">AgentCommerce</span>
+        <span className="text-lg font-semibold">Apitoll</span>
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">

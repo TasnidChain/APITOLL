@@ -10,7 +10,7 @@
  * 4. Tracks all spending for analytics
  */
 
-import { createAgentWallet } from "@agentcommerce/buyer-sdk";
+import { createAgentWallet } from "@apitoll/buyer-sdk";
 
 // ─── Configure the agent wallet ─────────────────────────────────
 

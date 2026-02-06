@@ -1,4 +1,4 @@
-# AgentCommerce
+# Apitoll
 
 **The commerce layer for the x402 agent economy.**
 
@@ -239,7 +239,7 @@ agentcommerce/
 
 ```bash
 # Clone
-git clone https://github.com/TasnidChain/AgentCommerce.git
+git clone https://github.com/TasnidChain/Apitoll.git
 cd agentcommerce
 
 # Install

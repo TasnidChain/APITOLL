@@ -7,7 +7,7 @@ import {
   type FeeBreakdown,
   DEFAULT_CHAIN_CONFIGS,
   SECURITY_HEADERS,
-} from "@agentcommerce/shared";
+} from "@apitoll/shared";
 import {
   buildPaymentRequirements,
   encodePaymentRequired,
@@ -25,7 +25,7 @@ export interface PaymentMiddlewareOptions extends SellerConfig {}
  *
  * Usage:
  * ```ts
- * import { paymentMiddleware } from "@agentcommerce/seller-sdk";
+ * import { paymentMiddleware } from "@apitoll/seller-sdk";
  *
  * app.use(paymentMiddleware({
  *   walletAddress: "0xYourWallet...",
@@ -67,7 +67,7 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
     verbose: process.env.NODE_ENV !== "production",
   });
 
-  // Rate limiting: Redis-backed distributed rate limiting (SECURITY FIX)
+  // Rate limiting: Redis-backed distributed rate limiting with circuit breaker
   const Redis = require('redis');
   const redis = Redis.createClient({
     host: process.env.REDIS_HOST || 'localhost',
@@ -78,16 +78,71 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
   const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
   const RATE_LIMIT_MAX = 120; // max requests per window per IP
 
+  // Circuit breaker state for Redis failures
+  let redisFailureCount = 0;
+  let circuitOpen = false;
+  let circuitOpenedAt = 0;
+  const CIRCUIT_FAILURE_THRESHOLD = 5;   // Open circuit after 5 consecutive failures
+  const CIRCUIT_RESET_MS = 30_000;       // Try again after 30 seconds
+
+  // In-memory fallback rate limiter (used when Redis circuit is open)
+  const fallbackRateLimitMap = new Map<string, number[]>();
+
+  function checkFallbackRateLimit(key: string, limit: number, windowMs: number): boolean {
+    const now = Date.now();
+    const timestamps = fallbackRateLimitMap.get(key) || [];
+    const recent = timestamps.filter((t) => now - t < windowMs);
+    recent.push(now);
+    fallbackRateLimitMap.set(key, recent);
+
+    // Periodic cleanup to prevent memory leaks
+    if (fallbackRateLimitMap.size > 10_000) {
+      for (const [k, v] of fallbackRateLimitMap) {
+        if (v.every((t) => now - t > windowMs)) {
+          fallbackRateLimitMap.delete(k);
+        }
+      }
+    }
+
+    return recent.length <= limit;
+  }
+
   async function checkRateLimit(key: string, limit: number): Promise<boolean> {
+    // If circuit is open, check if enough time has passed to try again
+    if (circuitOpen) {
+      if (Date.now() - circuitOpenedAt > CIRCUIT_RESET_MS) {
+        // Half-open: try Redis again
+        circuitOpen = false;
+        redisFailureCount = 0;
+      } else {
+        // Circuit still open — use in-memory fallback
+        return checkFallbackRateLimit(key, limit, RATE_LIMIT_WINDOW_MS);
+      }
+    }
+
     try {
       const count = await redis.incr(key);
       if (count === 1) {
         await redis.expire(key, Math.ceil(RATE_LIMIT_WINDOW_MS / 1000));
       }
+      // Success — reset failure counter
+      redisFailureCount = 0;
       return count <= limit;
     } catch (e) {
-      console.error('Rate limit check failed:', e);
-      return true; // Allow on error to prevent blocking
+      console.error('Rate limit Redis error:', e);
+      redisFailureCount++;
+
+      if (redisFailureCount >= CIRCUIT_FAILURE_THRESHOLD) {
+        circuitOpen = true;
+        circuitOpenedAt = Date.now();
+        console.warn(
+          `⚠️  Redis circuit breaker OPEN after ${redisFailureCount} failures. ` +
+          `Falling back to in-memory rate limiting for ${CIRCUIT_RESET_MS / 1000}s.`
+        );
+      }
+
+      // Fallback to in-memory rate limiting (never fail open)
+      return checkFallbackRateLimit(key, limit, RATE_LIMIT_WINDOW_MS);
     }
   }
 

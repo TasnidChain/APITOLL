@@ -9,7 +9,7 @@
  */
 
 import express from "express";
-import { paymentMiddleware, getPaymentReceipt } from "@agentcommerce/seller-sdk";
+import { paymentMiddleware, getPaymentReceipt } from "@apitoll/seller-sdk";
 
 const app = express();
 app.use(express.json());

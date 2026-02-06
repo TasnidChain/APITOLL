@@ -1,6 +1,6 @@
 # 🧠 LLM Council Orchestrator
 
-A production-ready 3-stage LLM orchestration service for AgentCommerce. Combines analysis, execution, and synthesis to deliver high-quality AI-driven responses.
+A production-ready 3-stage LLM orchestration service for Apitoll. Combines analysis, execution, and synthesis to deliver high-quality AI-driven responses.
 
 ## Features
 
@@ -275,7 +275,7 @@ Final Response (with metadata)
 - **Sequential**: Tasks execute one by one (safest)
 - **Hybrid**: Independent tasks run in parallel, dependent tasks sequentially (balanced)
 
-## Integration with AgentCommerce
+## Integration with Apitoll
 
 ### Marketplace Service Definition
 
@@ -425,7 +425,7 @@ ENABLE_CACHING=true
 
 ## Contributing
 
-See the main [AgentCommerce Contributing Guide](../../CONTRIBUTING.md)
+See the main [Apitoll Contributing Guide](../../CONTRIBUTING.md)
 
 ## License
 

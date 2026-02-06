@@ -48,7 +48,7 @@ const port = parseInt(process.env.PORT || '3002')
 console.log(`
 ╔═══════════════════════════════════════════════════╗
 ║                                                   ║
-║   AgentCommerce Transaction Indexer               ║
+║   Apitoll Transaction Indexer               ║
 ║                                                   ║
 ║   Port: ${port}                                    ║
 ║   Health: http://localhost:${port}/health           ║

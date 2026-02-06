@@ -124,8 +124,13 @@ export interface Agent {
 }
 
 function normalizeAgent(agent: api.Agent | mock.Agent): Agent {
-  // Handle API response format
+  // Handle API response format (enriched with computed stats)
   if ('wallet_address' in agent) {
+    const enriched = agent as api.Agent & {
+      daily_spend?: number
+      daily_limit?: number
+      total_transactions?: number
+    }
     return {
       id: agent.id,
       name: agent.name,
@@ -133,9 +138,9 @@ function normalizeAgent(agent: api.Agent | mock.Agent): Agent {
       chain: agent.chain,
       balance: agent.balance,
       status: agent.status,
-      dailySpend: 0, // TODO: calculate from transactions
-      dailyLimit: 50, // TODO: get from policies
-      totalTransactions: 0, // TODO: calculate
+      dailySpend: enriched.daily_spend ?? 0,
+      dailyLimit: enriched.daily_limit ?? 50,
+      totalTransactions: enriched.total_transactions ?? 0,
       createdAt: new Date(agent.created_at),
     }
   }
@@ -176,14 +181,21 @@ export async function getSellers(): Promise<Seller[]> {
 
   try {
     const sellers = await api.fetchSellers()
-    return sellers.map(s => ({
-      id: s.id,
-      name: s.name,
-      walletAddress: s.wallet_address,
-      totalRevenue: 0, // TODO: calculate
-      totalCalls: 0, // TODO: calculate
-      endpoints: 0, // TODO: count
-    }))
+    return sellers.map(s => {
+      const enriched = s as api.Seller & {
+        total_revenue?: number
+        total_calls?: number
+        endpoint_count?: number
+      }
+      return {
+        id: s.id,
+        name: s.name,
+        walletAddress: s.wallet_address,
+        totalRevenue: enriched.total_revenue ?? 0,
+        totalCalls: enriched.total_calls ?? 0,
+        endpoints: enriched.endpoint_count ?? 0,
+      }
+    })
   } catch (error) {
     console.warn('API unavailable, using mock data:', error)
     return mock.mockSellers as Seller[]

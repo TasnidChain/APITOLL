@@ -194,7 +194,7 @@ app.get("/", (req: Request, res: Response) => {
     name: "LLM Council Orchestrator",
     version: "1.0.0",
     description:
-      "3-stage LLM orchestration service for AgentCommerce marketplace",
+      "3-stage LLM orchestration service for Apitoll marketplace",
     endpoints: {
       orchestrate: {
         method: "POST",

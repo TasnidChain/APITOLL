@@ -1,7 +1,7 @@
 /**
  * Marketplace Integration Module
  *
- * Integrates LLM Council with AgentCommerce Marketplace
+ * Integrates LLM Council with Apitoll Marketplace
  * Handles service registration, metrics reporting, and compliance
  */
 
@@ -265,7 +265,7 @@ export class MarketplaceIntegration {
           "https://docs.agentcommerce.dev/llm-council/quickstart",
       },
       support: {
-        email: "support@agentcommerce.dev",
+        email: "support@apitoll.dev",
         discord: "https://discord.gg/agentcommerce",
         docs: "https://docs.agentcommerce.dev",
       },

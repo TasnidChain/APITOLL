@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { AnalyticsReporter } from "./analytics";
-import { verifyHmacSignature } from "@agentcommerce/shared";
-import type { PaymentReceipt } from "@agentcommerce/shared";
+import { verifyHmacSignature } from "@apitoll/shared";
+import type { PaymentReceipt } from "@apitoll/shared";
 
 const TEST_RECEIPT: PaymentReceipt = {
   txHash: "0xabc123",

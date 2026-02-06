@@ -1,5 +1,5 @@
 {
-  "name": "agentcommerce",
+  "name": "apitoll",
   "private": true,
   "workspaces": [
     "packages/*",

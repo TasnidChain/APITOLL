@@ -29,7 +29,7 @@ export type {
   FeeBreakdown,
   PlanTier,
   PlanLimits,
-} from "@agentcommerce/shared";
+} from "@apitoll/shared";
 
 // Re-export shared utilities
 export {
@@ -38,4 +38,4 @@ export {
   getPlanLimits,
   checkPlanLimit,
   PLAN_LIMITS,
-} from "@agentcommerce/shared";
+} from "@apitoll/shared";

@@ -66,7 +66,7 @@
     "deployment": "https://docs.agentcommerce.dev/llm-council/deployment"
   },
   "support": {
-    "email": "support@agentcommerce.dev",
+    "email": "support@apitoll.dev",
     "discord": "https://discord.gg/agentcommerce",
     "website": "https://agentcommerce.dev",
     "documentation": "https://docs.agentcommerce.dev"
@@ -163,7 +163,7 @@
     "sdks": [
       {
         "language": "JavaScript/TypeScript",
-        "package": "@agentcommerce/llm-council",
+        "package": "@apitoll/llm-council",
         "repository": "https://github.com/agentcommerce/llm-council"
       }
     ]
