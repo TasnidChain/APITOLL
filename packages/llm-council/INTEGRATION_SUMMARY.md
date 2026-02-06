@@ -135,7 +135,7 @@ GET    /                     Service info
 ### 1. Service Registration
 
 ```typescript
-import { MarketplaceIntegration } from '@agentcommerce/llm-council';
+import { MarketplaceIntegration } from '@apitoll/llm-council';
 
 const marketplace = new MarketplaceIntegration(
   process.env.MARKETPLACE_URL,
@@ -161,7 +161,7 @@ marketplace.startMetricsReporting(300000, () => {
 import axios from 'axios';
 
 const response = await axios.post(
-  'https://api.agentcommerce.dev/llm-council/orchestrate',
+  'https://api.apitoll.ai/llm-council/orchestrate',
   {
     query: 'Analyze market opportunity',
     context: { industry: 'AI/ML' }
@@ -390,9 +390,9 @@ app.use((req, res, next) => {
 
 ### Available Support
 
-- 📧 Email: support@agentcommerce.dev
-- 💬 Discord: https://discord.gg/agentcommerce
-- 📖 Documentation: https://docs.agentcommerce.dev/llm-council
+- 📧 Email: support@apitoll.ai
+- 💬 Discord: https://discord.gg/apitoll
+- 📖 Documentation: https://docs.apitoll.ai/llm-council
 - 🐛 Issues: GitHub issue tracker
 
 ### Maintenance Schedule

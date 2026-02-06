@@ -149,7 +149,7 @@ curl -X POST http://localhost:3001/analyze \
 ## Using as SDK
 
 ```typescript
-import { LLMCouncil } from '@agentcommerce/llm-council';
+import { LLMCouncil } from '@apitoll/llm-council';
 
 const council = new LLMCouncil({
   llm: {
@@ -272,9 +272,9 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for full guide.
 
 ## Support
 
-- 📧 Email: support@agentcommerce.dev
-- 💬 Discord: https://discord.gg/agentcommerce
-- 📖 Docs: https://docs.agentcommerce.dev/llm-council
+- 📧 Email: support@apitoll.ai
+- 💬 Discord: https://discord.gg/apitoll
+- 📖 Docs: https://docs.apitoll.ai/llm-council
 
 ---
 

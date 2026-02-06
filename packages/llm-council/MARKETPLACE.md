@@ -43,7 +43,7 @@ Perfect for applications requiring deep analysis, multi-perspective reasoning, o
 ### Service Endpoint
 
 ```
-https://api.agentcommerce.dev/llm-council
+https://api.apitoll.ai/llm-council
 ```
 
 **Endpoint Type**: REST (HTTP/HTTPS)  
@@ -55,7 +55,7 @@ https://api.agentcommerce.dev/llm-council
 ### Health Endpoint
 
 ```
-https://api.agentcommerce.dev/llm-council/health
+https://api.apitoll.ai/llm-council/health
 ```
 
 **Check Interval**: 60 seconds  
@@ -84,15 +84,15 @@ https://api.agentcommerce.dev/llm-council/health
 
 ### Documentation
 
-**Public Docs**: https://docs.agentcommerce.dev/llm-council  
-**API Reference**: https://docs.agentcommerce.dev/llm-council/api  
-**Getting Started**: https://docs.agentcommerce.dev/llm-council/quickstart  
+**Public Docs**: https://docs.apitoll.ai/llm-council  
+**API Reference**: https://docs.apitoll.ai/llm-council/api  
+**Getting Started**: https://docs.apitoll.ai/llm-council/quickstart  
 
 ### Support
 
-- **Email**: support@agentcommerce.dev
-- **Discord**: https://discord.gg/agentcommerce
-- **Docs**: https://docs.agentcommerce.dev
+- **Email**: support@apitoll.ai
+- **Discord**: https://discord.gg/apitoll
+- **Docs**: https://docs.apitoll.ai
 
 ### Capabilities
 
@@ -129,7 +129,7 @@ https://api.agentcommerce.dev/llm-council/health
 
 **Request**:
 ```bash
-curl -X POST https://api.agentcommerce.dev/llm-council/orchestrate \
+curl -X POST https://api.apitoll.ai/llm-council/orchestrate \
   -H "Content-Type: application/json" \
   -H "X-Service-Key: your-api-key" \
   -d '{
@@ -323,11 +323,11 @@ Configuration file: `packages/llm-council/marketplace-config.json`
 
 ### Step 3: Verify Listing
 
-Visit: https://marketplace.agentcommerce.dev/services/llm-council
+Visit: https://marketplace.apitoll.ai/services/llm-council
 
 ### Step 4: Monitor Performance
 
-Dashboard: https://dashboard.agentcommerce.dev/services/llm-council/metrics
+Dashboard: https://dashboard.apitoll.ai/services/llm-council/metrics
 
 ---
 
@@ -344,4 +344,4 @@ Dashboard: https://dashboard.agentcommerce.dev/services/llm-council/metrics
 
 ## Questions?
 
-Contact the marketplace team: marketplace@agentcommerce.dev
+Contact the marketplace team: marketplace@apitoll.ai

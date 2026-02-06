@@ -177,7 +177,7 @@ export function runStdio(server: PaidMCPServer) {
         result = {
           protocolVersion: '2024-11-05',
           capabilities: { tools: {} },
-          serverInfo: { name: 'agentcommerce-mcp', version: '0.1.0' },
+          serverInfo: { name: 'apitoll-mcp', version: '0.1.0' },
         }
       } else if (method === 'tools/list') {
         result = { tools: server.getToolDefinitions() }

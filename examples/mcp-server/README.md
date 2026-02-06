@@ -70,7 +70,7 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 ## Integration with Agent Wallet
 
 ```typescript
-import { createAgentWallet } from '@agentcommerce/buyer-sdk'
+import { createAgentWallet } from '@apitoll/buyer-sdk'
 
 const agent = createAgentWallet({
   name: 'WeatherBot',

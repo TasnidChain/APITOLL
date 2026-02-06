@@ -9,7 +9,7 @@ Complete examples of how to use the LLM Council Orchestrator.
 3. [Technical Analysis](#technical-analysis)
 4. [Business Strategy](#business-strategy)
 5. [Content Generation](#content-generation)
-6. [Integration with Apitoll](#integration-with-agentcommerce)
+6. [Integration with Apitoll](#integration-with-apitoll)
 
 ---
 
@@ -42,7 +42,7 @@ console.log("Total Duration:", response.data.data.metadata.totalDurationMs, "ms"
 ### TypeScript with SDK
 
 ```typescript
-import { LLMCouncil } from "@agentcommerce/llm-council";
+import { LLMCouncil } from "@apitoll/llm-council";
 
 const council = new LLMCouncil({
   llm: {
@@ -145,7 +145,7 @@ curl -X POST http://localhost:3001/orchestrate \
 ### Example 2: Technology Stack Evaluation
 
 ```typescript
-import { LLMCouncil } from "@agentcommerce/llm-council";
+import { LLMCouncil } from "@apitoll/llm-council";
 
 const council = new LLMCouncil({
   llm: { provider: "anthropic", apiKey: process.env.ANTHROPIC_API_KEY },
@@ -299,7 +299,7 @@ import axios from "axios";
 
 async function analyzeFeedback(userFeedback: string[]) {
   const response = await axios.post(
-    "https://api.agentcommerce.dev/llm-council/orchestrate",
+    "https://api.apitoll.ai/llm-council/orchestrate",
     {
       query: `Analyze the following customer feedback and identify key themes, sentiment, and actionable insights: ${userFeedback.join("; ")}`,
       context: {
@@ -313,7 +313,7 @@ async function analyzeFeedback(userFeedback: string[]) {
     },
     {
       headers: {
-        "X-Service-Key": process.env.AGENTCOMMERCE_SERVICE_KEY,
+        "X-Service-Key": process.env.APITOLL_SERVICE_KEY,
       },
     }
   );
@@ -505,6 +505,6 @@ setInterval(() => {
 ## More Examples
 
 For additional examples and use cases, see:
-- 📖 [Full Documentation](https://docs.agentcommerce.dev/llm-council)
+- 📖 [Full Documentation](https://docs.apitoll.ai/llm-council)
 - 🧪 [Test Suite](./src/orchestrator.test.ts)
 - 📊 [Sample Datasets](./examples/)

@@ -1,6 +1,6 @@
 import postgres from 'postgres'
 
-const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/agentcommerce'
+const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/apitoll'
 
 export const sql = postgres(connectionString, {
   max: 10,

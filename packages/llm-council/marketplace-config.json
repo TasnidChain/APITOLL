@@ -18,10 +18,10 @@
     ]
   },
   "endpoints": {
-    "main": "https://api.agentcommerce.dev/llm-council/orchestrate",
-    "health": "https://api.agentcommerce.dev/llm-council/health",
-    "metrics": "https://api.agentcommerce.dev/llm-council/metrics",
-    "analyze": "https://api.agentcommerce.dev/llm-council/analyze"
+    "main": "https://api.apitoll.ai/llm-council/orchestrate",
+    "health": "https://api.apitoll.ai/llm-council/health",
+    "metrics": "https://api.apitoll.ai/llm-council/metrics",
+    "analyze": "https://api.apitoll.ai/llm-council/analyze"
   },
   "pricing": {
     "model": "hybrid",
@@ -59,17 +59,17 @@
     "currency": "USD"
   },
   "documentation": {
-    "publicDocs": "https://docs.agentcommerce.dev/llm-council",
-    "apiReference": "https://docs.agentcommerce.dev/llm-council/api",
-    "gettingStarted": "https://docs.agentcommerce.dev/llm-council/quickstart",
-    "examples": "https://docs.agentcommerce.dev/llm-council/examples",
-    "deployment": "https://docs.agentcommerce.dev/llm-council/deployment"
+    "publicDocs": "https://docs.apitoll.ai/llm-council",
+    "apiReference": "https://docs.apitoll.ai/llm-council/api",
+    "gettingStarted": "https://docs.apitoll.ai/llm-council/quickstart",
+    "examples": "https://docs.apitoll.ai/llm-council/examples",
+    "deployment": "https://docs.apitoll.ai/llm-council/deployment"
   },
   "support": {
-    "email": "support@apitoll.dev",
-    "discord": "https://discord.gg/agentcommerce",
-    "website": "https://agentcommerce.dev",
-    "documentation": "https://docs.agentcommerce.dev"
+    "email": "support@apitoll.ai",
+    "discord": "https://discord.gg/apitoll",
+    "website": "https://apitoll.ai",
+    "documentation": "https://docs.apitoll.ai"
   },
   "capabilities": [
     "3-stage orchestration (analyze, execute, synthesize)",
@@ -164,7 +164,7 @@
       {
         "language": "JavaScript/TypeScript",
         "package": "@apitoll/llm-council",
-        "repository": "https://github.com/agentcommerce/llm-council"
+        "repository": "https://github.com/TasnidChain/Apitoll/llm-council"
       }
     ]
   },
@@ -179,7 +179,7 @@
     }
   },
   "testing": {
-    "testEndpoint": "https://sandbox.agentcommerce.dev/llm-council",
+    "testEndpoint": "https://sandbox.apitoll.ai/llm-council",
     "mockMode": true,
     "testApiKey": "test-key-1234567890"
   }

@@ -300,7 +300,7 @@ Final Response (with metadata)
 ### Usage Example
 
 ```typescript
-import { LLMCouncil } from '@agentcommerce/llm-council';
+import { LLMCouncil } from '@apitoll/llm-council';
 
 const council = new LLMCouncil({
   llm: {
@@ -433,6 +433,6 @@ MIT - See LICENSE file in root
 
 ## Support
 
-- 📧 Email: support@agentcommerce.dev
-- 🐛 Issues: github.com/agentcommerce/issues
-- 💬 Discord: discord.gg/agentcommerce
+- 📧 Email: support@apitoll.ai
+- 🐛 Issues: github.com/TasnidChain/Apitoll/issues
+- 💬 Discord: discord.gg/apitoll

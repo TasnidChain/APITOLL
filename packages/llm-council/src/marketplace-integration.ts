@@ -259,15 +259,15 @@ export class MarketplaceIntegration {
         freePeriodDays: 30,
       },
       documentation: {
-        publicDocs: "https://docs.agentcommerce.dev/llm-council",
-        apiReference: "https://docs.agentcommerce.dev/llm-council/api",
+        publicDocs: "https://docs.apitoll.ai/llm-council",
+        apiReference: "https://docs.apitoll.ai/llm-council/api",
         gettingStarted:
-          "https://docs.agentcommerce.dev/llm-council/quickstart",
+          "https://docs.apitoll.ai/llm-council/quickstart",
       },
       support: {
-        email: "support@apitoll.dev",
-        discord: "https://discord.gg/agentcommerce",
-        docs: "https://docs.agentcommerce.dev",
+        email: "support@apitoll.ai",
+        discord: "https://discord.gg/apitoll",
+        docs: "https://docs.apitoll.ai",
       },
       capabilities: [
         "3-stage orchestration",

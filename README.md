@@ -26,26 +26,26 @@ Monetize APIs with micropayments. Control agent spending. Own the transaction gr
 
 | Package | Description |
 |---------|-------------|
-| `@agentcommerce/seller-sdk` | Express/Hono middleware — add x402 payments to any API in 3 lines |
-| `@agentcommerce/buyer-sdk` | Agent wallet with auto 402 handling, budget policies, spend tracking |
-| `@agentcommerce/shared` | Shared types, utilities, chain configs |
+| `@apitoll/seller-sdk` | Express/Hono middleware — add x402 payments to any API in 3 lines |
+| `@apitoll/buyer-sdk` | Agent wallet with auto 402 handling, budget policies, spend tracking |
+| `@apitoll/shared` | Shared types, utilities, chain configs |
 | `apps/dashboard` | Next.js dashboard for agent funding, budgets, and analytics |
 | `apps/indexer` | Transaction indexer API (Hono + PostgreSQL) |
 | `apps/discovery` | Tool discovery API — search and find paid APIs |
-| `@agentcommerce/mcp-server` | Monetize MCP tools with x402 payments |
-| `@agentcommerce/langchain` | LangChain & CrewAI adapters for paid tools |
+| `@apitoll/mcp-server` | Monetize MCP tools with x402 payments |
+| `@apitoll/langchain` | LangChain & CrewAI adapters for paid tools |
 
 ## Quick Start
 
 ### Seller: Monetize Your API
 
 ```bash
-npm install @agentcommerce/seller-sdk
+npm install @apitoll/seller-sdk
 ```
 
 ```typescript
 import express from "express";
-import { paymentMiddleware } from "@agentcommerce/seller-sdk";
+import { paymentMiddleware } from "@apitoll/seller-sdk";
 
 const app = express();
 
@@ -75,11 +75,11 @@ app.listen(3001);
 ### Buyer: Deploy an Agent with Budget Controls
 
 ```bash
-npm install @agentcommerce/buyer-sdk
+npm install @apitoll/buyer-sdk
 ```
 
 ```typescript
-import { createAgentWallet } from "@agentcommerce/buyer-sdk";
+import { createAgentWallet } from "@apitoll/buyer-sdk";
 
 const agent = createAgentWallet({
   name: "ResearchBot",
@@ -99,12 +99,12 @@ const data = await agent.fetch("https://api.weather.pro/forecast");
 ### MCP Server: Monetize Tools
 
 ```bash
-npm install @agentcommerce/mcp-server
+npm install @apitoll/mcp-server
 ```
 
 ```typescript
 import { z } from "zod";
-import { createPaidMCPServer } from "@agentcommerce/mcp-server";
+import { createPaidMCPServer } from "@apitoll/mcp-server";
 
 const server = createPaidMCPServer({
   walletAddress: "0xYourWallet",
@@ -130,11 +130,11 @@ server.paidTool(
 ### LangChain/CrewAI: Use Paid Tools
 
 ```bash
-npm install @agentcommerce/langchain
+npm install @apitoll/langchain
 ```
 
 ```typescript
-import { createPaidTool, createPaidAgentExecutor } from "@agentcommerce/langchain";
+import { createPaidTool, createPaidAgentExecutor } from "@apitoll/langchain";
 
 // Create a paid tool
 const weatherTool = createPaidTool({
@@ -199,7 +199,7 @@ The buyer SDK enforces policies before any payment is signed:
 ## Project Structure
 
 ```
-agentcommerce/
+apitoll/
 ├── packages/
 │   ├── shared/              # Types, utilities, chain configs
 │   │   └── src/
@@ -240,7 +240,7 @@ agentcommerce/
 ```bash
 # Clone
 git clone https://github.com/TasnidChain/Apitoll.git
-cd agentcommerce
+cd apitoll
 
 # Install
 npm install

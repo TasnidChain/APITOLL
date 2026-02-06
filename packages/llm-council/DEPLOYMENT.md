@@ -181,10 +181,10 @@ services:
       start_period: 10s
     restart: unless-stopped
     networks:
-      - agentcommerce
+      - apitoll
 
 networks:
-  agentcommerce:
+  apitoll:
     external: true
 ```
 
@@ -344,7 +344,7 @@ LLM_MODEL=gpt-4
 ENABLE_CACHING=true
 
 # Marketplace Integration (Optional)
-MARKETPLACE_URL=https://api.agentcommerce.dev
+MARKETPLACE_URL=https://api.apitoll.ai
 MARKETPLACE_SERVICE_ID=llm-council
 MARKETPLACE_API_KEY=...
 
@@ -701,4 +701,4 @@ npm test
 
 ---
 
-For more help, see [README.md](./README.md) or contact support@agentcommerce.dev
+For more help, see [README.md](./README.md) or contact support@apitoll.ai

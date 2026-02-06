@@ -1,6 +1,6 @@
 import { type Transaction, type PaymentReceipt, type FeeBreakdown, generateId, computeHmacSignature } from "@apitoll/shared";
 
-const PLATFORM_API_URL = "https://api.agentcommerce.xyz";
+const PLATFORM_API_URL = "https://api.apitoll.xyz";
 
 export interface ReporterConfig {
   /** Platform API key for authentication */
@@ -91,7 +91,7 @@ export class AnalyticsReporter {
         ? ` fee=$${report.feeBreakdown.platformFee} seller=$${report.feeBreakdown.sellerAmount}`
         : "";
       console.log(
-        `[agentcommerce] tx=${transaction.id} endpoint=${transaction.endpoint} amount=$${transaction.amount}${feeInfo} chain=${transaction.chain} status=${transaction.status}`
+        `[apitoll] tx=${transaction.id} endpoint=${transaction.endpoint} amount=$${transaction.amount}${feeInfo} chain=${transaction.chain} status=${transaction.status}`
       );
     }
 
@@ -102,7 +102,7 @@ export class AnalyticsReporter {
     if (this.config.webhookUrl) {
       this.sendWebhook(transaction).catch((err) => {
         if (this.config.verbose) {
-          console.error(`[agentcommerce] webhook error:`, err);
+          console.error(`[apitoll] webhook error:`, err);
         }
       });
     }
@@ -118,7 +118,7 @@ export class AnalyticsReporter {
    */
   async reportRejection(endpoint: string, method: string, reason: string): Promise<void> {
     if (this.config.verbose) {
-      console.log(`[agentcommerce] rejected endpoint=${endpoint} reason=${reason}`);
+      console.log(`[apitoll] rejected endpoint=${endpoint} reason=${reason}`);
     }
   }
 
@@ -149,7 +149,7 @@ export class AnalyticsReporter {
         this.queue.unshift(...batch);
       }
       if (this.config.verbose) {
-        console.error(`[agentcommerce] flush error:`, err);
+        console.error(`[apitoll] flush error:`, err);
       }
     }
   }

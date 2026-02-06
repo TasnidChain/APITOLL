@@ -37,8 +37,8 @@ app.use(
         description: "Subscribe to severe weather alerts",
       },
     },
-    // Optional: Platform analytics (get an API key at agentcommerce.xyz)
-    platformApiKey: process.env.AGENTCOMMERCE_API_KEY,
+    // Optional: Platform analytics (get an API key at apitoll.ai)
+    platformApiKey: process.env.APITOLL_API_KEY,
     // Optional: Real-time webhooks
     webhookUrl: process.env.WEBHOOK_URL,
   })
