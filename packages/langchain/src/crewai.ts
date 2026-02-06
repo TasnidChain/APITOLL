@@ -72,7 +72,7 @@ export class CrewAITool {
   }
 
   private createPaidFetch(): typeof fetch {
-    return async (input: RequestInfo | URL, init?: RequestInit) => {
+    return async (input: string | URL | Request, init?: RequestInit) => {
       let response = await fetch(input, init)
 
       if (response.status === 402) {

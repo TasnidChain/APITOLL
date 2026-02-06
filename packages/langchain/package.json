@@ -1,9 +1,21 @@
 {
   "name": "@agentcommerce/langchain",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "LangChain and CrewAI adapters for AgentCommerce paid tools",
+  "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": ["dist", "README.md"],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TasnidChain/AgentCommerce"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -15,6 +27,14 @@
     "build": "tsc",
     "dev": "tsc --watch"
   },
+  "keywords": [
+    "langchain",
+    "crewai",
+    "ai-agents",
+    "x402",
+    "payments",
+    "tools"
+  ],
   "dependencies": {
     "@agentcommerce/shared": "*",
     "@agentcommerce/buyer-sdk": "*"
@@ -34,14 +54,5 @@
   "devDependencies": {
     "@types/node": "^20",
     "typescript": "^5"
-  },
-  "keywords": [
-    "langchain",
-    "crewai",
-    "ai-agents",
-    "x402",
-    "payments",
-    "tools"
-  ],
-  "license": "MIT"
+  }
 }

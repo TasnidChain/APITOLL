@@ -1,9 +1,21 @@
 {
   "name": "@agentcommerce/seller-sdk",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "x402 payment middleware for API and MCP tool monetization. Add per-request micropayments in 3 lines of code.",
+  "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": ["dist", "README.md"],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TasnidChain/AgentCommerce"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -11,10 +23,7 @@
   },
   "keywords": ["x402", "micropayments", "agent", "mcp", "usdc", "stablecoin", "api-monetization"],
   "dependencies": {
-    "@agentcommerce/shared": "workspace:*",
-    "@x402/core": "^0.2.0",
-    "@x402/evm": "^0.2.0",
-    "@x402/svm": "^0.2.0"
+    "@agentcommerce/shared": "file:../shared"
   },
   "peerDependencies": {
     "express": ">=4.0.0",

@@ -1,16 +1,64 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+// ═══════════════════════════════════════════════════
+// SECURITY FIX #7: Wallet Address Validation
+// ═══════════════════════════════════════════════════
+
+/**
+ * Validates Ethereum address format (EVM chains like Base)
+ * Must be 42 chars starting with 0x, valid hex
+ */
+function isValidEthereumAddress(addr: string): boolean {
+  if (!addr || typeof addr !== "string") return false;
+  if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) return false;
+  // Reject zero address
+  if (addr === "0x0000000000000000000000000000000000000000") return false;
+  return true;
+}
+
+/**
+ * Validates Solana address format
+ * Must be 32-44 chars of base58 characters
+ */
+function isValidSolanaAddress(addr: string): boolean {
+  if (!addr || typeof addr !== "string") return false;
+  if (!/^[1-9A-HJ-NP-Z]{32,44}$/.test(addr)) return false;
+  return true;
+}
+
+/**
+ * Custom Convex validator for wallet addresses (both EVM + Solana)
+ */
+const walletAddressValidator = v.custom<string>((addr) => {
+  if (!isValidEthereumAddress(addr) && !isValidSolanaAddress(addr)) {
+    throw new Error(`Invalid wallet address: ${addr} (must be valid Ethereum or Solana address)`);
+  }
+  return addr;
+});
+
 export default defineSchema({
   // ═══════════════════════════════════════════════════
-  // Organizations (multi-tenant)
+  // Organizations (multi-tenant) — with Stripe billing
   // ═══════════════════════════════════════════════════
   organizations: defineTable({
     name: v.string(),
     billingWallet: v.optional(v.string()),
     plan: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
     apiKey: v.string(),
-  }).index("by_api_key", ["apiKey"]),
+    // Stripe billing fields
+    stripeCustomerId: v.optional(v.string()),
+    stripeSubscriptionId: v.optional(v.string()),
+    stripePriceId: v.optional(v.string()),
+    billingEmail: v.optional(v.string()),
+    billingPeriodEnd: v.optional(v.number()),
+    // Usage tracking for plan enforcement
+    dailyCallCount: v.optional(v.number()),
+    dailyCallDate: v.optional(v.string()), // "YYYY-MM-DD"
+    createdAt: v.optional(v.number()),
+  })
+    .index("by_api_key", ["apiKey"])
+    .index("by_stripe_customer", ["stripeCustomerId"]),
 
   // ═══════════════════════════════════════════════════
   // Agents (buyer-side wallets)
@@ -18,7 +66,7 @@ export default defineSchema({
   agents: defineTable({
     orgId: v.id("organizations"),
     name: v.string(),
-    walletAddress: v.string(),
+    walletAddress: walletAddressValidator, // SECURITY FIX: Validated wallet address
     chain: v.union(v.literal("base"), v.literal("solana")),
     balance: v.number(),
     status: v.union(v.literal("active"), v.literal("paused"), v.literal("depleted")),
@@ -33,7 +81,7 @@ export default defineSchema({
   sellers: defineTable({
     orgId: v.optional(v.id("organizations")),
     name: v.string(),
-    walletAddress: v.string(),
+    walletAddress: walletAddressValidator, // SECURITY FIX: Validated wallet address
     apiKey: v.string(),
   })
     .index("by_wallet", ["walletAddress"])
@@ -59,11 +107,11 @@ export default defineSchema({
   }).index("by_seller", ["sellerId"]),
 
   // ═══════════════════════════════════════════════════
-  // Transactions (the core data model)
+  // Transactions — with platform fee tracking
   // ═══════════════════════════════════════════════════
   transactions: defineTable({
     txHash: v.optional(v.string()),
-    agentAddress: v.string(),
+    agentAddress: walletAddressValidator, // SECURITY FIX: Validated wallet address
     agentId: v.optional(v.id("agents")),
     sellerId: v.optional(v.id("sellers")),
     endpointId: v.optional(v.id("endpoints")),
@@ -83,6 +131,10 @@ export default defineSchema({
     requestedAt: v.number(), // timestamp
     settledAt: v.optional(v.number()),
     blockNumber: v.optional(v.number()),
+    // Platform fee tracking
+    platformFee: v.optional(v.number()),
+    sellerAmount: v.optional(v.number()),
+    feeBps: v.optional(v.number()),
   })
     .index("by_agent", ["agentAddress", "requestedAt"])
     .index("by_agent_id", ["agentId", "requestedAt"])
@@ -92,7 +144,7 @@ export default defineSchema({
     .index("by_tx_hash", ["txHash"]),
 
   // ═══════════════════════════════════════════════════
-  // Tools (for Discovery API)
+  // Tools (for Discovery API) — with premium listing support
   // ═══════════════════════════════════════════════════
   tools: defineTable({
     sellerId: v.optional(v.id("sellers")),
@@ -116,11 +168,22 @@ export default defineSchema({
     ratingCount: v.number(),
     isActive: v.boolean(),
     isVerified: v.boolean(),
+    // Premium marketplace listing
+    isFeatured: v.optional(v.boolean()),
+    featuredUntil: v.optional(v.number()), // timestamp
+    listingTier: v.optional(v.union(
+      v.literal("free"),
+      v.literal("featured"),
+      v.literal("verified"),
+      v.literal("premium")
+    )),
+    boostScore: v.optional(v.number()), // 0-100, affects search ranking
   })
     .index("by_slug", ["slug"])
     .index("by_category", ["category"])
     .index("by_seller", ["sellerId"])
     .index("by_active", ["isActive"])
+    .index("by_featured", ["isFeatured"])
     .searchIndex("search_tools", {
       searchField: "description",
       filterFields: ["category", "isActive"],
@@ -171,4 +234,71 @@ export default defineSchema({
     isActive: v.boolean(),
     lastTriggered: v.optional(v.number()),
   }).index("by_org", ["orgId"]),
+
+  // ═══════════════════════════════════════════════════
+  // Disputes & Refunds
+  // ═══════════════════════════════════════════════════
+  disputes: defineTable({
+    transactionId: v.id("transactions"),
+    orgId: v.id("organizations"),
+    reason: v.string(),
+    status: v.union(
+      v.literal("open"),
+      v.literal("under_review"),
+      v.literal("resolved"),
+      v.literal("rejected")
+    ),
+    resolution: v.optional(v.union(
+      v.literal("refunded"),
+      v.literal("partial_refund"),
+      v.literal("denied")
+    )),
+    refundAmount: v.optional(v.number()),
+    adminNotes: v.optional(v.string()),
+    createdAt: v.number(),
+    resolvedAt: v.optional(v.number()),
+  })
+    .index("by_org", ["orgId"])
+    .index("by_transaction", ["transactionId"])
+    .index("by_status", ["status"]),
+
+  // ═══════════════════════════════════════════════════
+  // Platform Revenue Ledger
+  // ═══════════════════════════════════════════════════
+  platformRevenue: defineTable({
+    transactionId: v.id("transactions"),
+    amount: v.number(),
+    currency: v.string(),
+    chain: v.union(v.literal("base"), v.literal("solana")),
+    feeBps: v.number(),
+    collectedAt: v.number(),
+  })
+    .index("by_collected", ["collectedAt"]),
+
+  // ═══════════════════════════════════════════════════
+  // Fiat Deposits (Stripe → USDC on-ramp)
+  // ═══════════════════════════════════════════════════
+  deposits: defineTable({
+    orgId: v.id("organizations"),
+    agentId: v.optional(v.id("agents")),
+    stripePaymentIntentId: v.string(),
+    fiatAmount: v.number(), // USD amount charged
+    usdcAmount: v.number(), // USDC amount to deliver
+    exchangeRate: v.number(), // fiat/crypto rate at time of deposit
+    feeAmount: v.number(), // on-ramp fee (1-2%)
+    status: v.union(
+      v.literal("pending"),
+      v.literal("processing"),
+      v.literal("completed"),
+      v.literal("failed")
+    ),
+    walletAddress: walletAddressValidator, // SECURITY FIX: Validated wallet address
+    chain: v.union(v.literal("base"), v.literal("solana")),
+    txHash: v.optional(v.string()),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_org", ["orgId"])
+    .index("by_stripe_pi", ["stripePaymentIntentId"])
+    .index("by_status", ["status"]),
 });

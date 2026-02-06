@@ -31,14 +31,15 @@ export async function discoverTools(options: {
     throw new Error(`Discovery API error: ${response.statusText}`)
   }
 
-  const { tools } = await response.json()
+  const data = await response.json() as { tools?: unknown[] }
+  const toolsData = Array.isArray(data.tools) ? data.tools : []
 
   // Filter by max price if specified
   const filteredTools = options.maxPrice
-    ? tools.filter((t: any) => t['x-402']?.price <= options.maxPrice!)
-    : tools
+    ? toolsData.filter((t: any) => t['x-402']?.price <= options.maxPrice!)
+    : toolsData
 
-  return createToolsFromDiscovery(filteredTools)
+  return createToolsFromDiscovery(filteredTools as any)
 }
 
 /**
@@ -69,7 +70,8 @@ export async function discoverToolsForTask(
     throw new Error(`Discovery API error: ${response.statusText}`)
   }
 
-  const { recommendations } = await response.json()
+  const data = await response.json() as { recommendations?: unknown[] }
+  const recommendations = Array.isArray(data.recommendations) ? data.recommendations : []
 
   const tools = recommendations.map((r: any) => r.tool)
 
@@ -114,7 +116,7 @@ export async function createAutoDiscoverAgent(options: {
 
   // Create paid fetch
   const createPaidFetch = () => async (
-    input: RequestInfo | URL,
+    input: string | URL | Request,
     init?: RequestInit
   ) => {
     let response = await fetch(input, init)

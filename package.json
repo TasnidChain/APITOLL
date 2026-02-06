@@ -7,10 +7,12 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces",
-    "dev": "npm run dev:dashboard & npm run dev:indexer & npm run dev:discovery",
+    "dev": "npm run dev:dashboard & npm run dev:indexer & npm run dev:discovery & npm run dev:llm-council",
     "dev:dashboard": "npm run dev --workspace=apps/dashboard",
     "dev:indexer": "npm run dev --workspace=apps/indexer",
     "dev:discovery": "npm run dev --workspace=apps/discovery",
+    "dev:llm-council": "npm run dev --workspace=packages/llm-council",
+    "start:llm-council": "npm start --workspace=packages/llm-council",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "vitest"
   },

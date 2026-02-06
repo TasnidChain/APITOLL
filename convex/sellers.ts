@@ -12,8 +12,11 @@ export const create = mutation({
     walletAddress: v.string(),
   },
   handler: async (ctx, args) => {
-    // Generate API key
-    const apiKey = `sk_${crypto.randomUUID().replace(/-/g, "")}`;
+    // Generate secure API key (32 bytes of entropy)
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    const apiKey = `sk_${hex}`;
 
     const id = await ctx.db.insert("sellers", {
       orgId: args.orgId,
@@ -82,12 +85,13 @@ export const getStats = query({
       .withIndex("by_seller", (q) => q.eq("sellerId", args.id))
       .collect();
 
-    const totalRevenue = transactions
-      .filter((t) => t.status === "settled")
-      .reduce((sum, t) => sum + t.amount, 0);
+    const settledTxs = transactions.filter((t) => t.status === "settled");
+    const totalRevenue = settledTxs.reduce((sum, t) => sum + t.amount, 0);
+    const totalPlatformFees = settledTxs.reduce((sum, t) => sum + (t.platformFee ?? 0), 0);
+    const totalSellerRevenue = settledTxs.reduce((sum, t) => sum + (t.sellerAmount ?? t.amount), 0);
 
     const totalCalls = transactions.length;
-    const successfulCalls = transactions.filter((t) => t.status === "settled").length;
+    const successfulCalls = settledTxs.length;
 
     const endpoints = await ctx.db
       .query("endpoints")
@@ -96,6 +100,8 @@ export const getStats = query({
 
     return {
       totalRevenue,
+      totalSellerRevenue,
+      totalPlatformFees,
       totalCalls,
       successfulCalls,
       endpointCount: endpoints.length,

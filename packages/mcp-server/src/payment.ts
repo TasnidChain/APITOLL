@@ -68,12 +68,12 @@ export async function verifyPayment(
       return { valid: false, error: `Facilitator error: ${error}` }
     }
 
-    const result = await response.json()
+    const result = await response.json() as { valid?: boolean; txHash?: string; settledAt?: string; error?: string }
 
     if (result.valid) {
       return {
         valid: true,
-        txHash: result.txHash,
+        txHash: result.txHash || '',
         settledAt: result.settledAt ? new Date(result.settledAt) : new Date(),
       }
     }
@@ -136,9 +136,9 @@ export function createPaymentReceipt(
   result: VerificationResult,
   amount: number,
   chain: string
-) {
+): { txHash: string; amount: number; chain: string; settledAt?: string } {
   return {
-    txHash: result.txHash,
+    txHash: result.txHash || '',
     amount,
     chain,
     settledAt: result.settledAt?.toISOString(),

@@ -1,6 +1,10 @@
 'use client'
 
-import { DailyStats } from '@/lib/mock-data'
+interface DailyStats {
+  date: string
+  spend: number
+  transactions: number
+}
 import { formatUSD } from '@/lib/utils'
 
 interface SpendChartProps {

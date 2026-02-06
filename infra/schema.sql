@@ -1,21 +1,32 @@
--- AgentCommerce Transaction Indexer Schema
+-- AgentCommerce Schema v2.0
 -- PostgreSQL 15+
+-- Includes: billing, fees, disputes, deposits, premium marketplace
 
 -- ═══════════════════════════════════════════════════
--- Organizations (multi-tenant)
+-- Organizations (multi-tenant) — with Stripe billing
 -- ═══════════════════════════════════════════════════
 
 CREATE TABLE organizations (
-    id              TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-    name            TEXT NOT NULL,
-    billing_wallet  TEXT,
-    plan            TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'pro', 'enterprise')),
-    api_key         TEXT UNIQUE NOT NULL DEFAULT encode(gen_random_bytes(32), 'hex'),
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    id                      TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    name                    TEXT NOT NULL,
+    billing_wallet          TEXT,
+    plan                    TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'pro', 'enterprise')),
+    api_key                 TEXT UNIQUE NOT NULL DEFAULT 'org_' || encode(gen_random_bytes(32), 'hex'),
+    -- Stripe billing
+    stripe_customer_id      TEXT,
+    stripe_subscription_id  TEXT,
+    stripe_price_id         TEXT,
+    billing_email           TEXT,
+    billing_period_end      TIMESTAMPTZ,
+    -- Usage tracking
+    daily_call_count        INTEGER NOT NULL DEFAULT 0,
+    daily_call_date         DATE,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_orgs_api_key ON organizations(api_key);
+CREATE INDEX idx_orgs_stripe ON organizations(stripe_customer_id) WHERE stripe_customer_id IS NOT NULL;
 
 -- ═══════════════════════════════════════════════════
 -- Agents (buyer-side wallets)
@@ -46,7 +57,7 @@ CREATE TABLE sellers (
     org_id          TEXT REFERENCES organizations(id) ON DELETE SET NULL,
     name            TEXT NOT NULL,
     wallet_address  TEXT NOT NULL,
-    api_key         TEXT UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+    api_key         TEXT UNIQUE DEFAULT 'sk_' || encode(gen_random_bytes(32), 'hex'),
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -82,7 +93,7 @@ CREATE INDEX idx_endpoints_active ON endpoints(is_active) WHERE is_active = true
 CREATE INDEX idx_endpoints_category ON endpoints(category);
 
 -- ═══════════════════════════════════════════════════
--- Transactions (the core data model)
+-- Transactions — with platform fee tracking
 -- ═══════════════════════════════════════════════════
 
 CREATE TABLE transactions (
@@ -104,6 +115,10 @@ CREATE TABLE transactions (
     requested_at    TIMESTAMPTZ NOT NULL,
     settled_at      TIMESTAMPTZ,
     block_number    BIGINT,
+    -- Platform fee tracking
+    platform_fee    NUMERIC(20, 6),
+    seller_amount   NUMERIC(20, 6),
+    fee_bps         INTEGER,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -117,9 +132,69 @@ CREATE INDEX idx_txns_status ON transactions(status);
 CREATE INDEX idx_txns_time ON transactions(requested_at DESC);
 CREATE INDEX idx_txns_hash ON transactions(tx_hash) WHERE tx_hash IS NOT NULL;
 
--- Partition by month for scale (optional, enable when volume justifies it)
--- CREATE TABLE transactions_2026_02 PARTITION OF transactions
---     FOR VALUES FROM ('2026-02-01') TO ('2026-03-01');
+-- ═══════════════════════════════════════════════════
+-- Disputes & Refunds
+-- ═══════════════════════════════════════════════════
+
+CREATE TABLE disputes (
+    id              TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    transaction_id  TEXT NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+    org_id          TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    reason          TEXT NOT NULL,
+    status          TEXT NOT NULL DEFAULT 'open'
+                    CHECK (status IN ('open', 'under_review', 'resolved', 'rejected')),
+    resolution      TEXT CHECK (resolution IN ('refunded', 'partial_refund', 'denied')),
+    refund_amount   NUMERIC(20, 6),
+    admin_notes     TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    resolved_at     TIMESTAMPTZ
+);
+
+CREATE INDEX idx_disputes_org ON disputes(org_id);
+CREATE INDEX idx_disputes_transaction ON disputes(transaction_id);
+CREATE INDEX idx_disputes_status ON disputes(status);
+
+-- ═══════════════════════════════════════════════════
+-- Platform Revenue Ledger
+-- ═══════════════════════════════════════════════════
+
+CREATE TABLE platform_revenue (
+    id              TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    transaction_id  TEXT NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+    amount          NUMERIC(20, 6) NOT NULL,
+    currency        TEXT NOT NULL DEFAULT 'USDC',
+    chain           TEXT NOT NULL CHECK (chain IN ('base', 'solana')),
+    fee_bps         INTEGER NOT NULL,
+    collected_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_platform_rev_time ON platform_revenue(collected_at DESC);
+
+-- ═══════════════════════════════════════════════════
+-- Fiat Deposits (Stripe → USDC on-ramp)
+-- ═══════════════════════════════════════════════════
+
+CREATE TABLE deposits (
+    id                      TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    org_id                  TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    agent_id                TEXT REFERENCES agents(id) ON DELETE SET NULL,
+    stripe_payment_intent_id TEXT NOT NULL,
+    fiat_amount             NUMERIC(20, 2) NOT NULL,
+    usdc_amount             NUMERIC(20, 6) NOT NULL,
+    exchange_rate           NUMERIC(10, 6) NOT NULL DEFAULT 1.0,
+    fee_amount              NUMERIC(20, 6) NOT NULL,
+    status                  TEXT NOT NULL DEFAULT 'pending'
+                            CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+    wallet_address          TEXT NOT NULL,
+    chain                   TEXT NOT NULL CHECK (chain IN ('base', 'solana')),
+    tx_hash                 TEXT,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    completed_at            TIMESTAMPTZ
+);
+
+CREATE INDEX idx_deposits_org ON deposits(org_id);
+CREATE INDEX idx_deposits_stripe_pi ON deposits(stripe_payment_intent_id);
+CREATE INDEX idx_deposits_status ON deposits(status);
 
 -- ═══════════════════════════════════════════════════
 -- Policies (buyer-side rules)
@@ -143,7 +218,6 @@ CREATE INDEX idx_policies_agent ON policies(agent_id);
 -- Materialized views for analytics
 -- ═══════════════════════════════════════════════════
 
--- Hourly spend aggregation
 CREATE MATERIALIZED VIEW mv_hourly_spend AS
 SELECT
     date_trunc('hour', requested_at) AS hour,
@@ -152,6 +226,7 @@ SELECT
     chain,
     COUNT(*) AS tx_count,
     SUM(amount) AS total_spend,
+    SUM(platform_fee) AS total_platform_fees,
     AVG(amount) AS avg_spend,
     AVG(latency_ms) AS avg_latency
 FROM transactions
@@ -160,7 +235,6 @@ GROUP BY 1, 2, 3, 4;
 
 CREATE UNIQUE INDEX idx_mv_hourly ON mv_hourly_spend(hour, agent_id, seller_id, chain);
 
--- Daily spend aggregation
 CREATE MATERIALIZED VIEW mv_daily_spend AS
 SELECT
     date_trunc('day', requested_at) AS day,
@@ -169,6 +243,7 @@ SELECT
     chain,
     COUNT(*) AS tx_count,
     SUM(amount) AS total_spend,
+    SUM(platform_fee) AS total_platform_fees,
     AVG(amount) AS avg_spend,
     PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY latency_ms) AS p95_latency
 FROM transactions
@@ -177,9 +252,18 @@ GROUP BY 1, 2, 3, 4;
 
 CREATE UNIQUE INDEX idx_mv_daily ON mv_daily_spend(day, agent_id, seller_id, chain);
 
--- Refresh function (call via pg_cron or application)
--- REFRESH MATERIALIZED VIEW CONCURRENTLY mv_hourly_spend;
--- REFRESH MATERIALIZED VIEW CONCURRENTLY mv_daily_spend;
+-- Platform revenue daily summary
+CREATE MATERIALIZED VIEW mv_daily_revenue AS
+SELECT
+    date_trunc('day', collected_at) AS day,
+    chain,
+    COUNT(*) AS tx_count,
+    SUM(amount) AS total_revenue,
+    AVG(fee_bps) AS avg_fee_bps
+FROM platform_revenue
+GROUP BY 1, 2;
+
+CREATE UNIQUE INDEX idx_mv_daily_rev ON mv_daily_revenue(day, chain);
 
 -- ═══════════════════════════════════════════════════
 -- Alerts configuration

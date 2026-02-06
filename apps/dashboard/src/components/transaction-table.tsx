@@ -1,11 +1,26 @@
 'use client'
 
-import { Transaction } from '@/lib/mock-data'
 import { cn, formatUSD, shortenAddress, timeAgo } from '@/lib/utils'
 import { ExternalLink } from 'lucide-react'
 
+export interface TransactionRow {
+  _id: string
+  txHash?: string | null
+  agentName: string
+  sellerName: string
+  endpointPath: string
+  method: string
+  amount: number
+  chain: 'base' | 'solana'
+  status: 'pending' | 'settled' | 'failed' | 'refunded'
+  latencyMs: number
+  requestedAt: number | Date
+  platformFee?: number
+  sellerAmount?: number
+}
+
 interface TransactionTableProps {
-  transactions: Transaction[]
+  transactions: TransactionRow[]
   showAgent?: boolean
 }
 
@@ -43,9 +58,9 @@ export function TransactionTable({
         </thead>
         <tbody>
           {transactions.map((tx) => (
-            <tr key={tx.id} className="border-b text-sm">
+            <tr key={tx._id} className="border-b text-sm">
               <td className="py-3 text-muted-foreground">
-                {timeAgo(tx.requestedAt)}
+                {timeAgo(typeof tx.requestedAt === 'number' ? new Date(tx.requestedAt) : tx.requestedAt)}
               </td>
               {showAgent && (
                 <td className="py-3 font-medium">{tx.agentName}</td>

@@ -4,11 +4,15 @@ import {
   type PaymentReceipt,
   type EndpointConfig,
   type ChainConfig,
+  type PlatformFeeConfig,
+  type FeeBreakdown,
   DEFAULT_CHAIN_CONFIGS,
   usdcToSmallestUnit,
   usdcFromSmallestUnit,
   matchRoute,
   generateId,
+  calculateFeeBreakdown,
+  getPlatformWallet,
 } from "@agentcommerce/shared";
 
 // ─── Payment Requirement Builder ────────────────────────────────
@@ -16,14 +20,20 @@ import {
 /**
  * Build the PaymentRequired response body for a given endpoint config.
  * Returns an array of PaymentRequirement objects (one per supported chain).
+ * When platform fees are configured, the response includes fee metadata.
  */
 export function buildPaymentRequirements(
   endpoint: EndpointConfig,
   sellerWallet: string,
-  chainConfigs: Record<SupportedChain, ChainConfig>
+  chainConfigs: Record<SupportedChain, ChainConfig>,
+  platformFee?: PlatformFeeConfig
 ): PaymentRequirement[] {
+  const feeBreakdown = calculateFeeBreakdown(endpoint.price, platformFee);
+
   return endpoint.chains.map((chain) => {
     const config = chainConfigs[chain];
+    const platformWallet = getPlatformWallet(chain, platformFee);
+
     return {
       scheme: "exact" as const,
       network: config.networkId,
@@ -34,9 +44,30 @@ export function buildPaymentRequirements(
       extra: {
         name: "USDC",
         decimals: 6,
+        // Platform fee metadata — facilitator uses this for fee splitting
+        ...(platformFee && platformFee.feeBps > 0 && platformWallet
+          ? {
+              platformFee: {
+                feeBps: platformFee.feeBps,
+                platformWallet,
+                sellerAmount: usdcToSmallestUnit(feeBreakdown.sellerAmount),
+                platformAmount: usdcToSmallestUnit(feeBreakdown.platformFee),
+              },
+            }
+          : {}),
       },
     };
   });
+}
+
+/**
+ * Get the fee breakdown for an endpoint price.
+ */
+export function getEndpointFeeBreakdown(
+  endpoint: EndpointConfig,
+  platformFee?: PlatformFeeConfig
+): FeeBreakdown {
+  return calculateFeeBreakdown(endpoint.price, platformFee);
 }
 
 /**
@@ -60,6 +91,7 @@ export interface VerifyPaymentOptions {
 export interface VerificationResult {
   valid: boolean;
   receipt?: PaymentReceipt;
+  feeBreakdown?: FeeBreakdown;
   error?: string;
 }
 
@@ -67,7 +99,10 @@ export interface VerificationResult {
  * Verify a payment by calling the x402 facilitator.
  * The facilitator checks on-chain that the payment is valid and settles it.
  */
-export async function verifyPayment(options: VerifyPaymentOptions): Promise<VerificationResult> {
+export async function verifyPayment(
+  options: VerifyPaymentOptions,
+  platformFee?: PlatformFeeConfig
+): Promise<VerificationResult> {
   const { paymentHeader, requirements, facilitatorUrl } = options;
 
   try {
@@ -94,20 +129,37 @@ export async function verifyPayment(options: VerifyPaymentOptions): Promise<Veri
       };
     }
 
-    const result = await response.json();
+    const result = await response.json() as { 
+      valid?: boolean
+      success?: boolean
+      txHash?: string
+      transaction?: { hash?: string }
+      from?: string
+      blockNumber?: number
+      error?: string
+      message?: string
+    };
 
     if (result.valid || result.success) {
+      const amount = requirements[0]
+        ? usdcFromSmallestUnit(requirements[0].maxAmountRequired)
+        : "0";
+
+      // Calculate fee breakdown for the verified amount
+      const feeBreakdown = calculateFeeBreakdown(amount, platformFee);
+
       return {
         valid: true,
         receipt: {
           txHash: result.txHash || result.transaction?.hash || "",
           chain: detectChainFromNetwork(paymentPayload.network || requirements[0]?.network),
-          amount: requirements[0] ? usdcFromSmallestUnit(requirements[0].maxAmountRequired) : "0",
+          amount,
           from: result.from || paymentPayload.from || "",
           to: requirements[0]?.payTo || "",
           timestamp: new Date().toISOString(),
           blockNumber: result.blockNumber,
         },
+        feeBreakdown,
       };
     }
 

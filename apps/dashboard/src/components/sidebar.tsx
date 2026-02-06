@@ -9,6 +9,10 @@ import {
   Store,
   Settings,
   Zap,
+  CreditCard,
+  AlertTriangle,
+  Wallet,
+  BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -17,6 +21,10 @@ const navigation = [
   { name: 'Transactions', href: '/transactions', icon: ArrowLeftRight },
   { name: 'Agents', href: '/agents', icon: Bot },
   { name: 'Sellers', href: '/sellers', icon: Store },
+  { name: 'Billing', href: '/billing', icon: CreditCard },
+  { name: 'Deposits', href: '/deposits', icon: Wallet },
+  { name: 'Disputes', href: '/disputes', icon: AlertTriangle },
+  { name: 'Revenue', href: '/revenue', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 

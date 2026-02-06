@@ -1,6 +1,16 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// ─── Secure API Key Generation ───────────────────────────────────
+
+function generateSecureKey(prefix: string): string {
+  // Use crypto.getRandomValues for 32 bytes of entropy
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${prefix}_${hex}`;
+}
+
 // ═══════════════════════════════════════════════════
 // Create Organization
 // ═══════════════════════════════════════════════════
@@ -11,14 +21,21 @@ export const create = mutation({
     billingWallet: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Generate API key
-    const apiKey = `org_${crypto.randomUUID().replace(/-/g, "")}`;
+    // Validate name
+    const name = args.name.trim();
+    if (name.length < 2 || name.length > 100) {
+      throw new Error("Organization name must be 2-100 characters");
+    }
+
+    // Generate secure API key (32 bytes = 64 hex chars)
+    const apiKey = generateSecureKey("org");
 
     const id = await ctx.db.insert("organizations", {
-      name: args.name,
+      name,
       billingWallet: args.billingWallet,
       plan: "free",
       apiKey,
+      createdAt: Date.now(),
     });
 
     return { id, apiKey };
@@ -51,6 +68,22 @@ export const get = query({
 });
 
 // ═══════════════════════════════════════════════════
+// List Organizations (with pagination)
+// ═══════════════════════════════════════════════════
+
+export const list = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("organizations")
+      .order("desc")
+      .take(args.limit ?? 50);
+  },
+});
+
+// ═══════════════════════════════════════════════════
 // Update Plan
 // ═══════════════════════════════════════════════════
 
@@ -79,13 +112,13 @@ export const updateBillingWallet = mutation({
 });
 
 // ═══════════════════════════════════════════════════
-// Regenerate API Key
+// Regenerate API Key (secure)
 // ═══════════════════════════════════════════════════
 
 export const regenerateApiKey = mutation({
   args: { id: v.id("organizations") },
   handler: async (ctx, args) => {
-    const newApiKey = `org_${crypto.randomUUID().replace(/-/g, "")}`;
+    const newApiKey = generateSecureKey("org");
     await ctx.db.patch(args.id, { apiKey: newApiKey });
     return newApiKey;
   },

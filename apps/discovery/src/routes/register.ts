@@ -43,14 +43,20 @@ async function requireSeller(c: any, next: any) {
 
 // GET /seller/tools - List seller's tools
 app.get('/seller/tools', requireSeller, async (c) => {
-  const sellerId = c.get('sellerId')
+  const sellerId = (c.get as any)('sellerId') as string | undefined
+  if (!sellerId) {
+    return c.json({ error: 'Missing seller ID' }, 401)
+  }
   const tools = await getToolsBySeller(sellerId)
   return c.json({ tools })
 })
 
 // POST /seller/tools - Register a new tool
 app.post('/seller/tools', requireSeller, async (c) => {
-  const sellerId = c.get('sellerId')
+  const sellerId = (c.get as any)('sellerId') as string | undefined
+  if (!sellerId) {
+    return c.json({ error: 'Missing seller ID' }, 401)
+  }
   const body = await c.req.json()
 
   const result = toolSchema.safeParse(body)
@@ -74,7 +80,10 @@ app.post('/seller/tools', requireSeller, async (c) => {
 
 // PATCH /seller/tools/:id - Update a tool
 app.patch('/seller/tools/:id', requireSeller, async (c) => {
-  const sellerId = c.get('sellerId')
+  const sellerId = (c.get as any)('sellerId') as string | undefined
+  if (!sellerId) {
+    return c.json({ error: 'Missing seller ID' }, 401)
+  }
   const { id } = c.req.param()
   const body = await c.req.json()
 
@@ -95,7 +104,10 @@ app.patch('/seller/tools/:id', requireSeller, async (c) => {
 
 // DELETE /seller/tools/:id - Delete (deactivate) a tool
 app.delete('/seller/tools/:id', requireSeller, async (c) => {
-  const sellerId = c.get('sellerId')
+  const sellerId = (c.get as any)('sellerId') as string | undefined
+  if (!sellerId) {
+    return c.json({ error: 'Missing seller ID' }, 401)
+  }
   const { id } = c.req.param()
 
   // Verify ownership

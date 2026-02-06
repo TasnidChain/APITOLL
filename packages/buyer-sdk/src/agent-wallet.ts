@@ -200,7 +200,7 @@ export class AgentWallet {
 
     // Fall back to JSON body
     try {
-      const body = await response.json();
+      const body = await response.json() as { paymentRequirements?: PaymentRequirement[] }
       if (body.paymentRequirements) {
         return body.paymentRequirements;
       }

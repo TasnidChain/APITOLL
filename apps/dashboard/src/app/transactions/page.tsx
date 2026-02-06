@@ -2,29 +2,33 @@
 
 import { useState } from 'react'
 import { TransactionTable } from '@/components/transaction-table'
-import { mockTransactions } from '@/lib/mock-data'
-import { Search, Filter } from 'lucide-react'
+import { TableSkeleton } from '@/components/loading'
+import { useOrgId, useTransactions } from '@/lib/hooks'
+import { Search, Filter, ArrowLeftRight } from 'lucide-react'
 
-type StatusFilter = 'all' | 'settled' | 'pending' | 'failed'
+type StatusFilter = 'all' | 'settled' | 'pending' | 'failed' | 'refunded'
 type ChainFilter = 'all' | 'base' | 'solana'
 
 export default function TransactionsPage() {
+  const orgId = useOrgId()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [chainFilter, setChainFilter] = useState<ChainFilter>('all')
 
-  const filteredTransactions = mockTransactions.filter((tx) => {
-    const matchesSearch =
-      tx.agentName.toLowerCase().includes(search.toLowerCase()) ||
-      tx.sellerName.toLowerCase().includes(search.toLowerCase()) ||
-      tx.endpointPath.toLowerCase().includes(search.toLowerCase())
+  const transactions = useTransactions(orgId, {
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    chain: chainFilter !== 'all' ? chainFilter : undefined,
+  })
 
-    const matchesStatus =
-      statusFilter === 'all' || tx.status === statusFilter
-
-    const matchesChain = chainFilter === 'all' || tx.chain === chainFilter
-
-    return matchesSearch && matchesStatus && matchesChain
+  // Client-side search filter
+  const filteredTransactions = transactions?.filter((tx) => {
+    if (!search) return true
+    const s = search.toLowerCase()
+    return (
+      tx.agentName.toLowerCase().includes(s) ||
+      tx.sellerName.toLowerCase().includes(s) ||
+      tx.endpointPath.toLowerCase().includes(s)
+    )
   })
 
   return (
@@ -60,6 +64,7 @@ export default function TransactionsPage() {
             <option value="settled">Settled</option>
             <option value="pending">Pending</option>
             <option value="failed">Failed</option>
+            <option value="refunded">Refunded</option>
           </select>
 
           <select
@@ -75,14 +80,25 @@ export default function TransactionsPage() {
       </div>
 
       {/* Results count */}
-      <p className="mb-4 text-sm text-muted-foreground">
-        Showing {filteredTransactions.length} of {mockTransactions.length}{' '}
-        transactions
-      </p>
+      {filteredTransactions && (
+        <p className="mb-4 text-sm text-muted-foreground">
+          Showing {filteredTransactions.length} transactions
+        </p>
+      )}
 
       {/* Table */}
       <div className="rounded-xl border bg-card p-6">
-        <TransactionTable transactions={filteredTransactions} />
+        {!filteredTransactions ? (
+          <TableSkeleton rows={10} />
+        ) : filteredTransactions.length === 0 ? (
+          <div className="py-12 text-center text-muted-foreground">
+            <ArrowLeftRight className="mx-auto mb-3 h-8 w-8 opacity-50" />
+            <p>No transactions found</p>
+            <p className="text-sm">Try adjusting your filters</p>
+          </div>
+        ) : (
+          <TransactionTable transactions={filteredTransactions} />
+        )}
       </div>
     </div>
   )

@@ -166,7 +166,7 @@ export class PaidMCPServer {
           ],
           _meta: {
             paymentReceipt: createPaymentReceipt(
-              verification,
+              { ...verification, txHash: verification.txHash || '0x0' },
               tool.payment.price,
               tool.payment.chains?.[0] || this.config.defaultChain
             ),

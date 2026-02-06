@@ -87,7 +87,7 @@ export class PaidAgentExecutor {
    * Create a fetch function that handles x402 payments
    */
   private createPaidFetch(): typeof fetch {
-    return async (input: RequestInfo | URL, init?: RequestInit) => {
+    return async (input: string | URL | Request, init?: RequestInit) => {
       // First request
       let response = await fetch(input, init)
 

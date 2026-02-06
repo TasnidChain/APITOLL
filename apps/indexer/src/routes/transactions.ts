@@ -35,7 +35,10 @@ const batchReportSchema = z.object({
 // ═══════════════════════════════════════════════════
 
 app.post('/report', requireSellerAuth, async (c) => {
-  const seller = c.get('seller')
+  const seller = (c.get as any)('seller') as { id: string } | undefined
+  if (!seller) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
   const body = await c.req.json()
 
   const result = batchReportSchema.safeParse(body)
@@ -74,7 +77,10 @@ app.post('/report', requireSellerAuth, async (c) => {
 // ═══════════════════════════════════════════════════
 
 app.get('/', requireOrgAuth, async (c) => {
-  const org = c.get('org')
+  const org = (c.get as any)('org') as { id: string } | undefined
+  if (!org) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
   const { limit, offset, status, chain, agentId } = c.req.query()
 
   const transactions = await getTransactionsByOrg(org.id, {

@@ -1,9 +1,21 @@
 {
   "name": "@agentcommerce/buyer-sdk",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "x402 payment client for AI agents. Auto-handles 402 responses with budget controls and spend tracking.",
+  "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": ["dist", "README.md"],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TasnidChain/AgentCommerce"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -11,11 +23,7 @@
   },
   "keywords": ["x402", "agent", "micropayments", "usdc", "budget", "spend-management"],
   "dependencies": {
-    "@agentcommerce/shared": "workspace:*",
-    "@x402/core": "^0.2.0",
-    "@x402/evm": "^0.2.0",
-    "@x402/svm": "^0.2.0",
-    "@x402/fetch": "^0.2.0"
+    "@agentcommerce/shared": "file:../shared"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

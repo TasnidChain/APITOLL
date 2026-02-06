@@ -8,6 +8,7 @@ export {
   encodePaymentRequired,
   verifyPayment,
   findEndpointConfig,
+  getEndpointFeeBreakdown,
   type VerifyPaymentOptions,
   type VerificationResult,
 } from "./payment";
@@ -24,4 +25,17 @@ export type {
   PaymentReceipt,
   SupportedChain,
   ChainConfig,
+  PlatformFeeConfig,
+  FeeBreakdown,
+  PlanTier,
+  PlanLimits,
+} from "@agentcommerce/shared";
+
+// Re-export shared utilities
+export {
+  calculateFeeBreakdown,
+  getPlatformWallet,
+  getPlanLimits,
+  checkPlanLimit,
+  PLAN_LIMITS,
 } from "@agentcommerce/shared";

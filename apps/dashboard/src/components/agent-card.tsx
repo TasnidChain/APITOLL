@@ -1,9 +1,20 @@
-import { Agent } from '@/lib/mock-data'
 import { cn, formatUSD, shortenAddress } from '@/lib/utils'
 import { Bot, Pause, AlertTriangle } from 'lucide-react'
 
+export interface AgentData {
+  _id: string
+  name: string
+  walletAddress: string
+  chain: 'base' | 'solana'
+  balance: number
+  status: 'active' | 'paused' | 'depleted'
+  dailySpend: number
+  dailyLimit: number
+  totalTransactions: number
+}
+
 interface AgentCardProps {
-  agent: Agent
+  agent: AgentData
 }
 
 const statusConfig = {

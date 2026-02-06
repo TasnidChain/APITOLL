@@ -1,9 +1,21 @@
 {
   "name": "@agentcommerce/mcp-server",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "Monetize MCP tools with x402 payments",
+  "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": ["dist", "README.md"],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TasnidChain/AgentCommerce"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -15,18 +27,6 @@
     "build": "tsc",
     "dev": "tsc --watch"
   },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
-    "@agentcommerce/shared": "*",
-    "zod": "^3.22.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20",
-    "typescript": "^5"
-  },
-  "peerDependencies": {
-    "@modelcontextprotocol/sdk": ">=1.0.0"
-  },
   "keywords": [
     "mcp",
     "x402",
@@ -34,5 +34,16 @@
     "ai-tools",
     "monetization"
   ],
-  "license": "MIT"
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@agentcommerce/shared": "*",
+    "zod": "^3.22.0"
+  },
+  "peerDependencies": {
+    "@modelcontextprotocol/sdk": ">=1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5"
+  }
 }

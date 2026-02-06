@@ -196,6 +196,111 @@ export interface AgentWallet {
   createdAt: string;
 }
 
+// ─── Platform Fee Types ─────────────────────────────────────────
+
+export interface PlatformFeeConfig {
+  /** Fee in basis points (100 = 1%, 300 = 3%) */
+  feeBps: number;
+  /** Platform wallet address for receiving fees on Base */
+  platformWalletBase?: string;
+  /** Platform wallet address for receiving fees on Solana */
+  platformWalletSolana?: string;
+}
+
+export interface FeeBreakdown {
+  /** Total amount charged to buyer */
+  totalAmount: string;
+  /** Amount going to seller */
+  sellerAmount: string;
+  /** Amount going to platform */
+  platformFee: string;
+  /** Fee in basis points */
+  feeBps: number;
+}
+
+// ─── Subscription / Plan Types ──────────────────────────────────
+
+export type PlanTier = "free" | "pro" | "enterprise";
+
+export interface PlanLimits {
+  /** Max API calls per day */
+  maxCallsPerDay: number;
+  /** Max agents allowed */
+  maxAgents: number;
+  /** Max sellers (endpoints) allowed */
+  maxSellers: number;
+  /** Analytics retention in days */
+  analyticsRetentionDays: number;
+  /** Whether webhooks are enabled */
+  webhooksEnabled: boolean;
+  /** Whether premium analytics are enabled */
+  premiumAnalytics: boolean;
+  /** Whether featured listings are allowed */
+  featuredListings: boolean;
+  /** Custom policies allowed */
+  customPolicies: boolean;
+}
+
+export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
+  free: {
+    maxCallsPerDay: 1000,
+    maxAgents: 1,
+    maxSellers: 2,
+    analyticsRetentionDays: 7,
+    webhooksEnabled: false,
+    premiumAnalytics: false,
+    featuredListings: false,
+    customPolicies: false,
+  },
+  pro: {
+    maxCallsPerDay: 100_000,
+    maxAgents: 10,
+    maxSellers: 25,
+    analyticsRetentionDays: 90,
+    webhooksEnabled: true,
+    premiumAnalytics: true,
+    featuredListings: true,
+    customPolicies: true,
+  },
+  enterprise: {
+    maxCallsPerDay: Infinity,
+    maxAgents: Infinity,
+    maxSellers: Infinity,
+    analyticsRetentionDays: 365,
+    webhooksEnabled: true,
+    premiumAnalytics: true,
+    featuredListings: true,
+    customPolicies: true,
+  },
+};
+
+// ─── Refund / Dispute Types ─────────────────────────────────────
+
+export type DisputeStatus = "open" | "under_review" | "resolved" | "rejected";
+export type DisputeResolution = "refunded" | "partial_refund" | "denied";
+
+export interface Dispute {
+  /** Unique dispute ID */
+  id: string;
+  /** Transaction ID being disputed */
+  transactionId: string;
+  /** Organization filing the dispute */
+  orgId: string;
+  /** Reason for dispute */
+  reason: string;
+  /** Current status */
+  status: DisputeStatus;
+  /** Resolution (if resolved) */
+  resolution?: DisputeResolution;
+  /** Refund amount (if applicable) */
+  refundAmount?: string;
+  /** Admin notes */
+  notes?: string;
+  /** ISO timestamps */
+  createdAt: string;
+  resolvedAt?: string;
+}
+
 // ─── Seller Types ───────────────────────────────────────────────
 
 export interface SellerConfig {
@@ -211,6 +316,8 @@ export interface SellerConfig {
   webhookUrl?: string;
   /** Platform API key for analytics reporting */
   platformApiKey?: string;
+  /** Platform fee configuration */
+  platformFee?: PlatformFeeConfig;
 }
 
 // ─── Analytics Types ────────────────────────────────────────────

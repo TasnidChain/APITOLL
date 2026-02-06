@@ -1,6 +1,30 @@
-import { Key, Bell, Shield, Wallet } from 'lucide-react'
+'use client'
+
+import { useState } from 'react'
+import { useOrgId, useBillingSummary } from '@/lib/hooks'
+import { useQuery } from 'convex/react'
+import { api } from '../../../../../convex/_generated/api'
+import { Key, Bell, Shield, Wallet, Copy, Check, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 
 export default function SettingsPage() {
+  const orgId = useOrgId()
+  const org = useQuery(api.organizations.get, orgId ? { id: orgId } : 'skip')
+  const billing = useBillingSummary(orgId)
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    if (org?.apiKey) {
+      navigator.clipboard.writeText(org.apiKey)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  const maskedKey = org?.apiKey
+    ? `${org.apiKey.slice(0, 8)}${'*'.repeat(32)}${org.apiKey.slice(-4)}`
+    : 'Loading...'
+
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -11,6 +35,27 @@ export default function SettingsPage() {
       </div>
 
       <div className="max-w-2xl space-y-6">
+        {/* Organization Info */}
+        {org && (
+          <div className="rounded-xl border bg-card p-6">
+            <h2 className="text-lg font-semibold mb-4">Organization</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium">Name</label>
+                <p className="mt-1 text-sm text-muted-foreground">{org.name}</p>
+              </div>
+              {org.billingWallet && (
+                <div>
+                  <label className="text-sm font-medium">Billing Wallet</label>
+                  <p className="mt-1 text-sm font-mono text-muted-foreground">
+                    {org.billingWallet}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* API Keys */}
         <div className="rounded-xl border bg-card p-6">
           <div className="flex items-center gap-3 mb-4">
@@ -25,15 +70,31 @@ export default function SettingsPage() {
               <label className="text-sm font-medium">Platform API Key</label>
               <div className="mt-1 flex gap-2">
                 <input
-                  type="password"
-                  value="sk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  type="text"
+                  value={maskedKey}
                   readOnly
                   className="flex-1 rounded-lg border bg-muted px-3 py-2 text-sm font-mono"
                 />
-                <button className="rounded-lg border px-3 py-2 text-sm hover:bg-accent">
-                  Copy
+                <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm hover:bg-accent"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-success" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" />
+                      Copy
+                    </>
+                  )}
                 </button>
               </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Keep this key secret. Do not share it in client-side code.
+              </p>
             </div>
           </div>
         </div>
@@ -126,14 +187,24 @@ export default function SettingsPage() {
           </div>
           <div className="flex items-center justify-between rounded-lg bg-muted p-4">
             <div>
-              <p className="font-medium">Free Plan</p>
+              <p className="font-medium capitalize">
+                {billing?.plan ?? 'Free'} Plan
+              </p>
               <p className="text-sm text-muted-foreground">
-                Up to 1,000 transactions/month
+                {billing?.plan === 'enterprise'
+                  ? 'Unlimited usage'
+                  : billing?.plan === 'pro'
+                  ? 'Up to 100,000 API calls/day'
+                  : 'Up to 1,000 API calls/day'}
               </p>
             </div>
-            <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-              Upgrade
-            </button>
+            <Link
+              href="/billing"
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              {billing?.plan === 'free' ? 'Upgrade' : 'Manage'}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
 

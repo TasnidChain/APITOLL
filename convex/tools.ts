@@ -123,15 +123,37 @@ export const getBySlug = query({
 export const getFeatured = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
-    const tools = await ctx.db
+    // First get premium featured tools
+    const featuredTools = await ctx.db
+      .query("tools")
+      .withIndex("by_featured", (q) => q.eq("isFeatured", true))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .take(50);
+
+    // Then get verified tools as fallback
+    const verifiedTools = await ctx.db
       .query("tools")
       .filter((q) =>
         q.and(q.eq(q.field("isActive"), true), q.eq(q.field("isVerified"), true))
       )
-      .take(args.limit ?? 10);
+      .take(50);
 
-    // Sort by rating
-    return tools.sort((a, b) => b.rating - a.rating);
+    // Merge, deduplicate, and sort by boost score + rating
+    const seen = new Set<string>();
+    const allTools = [...featuredTools, ...verifiedTools].filter((t) => {
+      if (seen.has(t._id)) return false;
+      seen.add(t._id);
+      return true;
+    });
+
+    // Sort: featured first (by boost score), then verified (by rating)
+    return allTools
+      .sort((a, b) => {
+        const aScore = (a.boostScore ?? 0) * 10 + a.rating;
+        const bScore = (b.boostScore ?? 0) * 10 + b.rating;
+        return bScore - aScore;
+      })
+      .slice(0, args.limit ?? 10);
   },
 });
 
@@ -286,5 +308,86 @@ export const listAsMCP = query({
         chains: tool.chains,
       },
     }));
+  },
+});
+
+// ═══════════════════════════════════════════════════
+// Premium Marketplace: Set Featured
+// ═══════════════════════════════════════════════════
+
+export const setFeatured = mutation({
+  args: {
+    id: v.id("tools"),
+    isFeatured: v.boolean(),
+    featuredDurationDays: v.optional(v.number()), // how long to feature
+    listingTier: v.optional(v.union(
+      v.literal("free"),
+      v.literal("featured"),
+      v.literal("verified"),
+      v.literal("premium")
+    )),
+    boostScore: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const updates: any = {
+      isFeatured: args.isFeatured,
+      listingTier: args.listingTier ?? (args.isFeatured ? "featured" : "free"),
+      boostScore: Math.max(0, Math.min(100, args.boostScore ?? (args.isFeatured ? 50 : 0))),
+    };
+
+    if (args.isFeatured && args.featuredDurationDays) {
+      updates.featuredUntil = Date.now() + args.featuredDurationDays * 24 * 60 * 60 * 1000;
+    }
+
+    if (!args.isFeatured) {
+      updates.featuredUntil = undefined;
+      updates.boostScore = 0;
+    }
+
+    await ctx.db.patch(args.id, updates);
+  },
+});
+
+// ═══════════════════════════════════════════════════
+// Premium Marketplace: Set Verified
+// ═══════════════════════════════════════════════════
+
+export const setVerified = mutation({
+  args: {
+    id: v.id("tools"),
+    isVerified: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      isVerified: args.isVerified,
+      listingTier: args.isVerified ? "verified" : "free",
+    });
+  },
+});
+
+// ═══════════════════════════════════════════════════
+// Rate a Tool
+// ═══════════════════════════════════════════════════
+
+export const rateTool = mutation({
+  args: {
+    id: v.id("tools"),
+    rating: v.number(), // 1-5
+  },
+  handler: async (ctx, args) => {
+    if (args.rating < 1 || args.rating > 5) {
+      throw new Error("Rating must be between 1 and 5");
+    }
+
+    const tool = await ctx.db.get(args.id);
+    if (!tool) throw new Error("Tool not found");
+
+    const newCount = tool.ratingCount + 1;
+    const newRating = (tool.rating * tool.ratingCount + args.rating) / newCount;
+
+    await ctx.db.patch(args.id, {
+      rating: Math.round(newRating * 100) / 100,
+      ratingCount: newCount,
+    });
   },
 });

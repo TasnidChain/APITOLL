@@ -1,4 +1,4 @@
-import { type Transaction, type PaymentReceipt, generateId } from "@agentcommerce/shared";
+import { type Transaction, type PaymentReceipt, type FeeBreakdown, generateId, computeHmacSignature } from "@agentcommerce/shared";
 
 const PLATFORM_API_URL = "https://api.agentcommerce.xyz";
 
@@ -11,6 +11,8 @@ export interface ReporterConfig {
   platformUrl?: string;
   /** Webhook URL for real-time notifications */
   webhookUrl?: string;
+  /** Webhook signing secret for HMAC-SHA256 verification */
+  webhookSecret?: string;
   /** Enable local logging */
   verbose?: boolean;
 }
@@ -26,15 +28,25 @@ export interface TransactionReport {
   responseStatus: number;
   /** Request-to-response latency in ms */
   latencyMs: number;
+  /** Fee breakdown (if platform fee enabled) */
+  feeBreakdown?: FeeBreakdown;
+}
+
+// Extended transaction with fee data for internal tracking
+interface TransactionWithFee extends Transaction {
+  platformFee?: string;
+  sellerAmount?: string;
+  feeBps?: number;
 }
 
 /**
  * Analytics reporter that sends transaction data to the AgentCommerce platform.
+ * Now includes platform fee tracking for revenue reporting.
  * Falls back to local logging if no API key is configured.
  */
 export class AnalyticsReporter {
   private config: ReporterConfig;
-  private queue: Transaction[] = [];
+  private queue: TransactionWithFee[] = [];
   private flushTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(config: ReporterConfig = {}) {
@@ -51,10 +63,10 @@ export class AnalyticsReporter {
   }
 
   /**
-   * Report a completed transaction.
+   * Report a completed transaction (with optional fee breakdown).
    */
   async report(report: TransactionReport): Promise<void> {
-    const transaction: Transaction = {
+    const transaction: TransactionWithFee = {
       id: generateId("tx"),
       txHash: report.receipt.txHash,
       agentAddress: report.receipt.from,
@@ -68,11 +80,18 @@ export class AnalyticsReporter {
       settledAt: report.receipt.timestamp,
       responseStatus: report.responseStatus,
       latencyMs: report.latencyMs,
+      // Fee tracking
+      platformFee: report.feeBreakdown?.platformFee,
+      sellerAmount: report.feeBreakdown?.sellerAmount,
+      feeBps: report.feeBreakdown?.feeBps,
     };
 
     if (this.config.verbose) {
+      const feeInfo = report.feeBreakdown
+        ? ` fee=$${report.feeBreakdown.platformFee} seller=$${report.feeBreakdown.sellerAmount}`
+        : "";
       console.log(
-        `[agentcommerce] tx=${transaction.id} endpoint=${transaction.endpoint} amount=$${transaction.amount} chain=${transaction.chain} status=${transaction.status}`
+        `[agentcommerce] tx=${transaction.id} endpoint=${transaction.endpoint} amount=$${transaction.amount}${feeInfo} chain=${transaction.chain} status=${transaction.status}`
       );
     }
 
@@ -136,19 +155,31 @@ export class AnalyticsReporter {
   }
 
   /**
-   * Send a real-time webhook notification.
+   * Send a real-time webhook notification with optional HMAC-SHA256 signing.
    */
-  private async sendWebhook(transaction: Transaction): Promise<void> {
+  private async sendWebhook(transaction: TransactionWithFee): Promise<void> {
     if (!this.config.webhookUrl) return;
+
+    const body = JSON.stringify({
+      type: "transaction.settled",
+      timestamp: transaction.settledAt,
+      data: transaction,
+    });
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Sign webhook payload if secret is configured
+    if (this.config.webhookSecret) {
+      const signature = await computeHmacSignature(body, this.config.webhookSecret);
+      headers["X-Webhook-Signature"] = signature;
+    }
 
     await fetch(this.config.webhookUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "transaction.settled",
-        timestamp: transaction.settledAt,
-        data: transaction,
-      }),
+      headers,
+      body,
     });
   }
 
