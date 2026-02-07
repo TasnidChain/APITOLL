@@ -1,21 +1,9 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
-import { ethers } from "ethers";
+import { api, internal } from "./_generated/api";
 
 // ─── Environment Variable Validation ─────────────────────────────────
 // Fail fast if critical environment variables are missing
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(
-      `Missing required environment variable: ${name}. ` +
-      `Set it in your Convex dashboard or .env file.`
-    );
-  }
-  return value;
-}
 
 function validateEnvOnStartup() {
   const required = [
@@ -26,7 +14,7 @@ function validateEnvOnStartup() {
   const missing = required.filter((name) => !process.env[name]);
   if (missing.length > 0) {
     console.error(
-      `⚠️  Apitoll: Missing required environment variables: ${missing.join(", ")}. ` +
+      `Apitoll: Missing required environment variables: ${missing.join(", ")}. ` +
       `Some features will be unavailable.`
     );
   }
@@ -36,50 +24,86 @@ validateEnvOnStartup();
 
 const http = httpRouter();
 
-// ─── USDC Transfer Function ────────────────────────────────────────
+// ─── Web Crypto Helpers ──────────────────────────────────────────────
 
-const USDC_ADDRESS_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const USDC_ABI = ["function transfer(address to, uint256 amount) returns (bool)"];
+/**
+ * Compute HMAC-SHA256 using the Web Crypto API (available in Convex V8 runtime).
+ * Returns a hex-encoded string.
+ */
+async function hmacSha256Hex(key: string, message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(key),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    cryptoKey,
+    encoder.encode(message)
+  );
+  return Array.from(new Uint8Array(signature))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
-async function transferUSDC(walletAddress: string, amountUSDC: number): Promise<{ txHash: string; confirmed: boolean; blockNumber: number }> {
-  // SECURITY FIX: Validate wallet address
-  if (!ethers.isAddress(walletAddress)) {
-    throw new Error("Invalid wallet address format");
+/**
+ * Timing-safe string comparison to prevent timing attacks.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
-  if (walletAddress === ethers.ZeroAddress) {
-    throw new Error("Cannot transfer to zero address");
+  return result === 0;
+}
+
+// ─── Stripe Webhook Signature Verification ───────────────────────────
+
+/**
+ * Verify a Stripe webhook signature using Web Crypto API.
+ *
+ * Stripe v1 signatures use HMAC-SHA256. The stripe-signature header contains:
+ *   t=<timestamp>,v1=<hex-signature>[,v1=<hex-signature>...]
+ *
+ * The signed payload is: `<timestamp>.<body>`
+ */
+async function verifyStripeSignature(
+  payload: string,
+  sigHeader: string,
+  secret: string,
+  toleranceSeconds: number = 300
+): Promise<boolean> {
+  const elements = sigHeader.split(",");
+  const timestampStr = elements
+    .find((e) => e.startsWith("t="))
+    ?.slice(2);
+  const signatures = elements
+    .filter((e) => e.startsWith("v1="))
+    .map((e) => e.slice(3));
+
+  if (!timestampStr || signatures.length === 0) {
+    return false;
   }
 
-  const rpcUrl = process.env.BASE_RPC_URL || "https://mainnet.base.org";
-  const executorKey = requireEnv("EXECUTOR_PRIVATE_KEY");
+  const timestamp = parseInt(timestampStr, 10);
+  if (isNaN(timestamp)) return false;
 
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
-  const wallet = new ethers.Wallet(executorKey, provider);
-  const usdc = new ethers.Contract(USDC_ADDRESS_BASE, USDC_ABI, wallet);
-
-  try {
-    // Convert to USDC decimals (6)
-    const amountWei = ethers.parseUnits(amountUSDC.toString(), 6);
-
-    // Send transaction
-    const tx = await usdc.transfer(walletAddress, amountWei);
-    const receipt = await tx.wait(2); // Wait 2 block confirmations
-
-    if (!receipt?.hash) {
-      throw new Error("USDC transfer failed: no transaction hash");
-    }
-
-    console.log(`✅ USDC transfer successful: ${receipt.hash} to ${walletAddress}`);
-
-    return {
-      txHash: receipt.hash,
-      confirmed: true,
-      blockNumber: receipt.blockNumber || 0,
-    };
-  } catch (e: any) {
-    console.error("USDC transfer error:", e);
-    throw new Error(`USDC transfer failed: ${e.message}`);
+  // Check timestamp tolerance
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - timestamp) > toleranceSeconds) {
+    return false;
   }
+
+  // Compute expected signature
+  const signedPayload = `${timestampStr}.${payload}`;
+  const expectedSig = await hmacSha256Hex(secret, signedPayload);
+
+  // Check if any of the v1 signatures match
+  return signatures.some((sig) => timingSafeEqual(sig, expectedSig));
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -100,7 +124,7 @@ const SECURITY_HEADERS: Record<string, string> = {
 
 function corsHeaders(request?: Request): Record<string, string> {
   const origin = request?.headers.get("Origin") || "";
-  
+
   // SECURITY FIX: Deny all CORS by default
   if (ALLOWED_ORIGINS.length === 0) {
     // No origins configured = deny all cross-origin requests
@@ -110,10 +134,10 @@ function corsHeaders(request?: Request): Record<string, string> {
       "Access-Control-Allow-Headers": "",
     };
   }
-  
+
   // Only allow whitelisted origins (never use wildcard *)
   const allowed = ALLOWED_ORIGINS.includes(origin);
-  
+
   if (!allowed) {
     return {
       "Access-Control-Allow-Origin": "",
@@ -646,32 +670,28 @@ http.route({
       return errorResponse("fiatAmount must be between $1 and $10,000", 400, request);
     }
 
-    // SECURITY FIX: Create real Stripe PaymentIntent instead of placeholder
-    const stripeKey = requireEnv("STRIPE_SECRET_KEY");
-    const stripe = require('stripe')(stripeKey);
-    
-    let paymentIntent;
+    // Create Stripe PaymentIntent via Node.js action
+    let paymentIntent: { id: string; clientSecret: string };
     try {
-      paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(fiatAmount * 100), // Convert to cents
-        currency: 'usd',
-        payment_method_types: ['card'],
-        metadata: {
+      paymentIntent = await ctx.runAction(
+        internal.nodeActions.createStripePaymentIntent,
+        {
+          fiatAmount,
           orgId: org._id.toString(),
-          agentId: agentId || 'none',
+          agentId: agentId || "none",
           chain: chain === "solana" ? "solana" : "base",
-          walletAddress: walletAddress,
-        },
-      });
+          walletAddress,
+        }
+      );
     } catch (stripeError: any) {
-      console.error('Stripe PaymentIntent creation failed:', stripeError);
+      console.error("Stripe PaymentIntent creation failed:", stripeError);
       return errorResponse("Failed to create payment. Please try again later.", 500, request);
     }
 
     const result = await ctx.runMutation(api.deposits.create, {
       orgId: org._id,
       agentId: agentId || undefined,
-      stripePaymentIntentId: paymentIntent.id, // Real Stripe PI ID
+      stripePaymentIntentId: paymentIntent.id,
       fiatAmount,
       walletAddress,
       chain: chain === "solana" ? "solana" : "base",
@@ -681,7 +701,7 @@ http.route({
       {
         depositId: result.id,
         paymentIntentId: paymentIntent.id,
-        clientSecret: paymentIntent.client_secret,
+        clientSecret: paymentIntent.clientSecret,
         fiatAmount,
         usdcAmount: result.usdcAmount,
         feeAmount: result.feeAmount,
@@ -724,7 +744,7 @@ http.route({
     // Verify Stripe webhook signature (CRITICAL SECURITY FIX)
     const sig = request.headers.get("stripe-signature");
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    
+
     if (!sig || !webhookSecret) {
       return errorResponse("Missing Stripe webhook signature or secret", 401, request);
     }
@@ -736,15 +756,9 @@ http.route({
       return errorResponse("Invalid request body", 400, request);
     }
 
-    // Verify signature using HMAC-SHA256
-    const crypto = require('crypto');
-    const computedSig = crypto
-      .createHmac('sha256', webhookSecret)
-      .update(bodyText, 'utf8')
-      .digest('base64');
-
-    // Compare signatures using timing-safe comparison
-    if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(computedSig))) {
+    // Verify Stripe signature using Web Crypto API (HMAC-SHA256)
+    const signatureValid = await verifyStripeSignature(bodyText, sig, webhookSecret);
+    if (!signatureValid) {
       return errorResponse("Invalid Stripe webhook signature", 401, request);
     }
 
@@ -813,11 +827,14 @@ http.route({
             status: "processing",
           });
 
-          // Transfer USDC to the user's wallet
+          // Transfer USDC to the user's wallet via Node.js action
           try {
-            const transferResult = await transferUSDC(
-              deposit.walletAddress,
-              deposit.usdcAmount
+            const transferResult = await ctx.runAction(
+              internal.nodeActions.transferUSDC,
+              {
+                walletAddress: deposit.walletAddress,
+                amountUSDC: deposit.usdcAmount,
+              }
             );
 
             await ctx.runMutation(api.deposits.updateStatus, {
