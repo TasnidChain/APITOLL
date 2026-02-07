@@ -177,5 +177,6 @@ export function getOverviewStats() {
     avgLatency: Math.round(avgLatency),
     successRate: (mockTransactions.filter(t => t.status === 'settled').length / mockTransactions.length) * 100,
     totalPlatformFees: Math.round(totalPlatformFees * 100) / 100,
+    plan: 'free' as const,
   }
 }
