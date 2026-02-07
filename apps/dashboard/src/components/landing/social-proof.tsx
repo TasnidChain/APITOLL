@@ -1,33 +1,36 @@
-import { Star } from 'lucide-react'
+import { CheckCircle, ExternalLink, Zap, Shield, Globe } from 'lucide-react'
 
-const testimonials = [
+const facts = [
   {
-    quote: 'We switched from Stripe to Apitoll and our agents now settle payments in under 2 seconds. No more webhook hell.',
-    name: 'Alex Chen',
-    role: 'CTO, AutoAgent Labs',
-    avatar: 'AC',
+    icon: CheckCircle,
+    title: 'Real USDC on Base Mainnet',
+    description: 'Not testnet tokens. Actual USDC micropayments settled on-chain in 2 seconds. Every transaction verifiable on Basescan.',
+    iconColor: 'text-emerald-400',
+    iconBg: 'bg-emerald-500/10',
   },
   {
-    quote: 'The x402 protocol is a game-changer. Our LLM proxy earns revenue on every request with zero integration overhead.',
-    name: 'Sarah Kim',
-    role: 'Founder, LLMProxy.ai',
-    avatar: 'SK',
+    icon: Zap,
+    title: 'First x402 facilitator, live now',
+    description: 'Our facilitator handles the payment flow between agents and sellers. Running on Railway, processing real transactions today.',
+    iconColor: 'text-blue-400',
+    iconBg: 'bg-blue-500/10',
   },
   {
-    quote: 'Finally a payment system that understands agents don\'t have credit cards. Micropayments just work.',
-    name: 'Marcus Rivera',
-    role: 'Lead Engineer, SwarmOps',
-    avatar: 'MR',
+    icon: Shield,
+    title: 'Open-source protocol',
+    description: 'Built on the open x402 HTTP payment standard. No vendor lock-in — any agent framework, any HTTP server, any wallet.',
+    iconColor: 'text-violet-400',
+    iconBg: 'bg-violet-500/10',
   },
 ]
 
-const logos = [
-  'AutoAgent Labs',
-  'SwarmOps',
-  'LLMProxy.ai',
-  'AgentCloud',
-  'DeFi Oracles',
-  'ComputeMarket',
+const techStack = [
+  { name: 'Base (Coinbase L2)', href: 'https://base.org' },
+  { name: 'USDC Stablecoin', href: 'https://www.circle.com/en/usdc' },
+  { name: 'x402 Protocol', href: 'https://www.x402.org/' },
+  { name: 'Convex (Real-time DB)', href: 'https://www.convex.dev/' },
+  { name: 'Clerk Auth', href: 'https://clerk.com/' },
+  { name: 'Cloudflare Pages', href: 'https://pages.cloudflare.com/' },
 ]
 
 export function SocialProof() {
@@ -38,54 +41,54 @@ export function SocialProof() {
       <div className="mx-auto max-w-7xl px-6">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-blue-400">
-            Trusted by builders
+            Production ready
           </p>
           <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
-            Teams shipping with Apitoll
+            Not a demo. Real payments, live now.
           </h2>
+          <p className="mt-4 text-lg text-slate-400">
+            We already ran our first real USDC transaction on Base mainnet.
+            The infrastructure works end-to-end.
+          </p>
         </div>
 
-        {/* Logo strip */}
-        <div className="mx-auto mt-12 flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-          {logos.map((logo) => (
-            <span
-              key={logo}
-              className="text-sm font-semibold text-slate-600 transition-colors hover:text-slate-400"
-            >
-              {logo}
-            </span>
-          ))}
-        </div>
-
-        {/* Testimonials */}
+        {/* Facts grid */}
         <div className="mt-16 grid gap-6 md:grid-cols-3">
-          {testimonials.map((t) => (
+          {facts.map((fact) => (
             <div
-              key={t.name}
+              key={fact.title}
               className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6"
             >
-              <div className="flex gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className="h-3.5 w-3.5 fill-amber-400 text-amber-400"
-                  />
-                ))}
+              <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-lg ${fact.iconBg}`}>
+                <fact.icon className={`h-5 w-5 ${fact.iconColor}`} />
               </div>
-              <p className="mt-4 text-sm leading-relaxed text-slate-300">
-                &ldquo;{t.quote}&rdquo;
+              <h3 className="text-base font-semibold text-white">{fact.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                {fact.description}
               </p>
-              <div className="mt-4 flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-slate-300">
-                  {t.avatar}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-white">{t.name}</p>
-                  <p className="text-xs text-slate-500">{t.role}</p>
-                </div>
-              </div>
             </div>
           ))}
+        </div>
+
+        {/* Tech stack strip */}
+        <div className="mx-auto mt-16 max-w-3xl">
+          <p className="mb-6 text-center text-xs font-semibold uppercase tracking-widest text-slate-500">
+            Built with
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+            {techStack.map((tech) => (
+              <a
+                key={tech.name}
+                href={tech.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-300"
+              >
+                {tech.name}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </section>

@@ -1,10 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="384" height="384" viewBox="0 0 384 384">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10b981"/>
-      <stop offset="100%" stop-color="#3b82f6"/>
+      <stop offset="0%" stop-color="#1e3a5f"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#2563eb"/>
     </linearGradient>
   </defs>
-  <rect width="384" height="384" rx="69" fill="url(#bg)"/>
-  <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-size="153" font-weight="bold" fill="white">AC</text>
+  <rect width="384" height="384" rx="76" fill="url(#bg)"/>
+  <rect x="27" y="27" width="330" height="330" rx="58" fill="none" stroke="url(#accent)" stroke-width="2" opacity="0.3"/>
+  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui,Arial,sans-serif" font-size="136" font-weight="800" fill="white" letter-spacing="-6">402</text>
+  <rect x="87" y="256" width="210" height="3" rx="1.5" fill="url(#accent)" opacity="0.5"/>
+  <text x="50%" y="80%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui,Arial,sans-serif" font-size="36" font-weight="600" fill="#94a3b8" letter-spacing="9">APITOLL</text>
 </svg>

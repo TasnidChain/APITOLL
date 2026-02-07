@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Zap, Menu, X } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import {
   SignInButton,
@@ -11,6 +11,7 @@ import {
   UserButton,
 } from '@clerk/nextjs'
 import { useClerkReady } from '@/components/clerk-provider'
+import { ApitollLogo } from '@/components/logo'
 
 const links = [
   { label: 'Features', href: '#features' },
@@ -26,10 +27,8 @@ export function Navbar() {
     <nav className="fixed top-0 z-50 w-full border-b border-slate-800/50 bg-slate-950/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
-            <Zap className="h-4 w-4 text-white" />
-          </div>
+        <Link href="/" className="flex items-center gap-2.5">
+          <ApitollLogo size={32} />
           <span className="text-lg font-bold text-white">Apitoll</span>
         </Link>
 

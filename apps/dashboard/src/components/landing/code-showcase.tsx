@@ -3,24 +3,34 @@
 import { useState } from 'react'
 import { Copy, Check } from 'lucide-react'
 
-const sellerCode = `// Monetize any API — add 3 lines
-import { paywall } from "@apitoll/middleware";
+const sellerCode = `// seller.ts — Monetize any Express API
+import { paymentMiddleware } from "@apitoll/seller-sdk";
 
-app.use(paywall({
-  "GET /api/forecast": { price: "0.005", network: "base" },
-  "POST /api/analyze": { price: "0.02",  network: "base" },
+app.use(paymentMiddleware({
+  facilitatorUrl: "https://facilitator-production-fbd7.up.railway.app",
+  routePricing: {
+    "GET /api/joke":    { price: "0.001", network: "base-mainnet" },
+    "POST /api/analyze": { price: "0.02",  network: "base-mainnet" },
+  },
+  sellerWallet: process.env.SELLER_WALLET,
 }));`
 
-const buyerCode = `// Agent auto-handles x402 payments
-import { AgentWallet } from "@apitoll/sdk";
+const buyerCode = `// agent.ts — Agent auto-handles 402 payments
+import { createAgentWallet, createFacilitatorSigner }
+  from "@apitoll/buyer-sdk";
 
-const agent = new AgentWallet({
-  budget: { daily: 50, perRequest: 1 },
-  chains: ["base", "solana"],
+const wallet = createAgentWallet({
+  signer: createFacilitatorSigner({
+    facilitatorUrl: "https://facilitator-production-fbd7.up.railway.app",
+    apiKey: process.env.FACILITATOR_API_KEY,
+  }),
 });
 
-const data = await agent.fetch("https://api.weather.com/forecast");
-// Payment signed & settled automatically`
+// Agent calls paid API — payment handled automatically
+const res = await wallet.fetch(
+  "https://seller-api-production.up.railway.app/api/joke"
+);
+console.log(await res.json()); // { joke: "..." }`
 
 export function CodeShowcase() {
   const [activeTab, setActiveTab] = useState<'seller' | 'buyer'>('seller')
@@ -43,14 +53,14 @@ export function CodeShowcase() {
           {/* Left — text */}
           <div>
             <p className="text-sm font-semibold uppercase tracking-widest text-blue-400">
-              Integration
+              Real code, real SDK
             </p>
             <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
               Ship in minutes,<br />not weeks
             </h2>
             <p className="mt-4 max-w-md text-lg leading-relaxed text-slate-400">
-              Sellers add a middleware to monetize APIs. Buyers create an agent
-              wallet that auto-handles x402 payments. That&apos;s it.
+              Sellers add our Express middleware. Agents use our wallet SDK.
+              The 402 handshake handles everything in between.
             </p>
 
             <div className="mt-8 space-y-4">
@@ -59,7 +69,7 @@ export function CodeShowcase() {
                   <Check className="h-3 w-3 text-emerald-400" />
                 </div>
                 <p className="text-sm text-slate-300">
-                  TypeScript SDKs for Express, Hono, and LangChain
+                  <code className="rounded bg-slate-800 px-1.5 py-0.5 text-xs font-mono text-blue-400">@apitoll/seller-sdk</code> — Express middleware for payment gating
                 </p>
               </div>
               <div className="flex items-start gap-3">
@@ -67,7 +77,7 @@ export function CodeShowcase() {
                   <Check className="h-3 w-3 text-emerald-400" />
                 </div>
                 <p className="text-sm text-slate-300">
-                  Budget policies, rate limits, and vendor ACLs built-in
+                  <code className="rounded bg-slate-800 px-1.5 py-0.5 text-xs font-mono text-blue-400">@apitoll/buyer-sdk</code> — Agent wallet with auto-pay on 402
                 </p>
               </div>
               <div className="flex items-start gap-3">
@@ -75,7 +85,7 @@ export function CodeShowcase() {
                   <Check className="h-3 w-3 text-emerald-400" />
                 </div>
                 <p className="text-sm text-slate-300">
-                  Works with any HTTP client — fetch, axios, or custom agents
+                  Facilitator handles USDC transfers on Base — sellers never touch crypto wallets
                 </p>
               </div>
             </div>
@@ -157,7 +167,7 @@ function colorize(line: string) {
     [/\b(import|from|export|const|await|new)\b/g, 'text-violet-400'],
     [/"([^"]*)"/g, 'text-emerald-400'],
     [/\b(\d+\.?\d*)\b/g, 'text-amber-400'],
-    [/\b(paywall|AgentWallet|fetch)\b/g, 'text-cyan-400'],
+    [/\b(paymentMiddleware|createAgentWallet|createFacilitatorSigner|fetch)\b/g, 'text-cyan-400'],
   ]
 
   // Simple approach: just color keywords inline
@@ -172,7 +182,7 @@ function colorize(line: string) {
         if (/^(import|from|export|const|await|new)$/.test(token)) {
           return <span key={idx} className="text-violet-400">{token}</span>
         }
-        if (/^(paywall|AgentWallet|fetch|app|agent)$/.test(token)) {
+        if (/^(paymentMiddleware|createAgentWallet|createFacilitatorSigner|fetch|app|wallet|res|console)$/.test(token)) {
           return <span key={idx} className="text-cyan-400">{token}</span>
         }
         if (/^\d+\.?\d*$/.test(token)) {

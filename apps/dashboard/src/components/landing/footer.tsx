@@ -1,22 +1,20 @@
 import Link from 'next/link'
-import { Zap } from 'lucide-react'
+import { ApitollLogo } from '@/components/logo'
 
 const footerLinks = {
   Product: [
     { label: 'Features', href: '#features' },
     { label: 'Pricing', href: '#pricing' },
     { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Changelog', href: '#' },
+    { label: 'Seller API (Live)', href: 'https://seller-api-production.up.railway.app/health' },
   ],
   Developers: [
-    { label: 'Documentation', href: 'https://docs.apitoll.com' },
-    { label: 'API Reference', href: '#' },
-    { label: 'SDKs', href: '#' },
-    { label: 'GitHub', href: '#' },
+    { label: 'x402 Protocol Spec', href: 'https://www.x402.org/' },
+    { label: 'GitHub', href: 'https://github.com/TasnidChain/Apitoll' },
+    { label: 'npm: @apitoll/seller-sdk', href: 'https://www.npmjs.com/package/@apitoll/seller-sdk' },
+    { label: 'npm: @apitoll/buyer-sdk', href: 'https://www.npmjs.com/package/@apitoll/buyer-sdk' },
   ],
   Company: [
-    { label: 'About', href: '#' },
-    { label: 'Blog', href: '#' },
     { label: 'Twitter / X', href: '#' },
     { label: 'Discord', href: '#' },
   ],
@@ -29,15 +27,13 @@ export function Footer() {
         <div className="grid gap-12 lg:grid-cols-4">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
-                <Zap className="h-4 w-4 text-white" />
-              </div>
+            <Link href="/" className="flex items-center gap-2.5">
+              <ApitollLogo size={32} id="footer-logo" />
               <span className="text-lg font-bold text-white">Apitoll</span>
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
               Payment infrastructure for the autonomous agent economy. Built on
-              x402. Powered by Base &amp; Solana.
+              the x402 HTTP payment protocol. Settled on Base with USDC.
             </p>
           </div>
 
@@ -51,6 +47,7 @@ export function Footer() {
                     <a
                       href={link.href}
                       className="text-sm text-slate-400 transition-colors hover:text-white"
+                      {...(link.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                     >
                       {link.label}
                     </a>
