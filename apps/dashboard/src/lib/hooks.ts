@@ -1,25 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
 import { Id } from '../../../../convex/_generated/dataModel'
-import {
-  getOverviewStats as getMockOverviewStats,
-  mockDailyStats,
-  mockTransactions,
-  mockAgents,
-  mockSellers,
-  mockDeposits,
-  getDepositStats as getMockDepositStats,
-  mockDisputes,
-  getRevenueOverview as getMockRevenueOverview,
-  mockDailyRevenue,
-  getBillingSummary as getMockBillingSummary,
-} from './mock-data'
 
 // ═══════════════════════════════════════════════════
-// Shared types for dashboard data (Convex + mock)
+// Shared types for dashboard data
 // ═══════════════════════════════════════════════════
 
 export interface DashboardAgent {
@@ -61,26 +47,10 @@ export interface DashboardTransaction {
 }
 
 // ═══════════════════════════════════════════════════
-// Org context — In production, this would come from auth.
-// For now, use the first org or a configured env var.
-// Falls back to mock data when Convex is unavailable.
+// Org context — Uses first org from Convex.
+// Returns undefined while loading, null if no org exists.
+// NO MOCK DATA — only real Convex data.
 // ═══════════════════════════════════════════════════
-
-const CONVEX_TIMEOUT_MS = 800
-
-function useMockFallback<T>(convexData: T | undefined, mockData: T): T | undefined {
-  const [timedOut, setTimedOut] = useState(false)
-
-  useEffect(() => {
-    if (convexData !== undefined) return
-    const timer = setTimeout(() => setTimedOut(true), CONVEX_TIMEOUT_MS)
-    return () => clearTimeout(timer)
-  }, [convexData])
-
-  if (convexData !== undefined) return convexData
-  if (timedOut) return mockData
-  return undefined
-}
 
 export function useOrgId(): Id<"organizations"> | null {
   const orgs = useQuery(api.organizations.list, { limit: 1 })
@@ -88,121 +58,58 @@ export function useOrgId(): Id<"organizations"> | null {
 }
 
 export function useOrg(orgId: Id<"organizations"> | null) {
-  const convexData = useQuery(
+  return useQuery(
     api.organizations.get,
     orgId ? { id: orgId } : "skip"
   )
-  const mockOrg = {
-    _id: 'org-mock-1' as Id<"organizations">,
-    _creationTime: Date.now(),
-    name: 'My Organization',
-    apiKey: 'ac_live_k8x2mN7pQrT9wYzA3bCdEfGhIjKlMnOpQrStUvWxYz01',
-    billingWallet: '0x1234567890abcdef1234567890abcdef12345678',
-    plan: 'free' as const,
-  }
-  return useMockFallback(convexData as typeof mockOrg | undefined, mockOrg)
 }
 
 // ═══════════════════════════════════════════════════
-// Dashboard queries (with mock data fallback)
+// Dashboard queries — REAL DATA ONLY
+// Returns undefined while loading.
+// Pages must handle empty/zero states themselves.
 // ═══════════════════════════════════════════════════
 
 export function useOverviewStats(orgId: Id<"organizations"> | null) {
-  const convexData = useQuery(
+  return useQuery(
     api.dashboard.getOverviewStats,
     orgId ? { orgId } : "skip"
   )
-  return useMockFallback(convexData, getMockOverviewStats())
 }
 
 export function useDailyStats(orgId: Id<"organizations"> | null, days?: number) {
-  const convexData = useQuery(
+  return useQuery(
     api.dashboard.getDailyStats,
     orgId ? { orgId, days } : "skip"
   )
-  return useMockFallback(convexData, mockDailyStats.slice(-(days ?? 30)))
 }
 
 export function useTransactions(
   orgId: Id<"organizations"> | null,
   options?: { limit?: number; status?: string; chain?: string }
 ): DashboardTransaction[] | undefined {
-  const convexData = useQuery(
+  return useQuery(
     api.dashboard.listTransactions,
     orgId ? { orgId, ...options } : "skip"
-  )
-  let filtered = [...mockTransactions]
-  if (options?.status) {
-    filtered = filtered.filter((t) => t.status === options.status)
-  }
-  if (options?.chain) {
-    filtered = filtered.filter((t) => t.chain === options.chain)
-  }
-  const mockTxs: DashboardTransaction[] = filtered
-    .slice(0, options?.limit ?? 100)
-    .map((tx) => ({
-      _id: tx.id,
-      txHash: tx.txHash,
-      agentName: tx.agentName,
-      sellerName: tx.sellerName,
-      endpointPath: tx.endpointPath,
-      method: tx.method,
-      amount: tx.amount,
-      chain: tx.chain,
-      status: tx.status,
-      latencyMs: tx.latencyMs,
-      requestedAt: tx.requestedAt.getTime(),
-    }))
-  return useMockFallback(
-    convexData as DashboardTransaction[] | undefined,
-    mockTxs
-  )
+  ) as DashboardTransaction[] | undefined
 }
 
 export function useAgents(
   orgId: Id<"organizations"> | null
 ): DashboardAgent[] | undefined {
-  const convexData = useQuery(
+  return useQuery(
     api.dashboard.listAgents,
     orgId ? { orgId } : "skip"
-  )
-  const mockAgentsWithId: DashboardAgent[] = mockAgents.map((a) => ({
-    _id: a.id,
-    name: a.name,
-    walletAddress: a.walletAddress,
-    chain: a.chain,
-    balance: a.balance,
-    status: a.status,
-    dailySpend: a.dailySpend,
-    dailyLimit: a.dailyLimit,
-    totalTransactions: a.totalTransactions,
-  }))
-  return useMockFallback(
-    convexData as DashboardAgent[] | undefined,
-    mockAgentsWithId
-  )
+  ) as DashboardAgent[] | undefined
 }
 
 export function useSellers(
   orgId: Id<"organizations"> | null
 ): DashboardSeller[] | undefined {
-  const convexData = useQuery(
+  return useQuery(
     api.dashboard.listSellers,
     orgId ? { orgId } : "skip"
-  )
-  const mockSellersWithId: DashboardSeller[] = mockSellers.map((s) => ({
-    _id: s.id,
-    name: s.name,
-    walletAddress: s.walletAddress,
-    totalRevenue: s.totalRevenue,
-    totalPlatformFees: Math.round(s.totalRevenue * 0.029 * 100) / 100,
-    totalCalls: s.totalCalls,
-    endpoints: s.endpoints,
-  }))
-  return useMockFallback(
-    convexData as DashboardSeller[] | undefined,
-    mockSellersWithId
-  )
+  ) as DashboardSeller[] | undefined
 }
 
 // ═══════════════════════════════════════════════════
@@ -210,27 +117,24 @@ export function useSellers(
 // ═══════════════════════════════════════════════════
 
 export function useBillingSummary(orgId: Id<"organizations"> | null) {
-  const convexData = useQuery(
+  return useQuery(
     api.billing.getBillingSummary,
     orgId ? { orgId } : "skip"
   )
-  return useMockFallback(convexData, getMockBillingSummary())
 }
 
 export function useAgentLimit(orgId: Id<"organizations"> | null) {
-  const convexData = useQuery(
+  return useQuery(
     api.billing.checkAgentLimit,
     orgId ? { orgId } : "skip"
   )
-  return useMockFallback(convexData, { allowed: true, limit: 5, current: mockAgents.length })
 }
 
 export function useSellerLimit(orgId: Id<"organizations"> | null) {
-  const convexData = useQuery(
+  return useQuery(
     api.billing.checkSellerLimit,
     orgId ? { orgId } : "skip"
   )
-  return useMockFallback(convexData, { allowed: true, limit: 10, current: mockSellers.length })
 }
 
 // ═══════════════════════════════════════════════════
@@ -238,15 +142,10 @@ export function useSellerLimit(orgId: Id<"organizations"> | null) {
 // ═══════════════════════════════════════════════════
 
 export function useDisputes(orgId: Id<"organizations"> | null, status?: string) {
-  const convexData = useQuery(
+  return useQuery(
     api.disputes.listByOrg,
     orgId ? { orgId, status } : "skip"
   )
-  let filtered = [...mockDisputes]
-  if (status) {
-    filtered = filtered.filter((d) => d.status === status)
-  }
-  return useMockFallback(convexData as typeof filtered | undefined, filtered)
 }
 
 // ═══════════════════════════════════════════════════
@@ -254,20 +153,17 @@ export function useDisputes(orgId: Id<"organizations"> | null, status?: string) 
 // ═══════════════════════════════════════════════════
 
 export function useDeposits(orgId: Id<"organizations"> | null, limit?: number) {
-  const convexData = useQuery(
+  return useQuery(
     api.deposits.listByOrg,
     orgId ? { orgId, limit } : "skip"
   )
-  const mock = limit ? mockDeposits.slice(0, limit) : mockDeposits
-  return useMockFallback(convexData as typeof mock | undefined, mock)
 }
 
 export function useDepositStats(orgId: Id<"organizations"> | null) {
-  const convexData = useQuery(
+  return useQuery(
     api.deposits.getStats,
     orgId ? { orgId } : "skip"
   )
-  return useMockFallback(convexData, getMockDepositStats())
 }
 
 // ═══════════════════════════════════════════════════
@@ -275,19 +171,17 @@ export function useDepositStats(orgId: Id<"organizations"> | null) {
 // ═══════════════════════════════════════════════════
 
 export function usePolicies(orgId: Id<"organizations"> | null) {
-  const convexData = useQuery(
+  return useQuery(
     api.policies.listByOrg,
     orgId ? { orgId } : "skip"
-  )
-  return useMockFallback(convexData as any[] | undefined, [])
+  ) as any[] | undefined
 }
 
 export function useAlertRules(orgId: Id<"organizations"> | null) {
-  const convexData = useQuery(
+  return useQuery(
     api.alertRules.listByOrg,
     orgId ? { orgId } : "skip"
-  )
-  return useMockFallback(convexData as any[] | undefined, [])
+  ) as any[] | undefined
 }
 
 // ═══════════════════════════════════════════════════
@@ -295,11 +189,9 @@ export function useAlertRules(orgId: Id<"organizations"> | null) {
 // ═══════════════════════════════════════════════════
 
 export function useRevenueOverview() {
-  const convexData = useQuery(api.platformRevenue.getOverview)
-  return useMockFallback(convexData, getMockRevenueOverview())
+  return useQuery(api.platformRevenue.getOverview)
 }
 
 export function useDailyRevenue(days?: number) {
-  const convexData = useQuery(api.platformRevenue.getDailyRevenue, { days })
-  return useMockFallback(convexData, mockDailyRevenue.slice(-(days ?? 30)))
+  return useQuery(api.platformRevenue.getDailyRevenue, { days })
 }
