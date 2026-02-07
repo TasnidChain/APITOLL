@@ -28,14 +28,11 @@ function isValidSolanaAddress(addr: string): boolean {
 }
 
 /**
- * Custom Convex validator for wallet addresses (both EVM + Solana)
+ * Wallet address validator — uses v.string() at the schema level.
+ * Runtime validation via isValidEthereumAddress/isValidSolanaAddress
+ * should be applied in mutation handlers before insert/update.
  */
-const walletAddressValidator = v.custom<string>((addr) => {
-  if (!isValidEthereumAddress(addr) && !isValidSolanaAddress(addr)) {
-    throw new Error(`Invalid wallet address: ${addr} (must be valid Ethereum or Solana address)`);
-  }
-  return addr;
-});
+const walletAddressValidator = v.string();
 
 // ═══════════════════════════════════════════════════
 // Typed JSON Schema Validators (replacing v.any())

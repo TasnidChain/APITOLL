@@ -66,11 +66,11 @@ export const updateStatus = mutation({
       // Update agent balance if linked
       const deposit = await ctx.db.get(args.depositId);
       if (deposit?.agentId) {
-        const agent = await ctx.db.get(deposit.agentId);
+        const agent = await ctx.db.get(deposit.agentId) as { balance: number } | null;
         if (agent) {
           await ctx.db.patch(deposit.agentId, {
             balance: agent.balance + deposit.usdcAmount,
-            status: "active",
+            status: "active" as const,
           });
         }
       }

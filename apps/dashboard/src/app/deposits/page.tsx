@@ -167,7 +167,7 @@ export default function DepositsPage() {
           </div>
           <div className="divide-y">
             {deposits.map((deposit) => {
-              const config = statusConfig[deposit.status]
+              const config = statusConfig[deposit.status as keyof typeof statusConfig]
               const StatusIcon = config.icon
 
               return (

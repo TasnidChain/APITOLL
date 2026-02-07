@@ -131,7 +131,7 @@ export default function DisputesPage() {
       ) : (
         <div className="space-y-4">
           {disputes.map((dispute) => {
-            const config = statusConfig[dispute.status]
+            const config = statusConfig[dispute.status as keyof typeof statusConfig]
             const StatusIcon = config.icon
 
             return (
@@ -203,7 +203,7 @@ export default function DisputesPage() {
                   <div className="mt-3 flex items-center gap-4 text-sm">
                     <span className="text-muted-foreground">Resolution:</span>
                     <span className="font-medium">
-                      {resolutionLabels[dispute.resolution]}
+                      {resolutionLabels[dispute.resolution as keyof typeof resolutionLabels]}
                     </span>
                     {dispute.refundAmount && (
                       <span className="text-success font-medium">

@@ -250,7 +250,7 @@ export const listAgents = query({
         const budgetPolicy = policies.find(
           (p) => p.policyType === "budget" && p.isActive
         );
-        const dailyLimit = budgetPolicy?.rulesJson?.dailyLimit ?? 50;
+        const dailyLimit = (budgetPolicy?.rulesJson as { dailyLimit?: number } | undefined)?.dailyLimit ?? 50;
 
         return {
           _id: agent._id,

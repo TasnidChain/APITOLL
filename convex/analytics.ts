@@ -116,7 +116,7 @@ export const getSpendByChain = query({
       .filter((q) => q.eq(q.field("status"), "settled"))
       .collect();
 
-    const byChain = {
+    const byChain: Record<string, number> = {
       base: 0,
       solana: 0,
     };
