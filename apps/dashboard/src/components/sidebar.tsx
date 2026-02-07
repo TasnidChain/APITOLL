@@ -13,12 +13,16 @@ import {
   AlertTriangle,
   Wallet,
   BarChart3,
+  Compass,
+  Trophy,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { UserButton } from '@clerk/nextjs'
 
 const navigation = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Discovery', href: '/dashboard/discovery', icon: Compass },
+  { name: 'Leaderboard', href: '/dashboard/leaderboard', icon: Trophy },
   { name: 'Transactions', href: '/dashboard/transactions', icon: ArrowLeftRight },
   { name: 'Agents', href: '/dashboard/agents', icon: Bot },
   { name: 'Sellers', href: '/dashboard/sellers', icon: Store },
