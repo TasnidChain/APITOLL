@@ -1,5 +1,6 @@
 {
   "name": "apitoll",
+  "description": "The commerce layer for the x402 agent economy — micropayments for AI agents on Base and Solana",
   "private": true,
   "workspaces": [
     "packages/*",

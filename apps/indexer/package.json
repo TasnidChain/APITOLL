@@ -1,5 +1,6 @@
 {
   "name": "@apitoll/indexer",
+  "description": "Transaction indexer API — real-time payment tracking and analytics for the Apitoll platform",
   "version": "0.1.0-beta.1",
   "private": true,
   "scripts": {

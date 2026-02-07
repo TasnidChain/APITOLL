@@ -54,7 +54,7 @@ router.get('/api/discovery/tools', async (req, env) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Failed to fetch tools' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -67,14 +67,68 @@ router.post('/api/webhook/stripe', async (req, env) => {
     const body = await req.text();
     const sig = req.headers.get('stripe-signature');
 
-    // Verify webhook signature
-    // TODO: Implement webhook verification
+    // Verify webhook signature using HMAC-SHA256
+    if (!sig || !env.STRIPE_WEBHOOK_SECRET) {
+      return new Response(JSON.stringify({ error: 'Missing signature or webhook secret' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Parse Stripe signature header (t=timestamp,v1=signature)
+    const sigParts = sig.split(',').reduce((acc: Record<string, string>, part) => {
+      const [key, value] = part.split('=');
+      acc[key] = value;
+      return acc;
+    }, {});
+
+    const timestamp = sigParts['t'];
+    const signature = sigParts['v1'];
+
+    if (!timestamp || !signature) {
+      return new Response(JSON.stringify({ error: 'Invalid signature format' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Reject if timestamp is older than 5 minutes (replay protection)
+    const age = Math.abs(Date.now() / 1000 - parseInt(timestamp));
+    if (age > 300) {
+      return new Response(JSON.stringify({ error: 'Webhook timestamp too old' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Compute expected signature: HMAC-SHA256(secret, "timestamp.body")
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(env.STRIPE_WEBHOOK_SECRET),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    const signed = await crypto.subtle.sign('HMAC', key, encoder.encode(`${timestamp}.${body}`));
+    const expected = Array.from(new Uint8Array(signed), (b) => b.toString(16).padStart(2, '0')).join('');
+
+    if (expected !== signature) {
+      return new Response(JSON.stringify({ error: 'Invalid webhook signature' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     const event = JSON.parse(body);
 
     if (event.type === 'payment_intent.succeeded') {
-      // Handle payment
-      console.log('Payment received:', event.data.object.id);
+      // Store payment event in KV for processing
+      await env.SESSIONS.put(
+        `stripe_event:${event.id}`,
+        JSON.stringify({ type: event.type, paymentIntentId: event.data.object.id, timestamp: Date.now() }),
+        { expirationTtl: 86400 }
+      );
     }
 
     return new Response(JSON.stringify({ received: true }), {
@@ -82,7 +136,7 @@ router.post('/api/webhook/stripe', async (req, env) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Webhook processing failed' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -131,7 +185,7 @@ router.post('/api/pay', async (req, env) => {
       }
     );
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Payment initiation failed' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -155,7 +209,7 @@ router.get('/api/pay/:paymentId', async (req, env) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Failed to fetch payment status' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -183,8 +237,10 @@ router.all('*', () => {
  */
 export default {
   fetch: (req: Request, env: Env, ctx: ExecutionContext) =>
-    router.handle(req, env, ctx).catch((err) => {
-      console.error('Worker error:', err);
-      return new Response('Internal Server Error', { status: 500 });
+    router.handle(req, env, ctx).catch(() => {
+      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }),
 };
