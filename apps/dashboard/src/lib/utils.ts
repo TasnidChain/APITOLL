@@ -6,6 +6,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatUSD(amount: number): string {
+  // For micropayments (< $0.01), show up to 4 decimal places
+  if (amount > 0 && amount < 0.01) {
+    return '$' + amount.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')
+  }
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
