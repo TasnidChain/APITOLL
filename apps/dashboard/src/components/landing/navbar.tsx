@@ -1,0 +1,84 @@
+'use client'
+
+import Link from 'next/link'
+import { Zap, Menu, X } from 'lucide-react'
+import { useState } from 'react'
+
+const links = [
+  { label: 'Features', href: '#features' },
+  { label: 'How It Works', href: '#how-it-works' },
+  { label: 'Pricing', href: '#pricing' },
+]
+
+export function Navbar() {
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  return (
+    <nav className="fixed top-0 z-50 w-full border-b border-slate-800/50 bg-slate-950/80 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
+            <Zap className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-lg font-bold text-white">Apitoll</span>
+        </Link>
+
+        {/* Desktop Links */}
+        <div className="hidden items-center gap-8 md:flex">
+          {links.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              className="text-sm font-medium text-slate-400 transition-colors hover:text-white"
+            >
+              {l.label}
+            </a>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div className="hidden items-center gap-3 md:flex">
+          <Link
+            href="/dashboard"
+            className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition-all hover:bg-slate-200"
+          >
+            Launch Dashboard
+          </Link>
+        </div>
+
+        {/* Mobile toggle */}
+        <button
+          className="md:hidden text-slate-400 hover:text-white"
+          onClick={() => setMobileOpen(!mobileOpen)}
+        >
+          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+      </div>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div className="border-t border-slate-800 bg-slate-950 px-6 py-4 md:hidden">
+          <div className="flex flex-col gap-4">
+            {links.map((l) => (
+              <a
+                key={l.href}
+                href={l.href}
+                onClick={() => setMobileOpen(false)}
+                className="text-sm font-medium text-slate-400 transition-colors hover:text-white"
+              >
+                {l.label}
+              </a>
+            ))}
+            <Link
+              href="/dashboard"
+              className="mt-2 rounded-lg bg-white px-4 py-2 text-center text-sm font-semibold text-slate-950"
+            >
+              Launch Dashboard
+            </Link>
+          </div>
+        </div>
+      )}
+    </nav>
+  )
+}

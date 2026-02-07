@@ -17,15 +17,15 @@ import {
 import { cn } from '@/lib/utils'
 
 const navigation = [
-  { name: 'Overview', href: '/', icon: LayoutDashboard },
-  { name: 'Transactions', href: '/transactions', icon: ArrowLeftRight },
-  { name: 'Agents', href: '/agents', icon: Bot },
-  { name: 'Sellers', href: '/sellers', icon: Store },
-  { name: 'Billing', href: '/billing', icon: CreditCard },
-  { name: 'Deposits', href: '/deposits', icon: Wallet },
-  { name: 'Disputes', href: '/disputes', icon: AlertTriangle },
-  { name: 'Revenue', href: '/revenue', icon: BarChart3 },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Transactions', href: '/dashboard/transactions', icon: ArrowLeftRight },
+  { name: 'Agents', href: '/dashboard/agents', icon: Bot },
+  { name: 'Sellers', href: '/dashboard/sellers', icon: Store },
+  { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
+  { name: 'Deposits', href: '/dashboard/deposits', icon: Wallet },
+  { name: 'Disputes', href: '/dashboard/disputes', icon: AlertTriangle },
+  { name: 'Revenue', href: '/dashboard/revenue', icon: BarChart3 },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
 export function Sidebar() {
@@ -40,7 +40,10 @@ export function Sidebar() {
 
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navigation.map((item) => {
-          const isActive = pathname === item.href
+          const isActive =
+            item.href === '/dashboard'
+              ? pathname === '/dashboard'
+              : pathname.startsWith(item.href)
           return (
             <Link
               key={item.name}

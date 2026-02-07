@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useOrgId, useBillingSummary } from '@/lib/hooks'
 import { useQuery } from 'convex/react'
-import { api } from '../../../../../convex/_generated/api'
+import { api } from '../../../../../../convex/_generated/api'
 import { Key, Bell, Shield, Wallet, Copy, Check, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
@@ -199,7 +199,7 @@ export default function SettingsPage() {
               </p>
             </div>
             <Link
-              href="/billing"
+              href="/dashboard/billing"
               className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               {billing?.plan === 'free' ? 'Upgrade' : 'Manage'}

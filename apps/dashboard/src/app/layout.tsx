@@ -1,20 +1,18 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Sidebar } from '@/components/sidebar'
-import { ConvexClientProvider } from '@/lib/convex'
-import { PWAInstallButton, PWAServiceWorker } from '@/components/pwa'
+import { PWAServiceWorker } from '@/components/pwa'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Apitoll Dashboard',
-  description: 'Monitor and manage your x402 agent payments, transactions, and seller ecosystem',
+  title: 'Apitoll - Payment Infrastructure for AI Agents',
+  description: 'Enable AI agents to autonomously pay for API calls with USDC micropayments. Built on the x402 protocol.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'AgentComm',
+    title: 'Apitoll',
   },
   icons: {
     icon: '/icons/icon-96x96.svg',
@@ -35,17 +33,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <body className={inter.className}>
-        <ConvexClientProvider>
-          <div className="flex h-screen">
-            <Sidebar />
-            <main className="flex-1 overflow-auto bg-muted/30">
-              {children}
-            </main>
-            <PWAInstallButton />
-          </div>
-        </ConvexClientProvider>
+        {children}
         <PWAServiceWorker />
       </body>
     </html>
