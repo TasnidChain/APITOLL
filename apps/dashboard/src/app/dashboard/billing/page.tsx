@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useOrgId, useBillingSummary } from '@/lib/hooks'
 import { PageLoading } from '@/components/loading'
 import { formatUSD } from '@/lib/utils'
@@ -10,6 +11,7 @@ import {
   Shield,
   BarChart3,
   ArrowRight,
+  Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -73,10 +75,26 @@ const PLANS = [
 export default function BillingPage() {
   const orgId = useOrgId()
   const billing = useBillingSummary(orgId)
+  const [upgrading, setUpgrading] = useState<string | null>(null)
 
   if (!billing && orgId) return <PageLoading />
 
   const currentPlan = billing?.plan ?? 'free'
+
+  const handlePlanChange = async (planId: string) => {
+    if (planId === currentPlan) return
+
+    setUpgrading(planId)
+    // In production, this would create a Stripe Checkout session
+    // and redirect the user. For now, we show a message.
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    setUpgrading(null)
+    alert(
+      planId === 'enterprise'
+        ? 'Enterprise plans require a sales call. Contact sales@apitoll.com'
+        : 'Stripe Checkout integration coming soon. Contact support to upgrade.'
+    )
+  }
 
   return (
     <div className="p-8">
@@ -97,7 +115,7 @@ export default function BillingPage() {
                 <h2 className="text-lg font-semibold">Current Plan</h2>
               </div>
               <p className="mt-1 text-muted-foreground">
-                You're on the{' '}
+                You&apos;re on the{' '}
                 <span className="font-semibold capitalize text-foreground">
                   {currentPlan}
                 </span>{' '}
@@ -160,6 +178,7 @@ export default function BillingPage() {
           const isUpgrade =
             (currentPlan === 'free' && plan.id !== 'free') ||
             (currentPlan === 'pro' && plan.id === 'enterprise')
+          const isLoading = upgrading === plan.id
 
           return (
             <div
@@ -198,6 +217,7 @@ export default function BillingPage() {
               </ul>
 
               <button
+                onClick={() => handlePlanChange(plan.id)}
                 className={cn(
                   'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors',
                   isCurrent
@@ -206,9 +226,14 @@ export default function BillingPage() {
                     ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                     : 'border bg-background text-foreground hover:bg-accent'
                 )}
-                disabled={isCurrent}
+                disabled={isCurrent || isLoading}
               >
-                {isCurrent ? (
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : isCurrent ? (
                   'Current Plan'
                 ) : isUpgrade ? (
                   <>

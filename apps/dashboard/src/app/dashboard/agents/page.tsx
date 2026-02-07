@@ -1,14 +1,18 @@
 'use client'
 
+import { useState } from 'react'
+import { useMutation } from 'convex/react'
+import { api } from '../../../../../../convex/_generated/api'
 import { AgentCard } from '@/components/agent-card'
 import { StatCardSkeleton, PageLoading } from '@/components/loading'
 import { useOrgId, useAgents, useAgentLimit } from '@/lib/hooks'
-import { Plus, Bot } from 'lucide-react'
+import { Plus, Bot, X, Loader2 } from 'lucide-react'
 
 export default function AgentsPage() {
   const orgId = useOrgId()
   const agents = useAgents(orgId)
   const agentLimit = useAgentLimit(orgId)
+  const [showModal, setShowModal] = useState(false)
 
   return (
     <div className="p-8">
@@ -26,6 +30,7 @@ export default function AgentsPage() {
             </span>
           )}
           <button
+            onClick={() => setShowModal(true)}
             className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             disabled={agentLimit ? !agentLimit.allowed : false}
           >
@@ -79,6 +84,146 @@ export default function AgentsPage() {
           ))}
         </div>
       )}
+
+      {/* Create Agent Modal */}
+      {showModal && orgId && (
+        <CreateAgentModal
+          orgId={orgId}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+function CreateAgentModal({
+  orgId,
+  onClose,
+}: {
+  orgId: string
+  onClose: () => void
+}) {
+  const createAgent = useMutation(api.agents.create)
+  const [name, setName] = useState('')
+  const [walletAddress, setWalletAddress] = useState('')
+  const [chain, setChain] = useState<'base' | 'solana'>('base')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim() || !walletAddress.trim()) {
+      setError('Name and wallet address are required')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+    try {
+      await createAgent({
+        orgId: orgId as any,
+        name: name.trim(),
+        walletAddress: walletAddress.trim(),
+        chain,
+      })
+      onClose()
+    } catch (err: any) {
+      setError(err.message || 'Failed to create agent')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-xl border bg-card p-6 shadow-xl">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Create New Agent</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Agent Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Research Bot"
+              className="mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Wallet Address</label>
+            <input
+              type="text"
+              value={walletAddress}
+              onChange={(e) => setWalletAddress(e.target.value)}
+              placeholder="0x... or So1..."
+              className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Chain</label>
+            <div className="mt-1 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setChain('base')}
+                className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  chain === 'base'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'hover:bg-accent'
+                }`}
+              >
+                Base
+              </button>
+              <button
+                type="button"
+                onClick={() => setChain('solana')}
+                className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  chain === 'solana'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'hover:bg-accent'
+                }`}
+              >
+                Solana
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium hover:bg-accent"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Agent'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

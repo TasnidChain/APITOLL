@@ -1,6 +1,9 @@
 'use client'
 
-import { useOrgId, useDeposits, useDepositStats } from '@/lib/hooks'
+import { useState } from 'react'
+import { useMutation } from 'convex/react'
+import { api } from '../../../../../../convex/_generated/api'
+import { useOrgId, useDeposits, useDepositStats, useAgents } from '@/lib/hooks'
 import { PageLoading, StatCardSkeleton } from '@/components/loading'
 import { formatUSD, timeAgo, shortenAddress } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -14,6 +17,7 @@ import {
   DollarSign,
   TrendingUp,
   ExternalLink,
+  X,
 } from 'lucide-react'
 
 const statusConfig = {
@@ -43,6 +47,7 @@ export default function DepositsPage() {
   const orgId = useOrgId()
   const deposits = useDeposits(orgId)
   const stats = useDepositStats(orgId)
+  const [showModal, setShowModal] = useState(false)
 
   return (
     <div className="p-8">
@@ -53,7 +58,10 @@ export default function DepositsPage() {
             Fund your agent wallets with USDC via fiat on-ramp
           </p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
           <ArrowDown className="h-4 w-4" />
           New Deposit
         </button>
@@ -142,7 +150,7 @@ export default function DepositsPage() {
             <div>
               <p className="font-medium">Fund Agent Wallet</p>
               <p className="text-sm text-muted-foreground">
-                USDC deposited to your agent's wallet
+                USDC deposited to your agent&apos;s wallet
               </p>
             </div>
           </div>
@@ -212,12 +220,19 @@ export default function DepositsPage() {
                       {config.label}
                     </span>
                     {deposit.txHash && (
-                      <button
+                      <a
+                        href={
+                          deposit.chain === 'base'
+                            ? `https://basescan.org/tx/${deposit.txHash}`
+                            : `https://solscan.io/tx/${deposit.txHash}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-muted-foreground hover:text-foreground"
                         title="View on explorer"
                       >
                         <ExternalLink className="h-4 w-4" />
-                      </button>
+                      </a>
                     )}
                   </div>
                 </div>
@@ -226,6 +241,200 @@ export default function DepositsPage() {
           </div>
         </div>
       )}
+
+      {/* New Deposit Modal */}
+      {showModal && orgId && (
+        <NewDepositModal orgId={orgId} onClose={() => setShowModal(false)} />
+      )}
+    </div>
+  )
+}
+
+function NewDepositModal({
+  orgId,
+  onClose,
+}: {
+  orgId: string
+  onClose: () => void
+}) {
+  const agents = useAgents(orgId as any)
+  const createDeposit = useMutation(api.deposits.create)
+  const [amount, setAmount] = useState('')
+  const [chain, setChain] = useState<'base' | 'solana'>('base')
+  const [selectedAgent, setSelectedAgent] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const fiatAmount = parseFloat(amount) || 0
+  const fee = fiatAmount * 0.015
+  const usdcAmount = fiatAmount - fee
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (fiatAmount < 1) {
+      setError('Minimum deposit is $1.00')
+      return
+    }
+    if (!selectedAgent) {
+      setError('Please select an agent wallet')
+      return
+    }
+
+    const agent = agents?.find((a) => a._id === selectedAgent)
+    if (!agent) {
+      setError('Invalid agent selected')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+    try {
+      await createDeposit({
+        orgId: orgId as any,
+        fiatAmount,
+        chain,
+        walletAddress: agent.walletAddress,
+        stripePaymentIntentId: `pi_demo_${Date.now()}`,
+        agentId: selectedAgent as any,
+      })
+      onClose()
+    } catch (err: any) {
+      setError(err.message || 'Failed to create deposit')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const presets = [10, 50, 100, 500]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-xl border bg-card p-6 shadow-xl">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">New Deposit</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Amount */}
+          <div>
+            <label className="text-sm font-medium">Amount (USD)</label>
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+              min="1"
+              step="0.01"
+              className="mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <div className="mt-2 flex gap-2">
+              {presets.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setAmount(p.toString())}
+                  className="rounded-md border px-3 py-1 text-xs font-medium hover:bg-accent"
+                >
+                  ${p}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Agent wallet */}
+          <div>
+            <label className="text-sm font-medium">Agent Wallet</label>
+            <select
+              value={selectedAgent}
+              onChange={(e) => setSelectedAgent(e.target.value)}
+              className="mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Select an agent...</option>
+              {agents?.map((agent) => (
+                <option key={agent._id} value={agent._id}>
+                  {agent.name} ({agent.chain})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Chain */}
+          <div>
+            <label className="text-sm font-medium">Chain</label>
+            <div className="mt-1 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setChain('base')}
+                className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  chain === 'base'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'hover:bg-accent'
+                }`}
+              >
+                Base
+              </button>
+              <button
+                type="button"
+                onClick={() => setChain('solana')}
+                className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                  chain === 'solana'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'hover:bg-accent'
+                }`}
+              >
+                Solana
+              </button>
+            </div>
+          </div>
+
+          {/* Summary */}
+          {fiatAmount > 0 && (
+            <div className="rounded-lg bg-muted/50 p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Amount</span>
+                <span className="font-medium">{formatUSD(fiatAmount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Fee (1.5%)</span>
+                <span className="text-muted-foreground">-{formatUSD(fee)}</span>
+              </div>
+              <div className="border-t pt-2 flex justify-between font-semibold">
+                <span>USDC Received</span>
+                <span className="text-success">{formatUSD(Math.max(0, usdcAmount))}</span>
+              </div>
+            </div>
+          )}
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium hover:bg-accent"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Deposit'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
