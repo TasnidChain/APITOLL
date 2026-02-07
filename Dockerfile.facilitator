@@ -1,0 +1,23 @@
+FROM node:20-slim
+
+WORKDIR /app
+
+# Copy root package files
+COPY package.json package-lock.json ./
+
+# Copy shared package
+COPY packages/shared/ packages/shared/
+
+# Copy facilitator package
+COPY packages/facilitator/ packages/facilitator/
+
+# Install all deps from root (monorepo)
+RUN npm install --workspace=packages/shared --workspace=packages/facilitator
+
+# Build shared package
+RUN cd packages/shared && npm run build
+
+EXPOSE 3000
+
+WORKDIR /app/packages/facilitator
+CMD ["npx", "tsx", "src/server.ts"]
