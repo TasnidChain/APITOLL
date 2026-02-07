@@ -16,7 +16,11 @@ export const metadata: Metadata = {
     title: 'Apitoll',
   },
   icons: {
-    icon: '/icons/icon-96x96.svg',
+    icon: [
+      { url: '/icons/icon-96x96.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    shortcut: '/icons/icon-96x96.svg',
     apple: '/icons/icon-192x192.svg',
   },
 }
