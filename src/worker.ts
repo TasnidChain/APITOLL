@@ -1,0 +1,190 @@
+/**
+ * Apitoll Cloudflare Worker
+ * 
+ * Routes:
+ * - /api/* → Backend API (indexer, payments, discovery)
+ * - /health → Health check
+ * - /* → Dashboard (static assets)
+ */
+
+import { Router } from 'itty-router';
+
+interface Env {
+  CACHE: KVNamespace;
+  SESSIONS: KVNamespace;
+  DB: D1Database;
+  BUCKET: R2Bucket;
+  STRIPE_SECRET_KEY: string;
+  STRIPE_WEBHOOK_SECRET: string;
+  EXECUTOR_PRIVATE_KEY: string;
+  BASE_RPC_URL: string;
+  ALLOWED_ORIGINS: string;
+  LOG_LEVEL: string;
+}
+
+const router = Router<{ Bindings: Env }>();
+
+/**
+ * Health Check
+ */
+router.get('/health', (req, env) => {
+  return new Response(
+    JSON.stringify({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: env.ENVIRONMENT || 'unknown',
+    }),
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+});
+
+/**
+ * API Routes
+ */
+
+// Discovery API
+router.get('/api/discovery/tools', async (req, env) => {
+  try {
+    // Query D1 database for tools
+    const { results } = await env.DB.prepare(
+      'SELECT * FROM tools WHERE isActive = 1 LIMIT 100'
+    ).all();
+
+    return new Response(JSON.stringify(results), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error: any) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+});
+
+// Payment webhook
+router.post('/api/webhook/stripe', async (req, env) => {
+  try {
+    const body = await req.text();
+    const sig = req.headers.get('stripe-signature');
+
+    // Verify webhook signature
+    // TODO: Implement webhook verification
+
+    const event = JSON.parse(body);
+
+    if (event.type === 'payment_intent.succeeded') {
+      // Handle payment
+      console.log('Payment received:', event.data.object.id);
+    }
+
+    return new Response(JSON.stringify({ received: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error: any) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+});
+
+// Facilitator payment endpoint
+router.post('/api/pay', async (req, env) => {
+  try {
+    const { original_url, original_method, payment_required, agent_wallet } = await req.json();
+
+    // Validate inputs
+    if (!payment_required?.amount || !payment_required?.recipient) {
+      return new Response(JSON.stringify({ error: 'Missing payment details' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const paymentId = crypto.randomUUID();
+
+    // Store payment in KV (fast access)
+    await env.SESSIONS.put(
+      `payment:${paymentId}`,
+      JSON.stringify({
+        id: paymentId,
+        originalUrl: original_url,
+        originalMethod: original_method,
+        paymentRequired,
+        agentWallet: agent_wallet,
+        status: 'processing',
+        createdAt: Date.now(),
+      }),
+      { expirationTtl: 3600 } // 1 hour expiry
+    );
+
+    return new Response(
+      JSON.stringify({
+        payment_id: paymentId,
+        status: 'processing',
+        check_url: `/api/pay/${paymentId}`,
+      }),
+      {
+        status: 202,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  } catch (error: any) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+});
+
+// Check payment status
+router.get('/api/pay/:paymentId', async (req, env) => {
+  try {
+    const { paymentId } = req.params;
+    const payment = await env.SESSIONS.get(`payment:${paymentId}`);
+
+    if (!payment) {
+      return new Response(JSON.stringify({ error: 'Payment not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(payment, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error: any) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+});
+
+/**
+ * Dashboard static files (placeholder)
+ */
+router.get('/*', () => {
+  return new Response('Apitoll Dashboard - Deploy static assets from apps/dashboard', {
+    headers: { 'Content-Type': 'text/html' },
+  });
+});
+
+/**
+ * 404
+ */
+router.all('*', () => {
+  return new Response('Not found', { status: 404 });
+});
+
+/**
+ * Export handler
+ */
+export default {
+  fetch: (req: Request, env: Env, ctx: ExecutionContext) =>
+    router.handle(req, env, ctx).catch((err) => {
+      console.error('Worker error:', err);
+      return new Response('Internal Server Error', { status: 500 });
+    }),
+};
