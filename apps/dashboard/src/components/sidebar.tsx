@@ -15,6 +15,7 @@ import {
   BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { UserButton } from '@clerk/nextjs'
 
 const navigation = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
@@ -62,7 +63,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t p-4">
+      <div className="border-t p-4 space-y-3">
         <div className="rounded-lg bg-muted p-3">
           <p className="text-xs font-medium text-muted-foreground">
             x402 Protocol
@@ -70,6 +71,17 @@ export function Sidebar() {
           <p className="text-sm font-semibold text-foreground">
             Testnet Mode
           </p>
+        </div>
+        <div className="flex items-center gap-3 px-1">
+          <UserButton
+            afterSignOutUrl="/"
+            appearance={{
+              elements: {
+                avatarBox: 'h-8 w-8',
+              },
+            }}
+          />
+          <span className="text-sm text-muted-foreground">Account</span>
         </div>
       </div>
     </div>

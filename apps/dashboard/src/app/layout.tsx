@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
+import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
 import { PWAServiceWorker } from '@/components/pwa'
 
@@ -33,11 +34,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className={inter.className}>
-        {children}
-        <PWAServiceWorker />
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" className="scroll-smooth">
+        <body className={inter.className}>
+          {children}
+          <PWAServiceWorker />
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }

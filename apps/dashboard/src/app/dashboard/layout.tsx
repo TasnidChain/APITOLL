@@ -1,3 +1,10 @@
+'use client'
+
+import {
+  SignedIn,
+  SignedOut,
+  RedirectToSignIn,
+} from '@clerk/nextjs'
 import { Sidebar } from '@/components/sidebar'
 import { ConvexClientProvider } from '@/lib/convex'
 import { PWAInstallButton } from '@/components/pwa'
@@ -8,14 +15,21 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <ConvexClientProvider>
-      <div className="flex h-screen bg-background text-foreground">
-        <Sidebar />
-        <main className="flex-1 overflow-auto bg-muted/30">
-          {children}
-        </main>
-        <PWAInstallButton />
-      </div>
-    </ConvexClientProvider>
+    <>
+      <SignedOut>
+        <RedirectToSignIn />
+      </SignedOut>
+      <SignedIn>
+        <ConvexClientProvider>
+          <div className="flex h-screen bg-background text-foreground">
+            <Sidebar />
+            <main className="flex-1 overflow-auto bg-muted/30">
+              {children}
+            </main>
+            <PWAInstallButton />
+          </div>
+        </ConvexClientProvider>
+      </SignedIn>
+    </>
   )
 }

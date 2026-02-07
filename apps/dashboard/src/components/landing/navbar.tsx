@@ -3,6 +3,13 @@
 import Link from 'next/link'
 import { Zap, Menu, X } from 'lucide-react'
 import { useState } from 'react'
+import {
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from '@clerk/nextjs'
 
 const links = [
   { label: 'Features', href: '#features' },
@@ -38,13 +45,28 @@ export function Navbar() {
         </div>
 
         {/* CTA */}
-        <div className="hidden items-center gap-3 md:flex">
-          <Link
-            href="/dashboard"
-            className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition-all hover:bg-slate-200"
-          >
-            Launch Dashboard
-          </Link>
+        <div className="hidden items-center gap-4 md:flex">
+          <SignedOut>
+            <SignInButton>
+              <button className="text-sm font-medium text-slate-400 transition-colors hover:text-white cursor-pointer">
+                Sign In
+              </button>
+            </SignInButton>
+            <SignUpButton>
+              <button className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition-all hover:bg-slate-200 cursor-pointer">
+                Get Started
+              </button>
+            </SignUpButton>
+          </SignedOut>
+          <SignedIn>
+            <Link
+              href="/dashboard"
+              className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition-all hover:bg-slate-200"
+            >
+              Dashboard
+            </Link>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
         </div>
 
         {/* Mobile toggle */}
@@ -70,12 +92,26 @@ export function Navbar() {
                 {l.label}
               </a>
             ))}
-            <Link
-              href="/dashboard"
-              className="mt-2 rounded-lg bg-white px-4 py-2 text-center text-sm font-semibold text-slate-950"
-            >
-              Launch Dashboard
-            </Link>
+            <SignedOut>
+              <SignInButton>
+                <button className="mt-2 rounded-lg border border-slate-700 px-4 py-2 text-center text-sm font-semibold text-white cursor-pointer">
+                  Sign In
+                </button>
+              </SignInButton>
+              <SignUpButton>
+                <button className="rounded-lg bg-white px-4 py-2 text-center text-sm font-semibold text-slate-950 cursor-pointer">
+                  Get Started
+                </button>
+              </SignUpButton>
+            </SignedOut>
+            <SignedIn>
+              <Link
+                href="/dashboard"
+                className="mt-2 rounded-lg bg-white px-4 py-2 text-center text-sm font-semibold text-slate-950"
+              >
+                Dashboard
+              </Link>
+            </SignedIn>
           </div>
         </div>
       )}

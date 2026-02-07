@@ -16,6 +16,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.37.3",
     "convex": "^1.10.0",
     "stripe": "^20.3.1"
   },
