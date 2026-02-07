@@ -9,6 +9,9 @@ export {
   type PaymentSigner,
 } from "./agent-wallet";
 
+// Signers
+export { createFacilitatorSigner } from "./signers/evm-signer";
+
 // Policy engine
 export {
   PolicyEngine,

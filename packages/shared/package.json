@@ -3,6 +3,7 @@
   "version": "0.1.0-beta.1",
   "description": "Shared types and utilities for Apitoll packages",
   "license": "MIT",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": ["dist", "README.md"],

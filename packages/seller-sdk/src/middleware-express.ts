@@ -68,13 +68,6 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
   });
 
   // Rate limiting: Redis-backed distributed rate limiting with circuit breaker
-  const Redis = require('redis');
-  const redis = Redis.createClient({
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    retryStrategy: (times: number) => Math.min(times * 50, 2000),
-  });
-
   const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
   const RATE_LIMIT_MAX = 120; // max requests per window per IP
 
@@ -84,6 +77,24 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
   let circuitOpenedAt = 0;
   const CIRCUIT_FAILURE_THRESHOLD = 5;   // Open circuit after 5 consecutive failures
   const CIRCUIT_RESET_MS = 30_000;       // Try again after 30 seconds
+
+  // Redis is optional — if not available, falls through to in-memory rate limiting
+  let redis: any = null;
+  try {
+    const Redis = require('redis');
+    redis = Redis.createClient({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      retryStrategy: (times: number) => Math.min(times * 50, 2000),
+    });
+    redis.on('error', (err: Error) => {
+      console.warn('Redis connection error, using in-memory rate limiting:', err.message);
+    });
+  } catch {
+    // Redis not installed — start with circuit open to use in-memory fallback
+    circuitOpen = true;
+    circuitOpenedAt = Date.now();
+  }
 
   // In-memory fallback rate limiter (used when Redis circuit is open)
   const fallbackRateLimitMap = new Map<string, number[]>();
@@ -121,6 +132,7 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
     }
 
     try {
+      if (!redis) throw new Error('Redis not available');
       const count = await redis.incr(key);
       if (count === 1) {
         await redis.expire(key, Math.ceil(RATE_LIMIT_WINDOW_MS / 1000));

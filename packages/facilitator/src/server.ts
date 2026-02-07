@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import { ethers } from 'ethers';
 import { v4 as uuidv4 } from 'uuid';
@@ -32,7 +33,7 @@ const API_KEYS = (process.env.FACILITATOR_API_KEYS || '').split(',').filter(Bool
 
 // ─── Constants ──────────────────────────────────────────────────
 
-const USDC_ADDRESS_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const USDC_ADDRESS_BASE = process.env.USDC_ADDRESS || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const USDC_ABI = ['function transfer(address to, uint256 amount) returns (bool)'];
 const MAX_PAYMENT_AMOUNT = 100; // $100 USDC max per single payment (safety cap)
 const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
@@ -439,6 +440,104 @@ app.post('/forward/:paymentId', rateLimit, requireAuth, async (req: Request, res
   } catch (error: any) {
     logger.error({ error: error.message }, 'Forward request failed');
     res.status(502).json({ error: 'Failed to forward request to seller' });
+  }
+});
+
+// ─── POST /verify — Verify Payment ──────────────────────────────
+
+/**
+ * Verify a payment from an X-PAYMENT header.
+ * Called by seller middleware to validate that a payment is real.
+ *
+ * Body: { payload: <decoded X-PAYMENT>, requirements: PaymentRequirement[] }
+ * Returns: { valid: boolean, txHash?: string, from?: string, blockNumber?: number, error?: string }
+ */
+app.post('/verify', rateLimit, async (req: Request, res: Response) => {
+  try {
+    const parseResult = z.object({
+      payload: z.record(z.unknown()),
+      requirements: z.array(z.record(z.unknown())),
+    }).safeParse(req.body);
+
+    if (!parseResult.success) {
+      return res.status(400).json({
+        valid: false,
+        error: 'Invalid verification request',
+      });
+    }
+
+    const { payload, requirements } = parseResult.data;
+    const txHash = payload.txHash as string | undefined;
+    const paymentId = payload.paymentId as string | undefined;
+
+    // Option 1: Verify by payment ID (facilitator-managed payment)
+    if (paymentId) {
+      const payment = pendingPayments.get(paymentId);
+      if (!payment) {
+        return res.json({ valid: false, error: 'Payment ID not found' });
+      }
+      if (payment.status === 'completed') {
+        return res.json({
+          valid: true,
+          txHash: payment.txHash,
+          from: payment.agentWallet,
+        });
+      }
+      return res.json({
+        valid: false,
+        error: `Payment status: ${payment.status}`,
+      });
+    }
+
+    // Option 2: Verify by on-chain transaction hash
+    if (txHash) {
+      const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
+      const receipt = await provider.getTransactionReceipt(txHash);
+
+      if (!receipt) {
+        return res.json({
+          valid: false,
+          error: 'Transaction not found or not confirmed',
+        });
+      }
+
+      const currentBlock = await provider.getBlockNumber();
+      const confirmations = currentBlock - receipt.blockNumber;
+
+      if (confirmations < 1) {
+        return res.json({
+          valid: false,
+          error: `Insufficient confirmations: ${confirmations}`,
+        });
+      }
+
+      // Verify recipient matches requirement if provided
+      const requirement = requirements[0] as { payTo?: string } | undefined;
+      if (requirement?.payTo && receipt.to?.toLowerCase() !== requirement.payTo.toLowerCase()) {
+        return res.json({
+          valid: false,
+          error: 'Payment recipient mismatch',
+        });
+      }
+
+      return res.json({
+        valid: true,
+        txHash: receipt.hash,
+        from: receipt.from,
+        blockNumber: receipt.blockNumber,
+      });
+    }
+
+    return res.json({
+      valid: false,
+      error: 'No txHash or paymentId provided for verification',
+    });
+  } catch (error: any) {
+    logger.error({ error: error.message }, 'Verification failed');
+    res.status(500).json({
+      valid: false,
+      error: 'Verification failed',
+    });
   }
 });
 
