@@ -52,7 +52,7 @@ export function PWAInstallButton() {
     <button
       onClick={handleInstall}
       className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-lg font-semibold text-sm shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 active:translate-y-0"
-      title="Install Apitoll as a desktop app"
+      title="Install API Toll as a desktop app"
     >
       <span>📲</span>
       <span>Install App</span>

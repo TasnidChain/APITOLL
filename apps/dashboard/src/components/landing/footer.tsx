@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ApitollLogo } from '@/components/logo'
+import { ApiTollLogo } from '@/components/logo'
 
 const footerLinks = {
   Product: [
@@ -10,7 +10,7 @@ const footerLinks = {
   ],
   Developers: [
     { label: 'x402 Protocol Spec', href: 'https://www.x402.org/' },
-    { label: 'GitHub', href: 'https://github.com/TasnidChain/Apitoll' },
+    { label: 'GitHub', href: 'https://github.com/TasnidChain/APITOLL' },
     { label: 'npm: @apitoll/seller-sdk', href: 'https://www.npmjs.com/package/@apitoll/seller-sdk' },
     { label: 'npm: @apitoll/buyer-sdk', href: 'https://www.npmjs.com/package/@apitoll/buyer-sdk' },
   ],
@@ -28,8 +28,8 @@ export function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center gap-2.5">
-              <ApitollLogo size={32} id="footer-logo" />
-              <span className="text-lg font-bold text-white">Apitoll</span>
+              <ApiTollLogo size={32} id="footer-logo" />
+              <span className="text-lg font-bold text-white">API Toll</span>
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
               Payment infrastructure for the autonomous agent economy. Built on
@@ -61,7 +61,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-slate-800 pt-8 sm:flex-row">
           <p className="text-xs text-slate-500">
-            &copy; {new Date().getFullYear()} Apitoll. All rights reserved.
+            &copy; {new Date().getFullYear()} API Toll. All rights reserved.
           </p>
           <div className="flex gap-6">
             <a href="#" className="text-xs text-slate-500 hover:text-slate-300">

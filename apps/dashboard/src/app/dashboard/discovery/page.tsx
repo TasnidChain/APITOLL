@@ -84,7 +84,7 @@ const seedTools = [
     _id: 'seed-1',
     name: 'Joke API',
     slug: 'joke-api',
-    description: 'Get a random programming joke. First live x402-paid API on Apitoll. $0.001 per call on Base.',
+    description: 'Get a random programming joke. First live x402-paid API on API Toll. $0.001 per call on Base.',
     baseUrl: 'https://seller-api-production.up.railway.app',
     method: 'GET',
     path: '/api/joke',

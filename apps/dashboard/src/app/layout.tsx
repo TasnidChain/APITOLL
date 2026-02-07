@@ -7,13 +7,13 @@ import { ClerkClientProvider } from '@/components/clerk-provider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Apitoll - Payment Infrastructure for AI Agents',
+  title: 'API Toll - Payment Infrastructure for AI Agents',
   description: 'Enable AI agents to autonomously pay for API calls with USDC micropayments. Built on the x402 protocol.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Apitoll',
+    title: 'API Toll',
   },
   icons: {
     icon: [

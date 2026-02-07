@@ -1,6 +1,6 @@
 {
-  "name": "Apitoll Dashboard",
-  "short_name": "Apitoll",
+  "name": "API Toll Dashboard",
+  "short_name": "API Toll",
   "description": "Monitor and manage your x402 agent payments, transactions, and seller ecosystem",
   "theme_color": "#0f172a",
   "background_color": "#020617",

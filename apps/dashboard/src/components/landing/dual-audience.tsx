@@ -30,7 +30,7 @@ export function DualAudience() {
             Built for agents & sellers
           </h2>
           <p className="mt-4 text-lg text-slate-400">
-            Whether you&apos;re building AI agents or selling APIs, Apitoll handles the money.
+            Whether you&apos;re building AI agents or selling APIs, API Toll handles the money.
           </p>
         </div>
 

@@ -53,7 +53,7 @@ export function Hero() {
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <a
-              href="https://github.com/TasnidChain/Apitoll"
+              href="https://github.com/TasnidChain/APITOLL"
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-xl border border-slate-700 bg-slate-900/50 px-8 py-3.5 text-sm font-semibold text-slate-300 backdrop-blur-sm transition-all hover:border-slate-600 hover:bg-slate-800/50 hover:text-white"

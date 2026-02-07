@@ -47,7 +47,7 @@ export default function LeaderboardPage() {
       <div>
         <h1 className="text-2xl font-bold">Leaderboard</h1>
         <p className="text-sm text-muted-foreground">
-          Top performers on the Apitoll network
+          Top performers on the API Toll network
         </p>
       </div>
 

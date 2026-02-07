@@ -1,5 +1,5 @@
-/** Shared Apitoll "402" logo component used across navbar, footer, sidebar */
-export function ApitollLogo({ size = 32, id = 'logo' }: { size?: number; id?: string }) {
+/** Shared API Toll "402" logo component used across navbar, footer, sidebar */
+export function ApiTollLogo({ size = 32, id = 'logo' }: { size?: number; id?: string }) {
   return (
     <svg
       width={size}
@@ -7,7 +7,7 @@ export function ApitollLogo({ size = 32, id = 'logo' }: { size?: number; id?: st
       viewBox="0 0 512 512"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="Apitoll logo"
+      aria-label="API Toll logo"
     >
       <defs>
         <linearGradient id={`${id}-bg`} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -47,3 +47,6 @@ export function ApitollLogo({ size = 32, id = 'logo' }: { size?: number; id?: st
     </svg>
   )
 }
+
+/** @deprecated Use ApiTollLogo instead */
+export const ApitollLogo = ApiTollLogo

@@ -91,7 +91,7 @@ export default function BillingPage() {
     setUpgrading(null)
     alert(
       planId === 'enterprise'
-        ? 'Enterprise plans require a sales call. Contact sales@apitoll.com'
+        ? 'Enterprise plans require a sales call. Contact sales@apitoll.com'  // email stays as-is for now
         : 'Stripe Checkout integration coming soon. Contact support to upgrade.'
     )
   }

@@ -34,7 +34,7 @@ export function SwarmPitch() {
               Scale to thousands of agents
             </h2>
             <p className="mt-4 text-lg text-slate-400">
-              Whether you run 1 agent or 10,000, Apitoll handles payments, budgets, and compliance at any scale.
+              Whether you run 1 agent or 10,000, API Toll handles payments, budgets, and compliance at any scale.
             </p>
 
             <div className="mt-10 space-y-6">

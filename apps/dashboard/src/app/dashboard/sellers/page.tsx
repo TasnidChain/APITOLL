@@ -261,7 +261,7 @@ function CreateSellerModal({
               <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
               <p className="text-xs text-amber-200">
                 This API key authenticates your seller when reporting transactions
-                to the Apitoll dashboard. Store it securely.
+                to the API Toll dashboard. Store it securely.
               </p>
             </div>
           </div>
@@ -344,7 +344,7 @@ function CreateSellerModal({
           <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground space-y-1">
             <p className="font-medium text-foreground">What happens next:</p>
             <p>An API key will be generated for this seller. Use it to:</p>
-            <p>- Report transactions to the Apitoll dashboard</p>
+            <p>- Report transactions to the API Toll dashboard</p>
             <p>- Authenticate your seller-sdk middleware</p>
             <p>- Track revenue and analytics in real-time</p>
           </div>

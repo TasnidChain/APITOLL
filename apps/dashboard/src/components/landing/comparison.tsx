@@ -53,7 +53,7 @@ export function Comparison() {
       <div className="mx-auto max-w-4xl px-6">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-blue-400">
-            Why Apitoll
+            Why API Toll
           </p>
           <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
             Built for machines, not humans
@@ -70,7 +70,7 @@ export function Comparison() {
                 <th className="px-6 py-4 text-left font-medium text-slate-400" />
                 <th className="px-6 py-4 text-center font-semibold text-white">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-3 py-1 text-blue-400">
-                    Apitoll
+                    API Toll
                   </span>
                 </th>
                 <th className="px-6 py-4 text-center font-medium text-slate-500">Stripe</th>
