@@ -1,15 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { useOrgId, useBillingSummary } from '@/lib/hooks'
-import { useQuery } from 'convex/react'
-import { api } from '../../../../../../convex/_generated/api'
+import { useOrgId, useBillingSummary, useOrg } from '@/lib/hooks'
 import { Key, Bell, Shield, Wallet, Copy, Check, ArrowRight, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function SettingsPage() {
   const orgId = useOrgId()
-  const org = useQuery(api.organizations.get, orgId ? { id: orgId } : 'skip')
+  const org = useOrg(orgId)
   const billing = useBillingSummary(orgId)
   const [copied, setCopied] = useState(false)
 

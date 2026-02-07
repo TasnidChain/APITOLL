@@ -10,6 +10,12 @@ import {
   mockTransactions,
   mockAgents,
   mockSellers,
+  mockDeposits,
+  getDepositStats as getMockDepositStats,
+  mockDisputes,
+  getRevenueOverview as getMockRevenueOverview,
+  mockDailyRevenue,
+  getBillingSummary as getMockBillingSummary,
 } from './mock-data'
 
 // ═══════════════════════════════════════════════════
@@ -79,6 +85,22 @@ function useMockFallback<T>(convexData: T | undefined, mockData: T): T | undefin
 export function useOrgId(): Id<"organizations"> | null {
   const orgs = useQuery(api.organizations.list, { limit: 1 })
   return orgs?.[0]?._id ?? null
+}
+
+export function useOrg(orgId: Id<"organizations"> | null) {
+  const convexData = useQuery(
+    api.organizations.get,
+    orgId ? { id: orgId } : "skip"
+  )
+  const mockOrg = {
+    _id: 'org-mock-1' as Id<"organizations">,
+    _creationTime: Date.now(),
+    name: 'My Organization',
+    apiKey: 'ac_live_k8x2mN7pQrT9wYzA3bCdEfGhIjKlMnOpQrStUvWxYz01',
+    billingWallet: '0x1234567890abcdef1234567890abcdef12345678',
+    plan: 'free' as const,
+  }
+  return useMockFallback(convexData as typeof mockOrg | undefined, mockOrg)
 }
 
 // ═══════════════════════════════════════════════════
@@ -188,24 +210,27 @@ export function useSellers(
 // ═══════════════════════════════════════════════════
 
 export function useBillingSummary(orgId: Id<"organizations"> | null) {
-  return useQuery(
+  const convexData = useQuery(
     api.billing.getBillingSummary,
     orgId ? { orgId } : "skip"
   )
+  return useMockFallback(convexData, getMockBillingSummary())
 }
 
 export function useAgentLimit(orgId: Id<"organizations"> | null) {
-  return useQuery(
+  const convexData = useQuery(
     api.billing.checkAgentLimit,
     orgId ? { orgId } : "skip"
   )
+  return useMockFallback(convexData, { allowed: true, limit: 5, current: mockAgents.length })
 }
 
 export function useSellerLimit(orgId: Id<"organizations"> | null) {
-  return useQuery(
+  const convexData = useQuery(
     api.billing.checkSellerLimit,
     orgId ? { orgId } : "skip"
   )
+  return useMockFallback(convexData, { allowed: true, limit: 10, current: mockSellers.length })
 }
 
 // ═══════════════════════════════════════════════════
@@ -213,10 +238,15 @@ export function useSellerLimit(orgId: Id<"organizations"> | null) {
 // ═══════════════════════════════════════════════════
 
 export function useDisputes(orgId: Id<"organizations"> | null, status?: string) {
-  return useQuery(
+  const convexData = useQuery(
     api.disputes.listByOrg,
     orgId ? { orgId, status } : "skip"
   )
+  let filtered = [...mockDisputes]
+  if (status) {
+    filtered = filtered.filter((d) => d.status === status)
+  }
+  return useMockFallback(convexData as typeof filtered | undefined, filtered)
 }
 
 // ═══════════════════════════════════════════════════
@@ -224,17 +254,20 @@ export function useDisputes(orgId: Id<"organizations"> | null, status?: string) 
 // ═══════════════════════════════════════════════════
 
 export function useDeposits(orgId: Id<"organizations"> | null, limit?: number) {
-  return useQuery(
+  const convexData = useQuery(
     api.deposits.listByOrg,
     orgId ? { orgId, limit } : "skip"
   )
+  const mock = limit ? mockDeposits.slice(0, limit) : mockDeposits
+  return useMockFallback(convexData as typeof mock | undefined, mock)
 }
 
 export function useDepositStats(orgId: Id<"organizations"> | null) {
-  return useQuery(
+  const convexData = useQuery(
     api.deposits.getStats,
     orgId ? { orgId } : "skip"
   )
+  return useMockFallback(convexData, getMockDepositStats())
 }
 
 // ═══════════════════════════════════════════════════
@@ -242,9 +275,11 @@ export function useDepositStats(orgId: Id<"organizations"> | null) {
 // ═══════════════════════════════════════════════════
 
 export function useRevenueOverview() {
-  return useQuery(api.platformRevenue.getOverview)
+  const convexData = useQuery(api.platformRevenue.getOverview)
+  return useMockFallback(convexData, getMockRevenueOverview())
 }
 
 export function useDailyRevenue(days?: number) {
-  return useQuery(api.platformRevenue.getDailyRevenue, { days })
+  const convexData = useQuery(api.platformRevenue.getDailyRevenue, { days })
+  return useMockFallback(convexData, mockDailyRevenue.slice(-(days ?? 30)))
 }
