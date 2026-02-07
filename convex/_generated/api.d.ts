@@ -9,6 +9,7 @@
  */
 
 import type * as agents from "../agents.js";
+import type * as alertRules from "../alertRules.js";
 import type * as analytics from "../analytics.js";
 import type * as billing from "../billing.js";
 import type * as categories from "../categories.js";
@@ -19,6 +20,7 @@ import type * as http from "../http.js";
 import type * as nodeActions from "../nodeActions.js";
 import type * as organizations from "../organizations.js";
 import type * as platformRevenue from "../platformRevenue.js";
+import type * as policies from "../policies.js";
 import type * as sellers from "../sellers.js";
 import type * as tools from "../tools.js";
 import type * as transactions from "../transactions.js";
@@ -31,6 +33,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   agents: typeof agents;
+  alertRules: typeof alertRules;
   analytics: typeof analytics;
   billing: typeof billing;
   categories: typeof categories;
@@ -41,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   nodeActions: typeof nodeActions;
   organizations: typeof organizations;
   platformRevenue: typeof platformRevenue;
+  policies: typeof policies;
   sellers: typeof sellers;
   tools: typeof tools;
   transactions: typeof transactions;

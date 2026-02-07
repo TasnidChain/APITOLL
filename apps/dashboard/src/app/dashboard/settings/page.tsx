@@ -1,29 +1,62 @@
 'use client'
 
 import { useState } from 'react'
-import { useOrgId, useBillingSummary, useOrg } from '@/lib/hooks'
-import { Key, Bell, Shield, Wallet, Copy, Check, ArrowRight, Loader2 } from 'lucide-react'
+import { useMutation } from 'convex/react'
+import { api } from '../../../../../../convex/_generated/api'
+import { useOrgId, useBillingSummary, useOrg, usePolicies, useAlertRules } from '@/lib/hooks'
+import {
+  Key,
+  Bell,
+  Shield,
+  Wallet,
+  Copy,
+  Check,
+  ArrowRight,
+  Loader2,
+  RefreshCw,
+  AlertTriangle,
+  Plus,
+  X,
+  Trash2,
+} from 'lucide-react'
 import Link from 'next/link'
 
 export default function SettingsPage() {
   const orgId = useOrgId()
   const org = useOrg(orgId)
   const billing = useBillingSummary(orgId)
+  const policies = usePolicies(orgId)
+  const alertRules = useAlertRules(orgId)
   const [copied, setCopied] = useState(false)
+  const [showRegenConfirm, setShowRegenConfirm] = useState(false)
 
-  // Notification toggle states
-  const [budgetAlerts, setBudgetAlerts] = useState(true)
-  const [lowBalanceWarnings, setLowBalanceWarnings] = useState(true)
-  const [txFailures, setTxFailures] = useState(false)
+  // Notification toggle states (persisted via alert rules)
+  const budgetAlerts = alertRules?.some((r: any) => r.ruleType === 'budget_threshold' && r.isActive) ?? true
+  const lowBalanceWarnings = alertRules?.some((r: any) => r.ruleType === 'low_balance' && r.isActive) ?? true
+  const txFailures = alertRules?.some((r: any) => r.ruleType === 'high_failure_rate' && r.isActive) ?? false
 
-  // Policy states
+  // Policy mutations
+  const createPolicy = useMutation(api.policies.create)
+  const updatePolicy = useMutation(api.policies.update)
+  const removePolicy = useMutation(api.policies.remove)
+  const createAlertRule = useMutation(api.alertRules.create)
+  const toggleAlertRule = useMutation(api.alertRules.toggleActive)
+  const regenerateApiKey = useMutation(api.organizations.regenerateApiKey)
+  const updateBillingWallet = useMutation(api.organizations.updateBillingWallet)
+
+  // Policy form states
   const [dailyLimit, setDailyLimit] = useState('50.00')
   const [weeklyLimit, setWeeklyLimit] = useState('200.00')
   const [maxPerRequest, setMaxPerRequest] = useState('0.10')
 
+  // Wallet editing
+  const [editingWallet, setEditingWallet] = useState(false)
+  const [walletInput, setWalletInput] = useState('')
+
   // Save states
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [regenLoading, setRegenLoading] = useState(false)
 
   const handleCopy = () => {
     if (org?.apiKey) {
@@ -37,13 +70,82 @@ export default function SettingsPage() {
     ? `${org.apiKey.slice(0, 8)}${'*'.repeat(32)}${org.apiKey.slice(-4)}`
     : 'Loading...'
 
+  const handleRegenerate = async () => {
+    if (!orgId) return
+    setRegenLoading(true)
+    try {
+      await regenerateApiKey({ id: orgId })
+      setShowRegenConfirm(false)
+    } catch (err) {
+      console.error('Failed to regenerate key:', err)
+    } finally {
+      setRegenLoading(false)
+    }
+  }
+
+  const handleWalletSave = async () => {
+    if (!orgId || !walletInput) return
+    if (!/^0x[0-9a-fA-F]{40}$/.test(walletInput)) return
+    try {
+      await updateBillingWallet({ id: orgId, billingWallet: walletInput })
+      setEditingWallet(false)
+    } catch (err) {
+      console.error('Failed to update wallet:', err)
+    }
+  }
+
+  const handleToggleAlert = async (ruleType: string) => {
+    if (!orgId) return
+    const existing = alertRules?.find((r: any) => r.ruleType === ruleType)
+    if (existing) {
+      await toggleAlertRule({ id: existing._id })
+    } else {
+      // Create the alert rule
+      const thresholds: Record<string, any> = {
+        budget_threshold: { percentage: 80 },
+        low_balance: { amount: 1.0 },
+        high_failure_rate: { rate: 10, windowMinutes: 60 },
+      }
+      await createAlertRule({
+        orgId,
+        ruleType: ruleType as any,
+        thresholdJson: thresholds[ruleType] ?? { percentage: 80 },
+      })
+    }
+  }
+
   const handleSave = async () => {
+    if (!orgId) return
     setSaving(true)
-    // Simulate save — in production this would call real mutations
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    try {
+      // Find or create budget policy for org
+      const budgetPolicy = policies?.find((p: any) => p.policyType === 'budget' && !p.agentId)
+      const rules = {
+        dailyLimit: parseFloat(dailyLimit) || undefined,
+        perTransactionLimit: parseFloat(maxPerRequest) || undefined,
+        monthlyLimit: parseFloat(weeklyLimit) ? parseFloat(weeklyLimit) * 4 : undefined,
+      }
+
+      if (budgetPolicy) {
+        await updatePolicy({
+          id: budgetPolicy._id,
+          rulesJson: rules,
+        })
+      } else {
+        await createPolicy({
+          orgId,
+          policyType: 'budget',
+          rulesJson: rules,
+        })
+      }
+
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      console.error('Failed to save settings:', err)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -51,7 +153,7 @@ export default function SettingsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-muted-foreground">
-          Manage your organization settings
+          Manage your organization settings, policies, and alert rules
         </p>
       </div>
 
@@ -65,14 +167,54 @@ export default function SettingsPage() {
                 <label className="text-sm font-medium">Name</label>
                 <p className="mt-1 text-sm text-muted-foreground">{org.name}</p>
               </div>
-              {org.billingWallet && (
-                <div>
-                  <label className="text-sm font-medium">Billing Wallet</label>
-                  <p className="mt-1 text-sm font-mono text-muted-foreground">
-                    {org.billingWallet}
-                  </p>
-                </div>
-              )}
+              <div>
+                <label className="text-sm font-medium">Billing Wallet</label>
+                {editingWallet ? (
+                  <div className="mt-1 flex gap-2">
+                    <input
+                      type="text"
+                      value={walletInput}
+                      onChange={(e) => setWalletInput(e.target.value)}
+                      placeholder="0x..."
+                      className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <button
+                      onClick={handleWalletSave}
+                      disabled={!/^0x[0-9a-fA-F]{40}$/.test(walletInput)}
+                      className="rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setEditingWallet(false)}
+                      className="rounded-lg border px-3 py-2 text-sm hover:bg-accent"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-1 flex items-center gap-2">
+                    <p className="text-sm font-mono text-muted-foreground">
+                      {org.billingWallet || 'Not set'}
+                    </p>
+                    <button
+                      onClick={() => {
+                        setWalletInput(org.billingWallet || '')
+                        setEditingWallet(true)
+                      }}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-medium">Plan</label>
+                <p className="mt-1 text-sm text-muted-foreground capitalize">
+                  {org.plan ?? 'free'}
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -117,10 +259,49 @@ export default function SettingsPage() {
                 Keep this key secret. Do not share it in client-side code.
               </p>
             </div>
+            <div className="pt-2">
+              {showRegenConfirm ? (
+                <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Regenerate API Key?</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        This will immediately invalidate your current key. All services using this key will stop working.
+                      </p>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={handleRegenerate}
+                          disabled={regenLoading}
+                          className="flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+                        >
+                          {regenLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                          Confirm Regenerate
+                        </button>
+                        <button
+                          onClick={() => setShowRegenConfirm(false)}
+                          className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-accent"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowRegenConfirm(true)}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Regenerate Key
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Notifications */}
+        {/* Notifications / Alert Rules */}
         <div className="rounded-xl border bg-card p-6">
           <div className="flex items-center gap-3 mb-4">
             <Bell className="h-5 w-5 text-muted-foreground" />
@@ -129,21 +310,21 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <ToggleRow
               title="Budget Alerts"
-              description="Get notified when agents reach budget thresholds"
+              description="Get notified when agents reach 80% of budget"
               checked={budgetAlerts}
-              onToggle={() => setBudgetAlerts(!budgetAlerts)}
+              onToggle={() => handleToggleAlert('budget_threshold')}
             />
             <ToggleRow
               title="Low Balance Warnings"
-              description="Alert when agent balance drops below threshold"
+              description="Alert when agent balance drops below $1.00"
               checked={lowBalanceWarnings}
-              onToggle={() => setLowBalanceWarnings(!lowBalanceWarnings)}
+              onToggle={() => handleToggleAlert('low_balance')}
             />
             <ToggleRow
               title="Transaction Failures"
-              description="Get notified on payment failures"
+              description="Get notified when failure rate exceeds 10%"
               checked={txFailures}
-              onToggle={() => setTxFailures(!txFailures)}
+              onToggle={() => handleToggleAlert('high_failure_rate')}
             />
           </div>
         </div>
@@ -155,8 +336,18 @@ export default function SettingsPage() {
             <h2 className="text-lg font-semibold">Default Policies</h2>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            These policies apply to new agents by default.
+            These policies apply to new agents by default. Saved to your Convex backend.
           </p>
+
+          {/* Active policies count */}
+          {policies && policies.length > 0 && (
+            <div className="mb-4 rounded-lg bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground">
+                {policies.filter((p: any) => p.isActive).length} active {policies.filter((p: any) => p.isActive).length === 1 ? 'policy' : 'policies'} configured
+              </p>
+            </div>
+          )}
+
           <div className="space-y-3">
             <div>
               <label className="text-sm font-medium">Daily Spend Limit</label>
@@ -240,7 +431,7 @@ export default function SettingsPage() {
           {saving ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Saving...
+              Saving to Convex...
             </>
           ) : saved ? (
             <>

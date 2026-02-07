@@ -18,6 +18,8 @@ import {
   TrendingUp,
   ExternalLink,
   X,
+  Copy,
+  Check,
 } from 'lucide-react'
 
 const statusConfig = {
@@ -43,6 +45,8 @@ const statusConfig = {
   },
 }
 
+const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+
 export default function DepositsPage() {
   const orgId = useOrgId()
   const deposits = useDeposits(orgId)
@@ -55,7 +59,7 @@ export default function DepositsPage() {
         <div>
           <h1 className="text-2xl font-bold">Deposits</h1>
           <p className="text-muted-foreground">
-            Fund your agent wallets with USDC via fiat on-ramp
+            Fund your agent wallets with USDC on Base
           </p>
         </div>
         <button
@@ -98,7 +102,7 @@ export default function DepositsPage() {
           <div className="rounded-lg border bg-card p-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <TrendingUp className="h-4 w-4" />
-              On-ramp Fees
+              Platform Fees
             </div>
             <p className="text-2xl font-bold mt-1 text-muted-foreground">
               {formatUSD(stats.totalFees)}
@@ -126,9 +130,9 @@ export default function DepositsPage() {
               1
             </div>
             <div>
-              <p className="font-medium">Pay with Card</p>
+              <p className="font-medium">Send USDC</p>
               <p className="text-sm text-muted-foreground">
-                Choose an amount and pay via Stripe
+                Transfer USDC on Base to your agent&apos;s wallet
               </p>
             </div>
           </div>
@@ -137,9 +141,9 @@ export default function DepositsPage() {
               2
             </div>
             <div>
-              <p className="font-medium">Convert to USDC</p>
+              <p className="font-medium">Record Deposit</p>
               <p className="text-sm text-muted-foreground">
-                Fiat is converted to USDC (1.5% fee)
+                Log the deposit here with amount and tx hash
               </p>
             </div>
           </div>
@@ -148,12 +152,17 @@ export default function DepositsPage() {
               3
             </div>
             <div>
-              <p className="font-medium">Fund Agent Wallet</p>
+              <p className="font-medium">Agent Funded</p>
               <p className="text-sm text-muted-foreground">
-                USDC deposited to your agent&apos;s wallet
+                Balance updated, agent ready to pay for APIs
               </p>
             </div>
           </div>
+        </div>
+
+        <div className="mt-4 rounded-lg bg-muted/50 p-3">
+          <p className="text-xs font-medium text-muted-foreground mb-1">Base USDC Contract</p>
+          <p className="text-xs font-mono text-muted-foreground">{USDC_CONTRACT}</p>
         </div>
       </div>
 
@@ -165,8 +174,14 @@ export default function DepositsPage() {
           <Wallet className="mx-auto mb-4 h-12 w-12 opacity-50" />
           <p className="text-lg font-medium">No deposits yet</p>
           <p className="text-sm">
-            Make your first deposit to fund your agent wallets
+            Send USDC to your agent wallet, then record it here
           </p>
+          <button
+            onClick={() => setShowModal(true)}
+            className="mt-4 text-sm font-medium text-primary hover:underline"
+          >
+            Record your first deposit
+          </button>
         </div>
       ) : (
         <div className="rounded-xl border bg-card">
@@ -221,15 +236,11 @@ export default function DepositsPage() {
                     </span>
                     {deposit.txHash && (
                       <a
-                        href={
-                          deposit.chain === 'base'
-                            ? `https://basescan.org/tx/${deposit.txHash}`
-                            : `https://solscan.io/tx/${deposit.txHash}`
-                        }
+                        href={`https://basescan.org/tx/${deposit.txHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-muted-foreground hover:text-foreground"
-                        title="View on explorer"
+                        title="View on BaseScan"
                       >
                         <ExternalLink className="h-4 w-4" />
                       </a>
@@ -260,19 +271,30 @@ function NewDepositModal({
   const agents = useAgents(orgId as any)
   const createDeposit = useMutation(api.deposits.create)
   const [amount, setAmount] = useState('')
-  const [chain, setChain] = useState<'base' | 'solana'>('base')
   const [selectedAgent, setSelectedAgent] = useState('')
+  const [txHash, setTxHash] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [copied, setCopied] = useState(false)
 
   const fiatAmount = parseFloat(amount) || 0
   const fee = fiatAmount * 0.015
   const usdcAmount = fiatAmount - fee
 
+  const selectedAgentData = agents?.find((a) => a._id === selectedAgent)
+
+  const handleCopyAddress = () => {
+    if (selectedAgentData?.walletAddress) {
+      navigator.clipboard.writeText(selectedAgentData.walletAddress)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (fiatAmount < 1) {
-      setError('Minimum deposit is $1.00')
+    if (fiatAmount < 0.01) {
+      setError('Minimum deposit is $0.01')
       return
     }
     if (!selectedAgent) {
@@ -289,17 +311,19 @@ function NewDepositModal({
     setLoading(true)
     setError('')
     try {
+      const paymentId = txHash || `manual_${Date.now()}`
+
       await createDeposit({
         orgId: orgId as any,
         fiatAmount,
-        chain,
+        chain: 'base',
         walletAddress: agent.walletAddress,
-        stripePaymentIntentId: `pi_demo_${Date.now()}`,
+        stripePaymentIntentId: paymentId,
         agentId: selectedAgent as any,
       })
       onClose()
     } catch (err: any) {
-      setError(err.message || 'Failed to create deposit')
+      setError(err.message || 'Failed to record deposit')
     } finally {
       setLoading(false)
     }
@@ -311,22 +335,21 @@ function NewDepositModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-xl border bg-card p-6 shadow-xl">
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">New Deposit</h2>
+          <h2 className="text-lg font-semibold">Record Deposit</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Amount */}
           <div>
-            <label className="text-sm font-medium">Amount (USD)</label>
+            <label className="text-sm font-medium">Amount (USDC)</label>
             <input
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
-              min="1"
+              min="0.01"
               step="0.01"
               className="mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
@@ -344,7 +367,6 @@ function NewDepositModal({
             </div>
           </div>
 
-          {/* Agent wallet */}
           <div>
             <label className="text-sm font-medium">Agent Wallet</label>
             <select
@@ -355,42 +377,50 @@ function NewDepositModal({
               <option value="">Select an agent...</option>
               {agents?.map((agent) => (
                 <option key={agent._id} value={agent._id}>
-                  {agent.name} ({agent.chain})
+                  {agent.name} ({agent.chain}) — ${agent.balance.toFixed(2)} balance
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Chain */}
-          <div>
-            <label className="text-sm font-medium">Chain</label>
-            <div className="mt-1 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setChain('base')}
-                className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                  chain === 'base'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'hover:bg-accent'
-                }`}
-              >
-                Base
-              </button>
-              <button
-                type="button"
-                onClick={() => setChain('solana')}
-                className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                  chain === 'solana'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'hover:bg-accent'
-                }`}
-              >
-                Solana
-              </button>
+          {selectedAgentData && (
+            <div className="rounded-lg bg-muted/50 p-3">
+              <p className="text-xs font-medium text-muted-foreground mb-1">
+                Send USDC to this address on Base:
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="text-xs font-mono text-foreground flex-1 truncate">
+                  {selectedAgentData.walletAddress}
+                </code>
+                <button
+                  type="button"
+                  onClick={handleCopyAddress}
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                >
+                  {copied ? (
+                    <Check className="h-3.5 w-3.5 text-success" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </div>
             </div>
+          )}
+
+          <div>
+            <label className="text-sm font-medium">Transaction Hash (optional)</label>
+            <input
+              type="text"
+              value={txHash}
+              onChange={(e) => setTxHash(e.target.value)}
+              placeholder="0x..."
+              className="mt-1 w-full rounded-lg border px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Paste the BaseScan tx hash after sending USDC
+            </p>
           </div>
 
-          {/* Summary */}
           {fiatAmount > 0 && (
             <div className="rounded-lg bg-muted/50 p-4 space-y-2 text-sm">
               <div className="flex justify-between">
@@ -398,11 +428,11 @@ function NewDepositModal({
                 <span className="font-medium">{formatUSD(fiatAmount)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Fee (1.5%)</span>
+                <span className="text-muted-foreground">Platform Fee (1.5%)</span>
                 <span className="text-muted-foreground">-{formatUSD(fee)}</span>
               </div>
               <div className="border-t pt-2 flex justify-between font-semibold">
-                <span>USDC Received</span>
+                <span>Agent Balance Credit</span>
                 <span className="text-success">{formatUSD(Math.max(0, usdcAmount))}</span>
               </div>
             </div>
@@ -426,10 +456,10 @@ function NewDepositModal({
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Processing...
+                  Recording...
                 </>
               ) : (
-                'Deposit'
+                'Record Deposit'
               )}
             </button>
           </div>

@@ -14,6 +14,7 @@ import {
   BarChart3,
   Compass,
   Trophy,
+  ShieldCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { UserButton } from '@clerk/nextjs'
@@ -26,6 +27,7 @@ const navigation = [
   { name: 'Transactions', href: '/dashboard/transactions', icon: ArrowLeftRight },
   { name: 'Agents', href: '/dashboard/agents', icon: Bot },
   { name: 'Sellers', href: '/dashboard/sellers', icon: Store },
+  { name: 'Policies', href: '/dashboard/policies', icon: ShieldCheck },
   { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
   { name: 'Deposits', href: '/dashboard/deposits', icon: Wallet },
   { name: 'Disputes', href: '/dashboard/disputes', icon: AlertTriangle },

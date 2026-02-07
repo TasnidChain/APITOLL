@@ -155,20 +155,36 @@ export class AnalyticsReporter {
   }
 
   /**
-   * Send a real-time webhook notification with optional HMAC-SHA256 signing.
+   * Send a real-time webhook notification to the Apitoll platform (Convex).
+   * Formats the transaction in the Convex /webhook/transactions format.
    */
   private async sendWebhook(transaction: TransactionWithFee): Promise<void> {
     if (!this.config.webhookUrl) return;
 
     const body = JSON.stringify({
-      type: "transaction.settled",
-      timestamp: transaction.settledAt,
-      data: transaction,
+      transactions: [
+        {
+          txHash: transaction.txHash,
+          agentAddress: transaction.agentAddress,
+          endpointPath: transaction.endpoint,
+          method: transaction.method,
+          amount: parseFloat(transaction.amount),
+          chain: transaction.chain,
+          status: transaction.status,
+          latencyMs: transaction.latencyMs,
+          requestedAt: transaction.requestedAt,
+        },
+      ],
     });
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
+
+    // Include seller API key for Convex authentication
+    if (this.config.apiKey) {
+      headers["X-Seller-Key"] = this.config.apiKey;
+    }
 
     // Sign webhook payload if secret is configured
     if (this.config.webhookSecret) {

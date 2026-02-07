@@ -271,6 +271,26 @@ export function useDepositStats(orgId: Id<"organizations"> | null) {
 }
 
 // ═══════════════════════════════════════════════════
+// Policies queries
+// ═══════════════════════════════════════════════════
+
+export function usePolicies(orgId: Id<"organizations"> | null) {
+  const convexData = useQuery(
+    api.policies.listByOrg,
+    orgId ? { orgId } : "skip"
+  )
+  return useMockFallback(convexData as any[] | undefined, [])
+}
+
+export function useAlertRules(orgId: Id<"organizations"> | null) {
+  const convexData = useQuery(
+    api.alertRules.listByOrg,
+    orgId ? { orgId } : "skip"
+  )
+  return useMockFallback(convexData as any[] | undefined, [])
+}
+
+// ═══════════════════════════════════════════════════
 // Platform Revenue queries
 // ═══════════════════════════════════════════════════
 

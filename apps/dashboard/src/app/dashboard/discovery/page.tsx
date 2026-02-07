@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '../../../../../../convex/_generated/api'
 import {
   Search,
-  Filter,
   Star,
   Zap,
   Globe,
@@ -11,9 +12,13 @@ import {
   BadgeCheck,
   TrendingUp,
   ChevronDown,
+  Plus,
+  X,
+  Loader2,
 } from 'lucide-react'
 import { StatCard } from '@/components/stat-card'
 import { formatUSD, formatCompact } from '@/lib/utils'
+import { useOrgId, useSellers } from '@/lib/hooks'
 
 // Categories for filtering
 const categories = [
@@ -28,179 +33,35 @@ const categories = [
   'Messaging',
 ]
 
-// Mock tools data — will be replaced by Convex query on `tools` table
-const mockTools = [
+// Fallback data so the page is never empty (used while Convex loads / if no tools exist)
+const seedTools = [
   {
-    _id: 't1',
-    name: 'GPT-4o Proxy',
-    slug: 'gpt-4o-proxy',
-    description: 'Pay-per-token access to GPT-4o with no API key required. Agents pay per request via x402.',
-    baseUrl: 'https://api.llmproxy.ai',
-    method: 'POST',
-    path: '/v1/chat/completions',
-    price: 0.003,
-    currency: 'USDC',
-    chains: ['base', 'solana'],
-    category: 'AI / ML',
-    tags: ['llm', 'openai', 'chat'],
-    totalCalls: 284500,
-    avgLatencyMs: 1240,
-    rating: 4.8,
-    ratingCount: 312,
-    isVerified: true,
-    isFeatured: true,
-    listingTier: 'premium' as const,
-  },
-  {
-    _id: 't2',
-    name: 'Web Search API',
-    slug: 'web-search-api',
-    description: 'Real-time web search results with snippets. Perfect for RAG pipelines and research agents.',
-    baseUrl: 'https://search.apitoll.com',
+    _id: 'seed-1',
+    name: 'Joke API',
+    slug: 'joke-api',
+    description: 'Get a random programming joke. First live x402-paid API on Apitoll. $0.001 per call on Base.',
+    baseUrl: 'https://seller-api-production.up.railway.app',
     method: 'GET',
-    path: '/v1/search',
+    path: '/api/joke',
     price: 0.001,
     currency: 'USDC',
     chains: ['base'],
-    category: 'Search',
-    tags: ['search', 'web', 'rag'],
-    totalCalls: 156200,
-    avgLatencyMs: 420,
-    rating: 4.6,
-    ratingCount: 187,
-    isVerified: true,
-    isFeatured: false,
-    listingTier: 'verified' as const,
-  },
-  {
-    _id: 't3',
-    name: 'Image Generation',
-    slug: 'image-gen',
-    description: 'Generate images from text prompts using Stable Diffusion XL. Returns image URLs.',
-    baseUrl: 'https://img.toolpay.ai',
-    method: 'POST',
-    path: '/v1/generate',
-    price: 0.005,
-    currency: 'USDC',
-    chains: ['base', 'solana'],
-    category: 'AI / ML',
-    tags: ['image', 'generation', 'sdxl'],
-    totalCalls: 89400,
-    avgLatencyMs: 3200,
-    rating: 4.4,
-    ratingCount: 94,
-    isVerified: false,
-    isFeatured: false,
-    listingTier: 'free' as const,
-  },
-  {
-    _id: 't4',
-    name: 'Price Oracle',
-    slug: 'price-oracle',
-    description: 'Real-time crypto and forex price feeds. 500+ pairs with <100ms latency.',
-    baseUrl: 'https://oracle.defitools.xyz',
-    method: 'GET',
-    path: '/v1/prices',
-    price: 0.0005,
-    currency: 'USDC',
-    chains: ['base', 'solana'],
-    category: 'Finance',
-    tags: ['price', 'oracle', 'defi'],
-    totalCalls: 1240000,
-    avgLatencyMs: 85,
-    rating: 4.9,
-    ratingCount: 528,
+    category: 'Data',
+    tags: ['joke', 'demo', 'x402', 'live'],
+    totalCalls: 1,
+    avgLatencyMs: 320,
+    rating: 5.0,
+    ratingCount: 1,
     isVerified: true,
     isFeatured: true,
-    listingTier: 'premium' as const,
-  },
-  {
-    _id: 't5',
-    name: 'S3-Compatible Storage',
-    slug: 's3-storage',
-    description: 'Pay-per-request object storage. Upload, download, and list objects. No account needed.',
-    baseUrl: 'https://store.agentcloud.io',
-    method: 'PUT',
-    path: '/v1/objects/:key',
-    price: 0.0001,
-    currency: 'USDC',
-    chains: ['base'],
-    category: 'Storage',
-    tags: ['storage', 's3', 'objects'],
-    totalCalls: 432000,
-    avgLatencyMs: 210,
-    rating: 4.5,
-    ratingCount: 201,
-    isVerified: true,
-    isFeatured: false,
     listingTier: 'verified' as const,
-  },
-  {
-    _id: 't6',
-    name: 'Code Execution Sandbox',
-    slug: 'code-sandbox',
-    description: 'Execute Python, JavaScript, or Rust code in isolated sandboxes. Returns stdout/stderr.',
-    baseUrl: 'https://exec.computemarket.ai',
-    method: 'POST',
-    path: '/v1/run',
-    price: 0.002,
-    currency: 'USDC',
-    chains: ['base', 'solana'],
-    category: 'Compute',
-    tags: ['code', 'execution', 'sandbox'],
-    totalCalls: 67800,
-    avgLatencyMs: 890,
-    rating: 4.3,
-    ratingCount: 76,
-    isVerified: false,
-    isFeatured: false,
-    listingTier: 'free' as const,
-  },
-  {
-    _id: 't7',
-    name: 'Email Verification',
-    slug: 'email-verify',
-    description: 'Verify email addresses in real-time. Check deliverability, MX records, and disposable detection.',
-    baseUrl: 'https://verify.emailtools.ai',
-    method: 'GET',
-    path: '/v1/verify',
-    price: 0.0008,
-    currency: 'USDC',
-    chains: ['base'],
-    category: 'Identity',
-    tags: ['email', 'verification', 'identity'],
-    totalCalls: 198000,
-    avgLatencyMs: 340,
-    rating: 4.7,
-    ratingCount: 143,
-    isVerified: true,
-    isFeatured: false,
-    listingTier: 'verified' as const,
-  },
-  {
-    _id: 't8',
-    name: 'Sentiment Analysis',
-    slug: 'sentiment',
-    description: 'Analyze text sentiment with confidence scores. Supports 50+ languages.',
-    baseUrl: 'https://nlp.agenttools.com',
-    method: 'POST',
-    path: '/v1/sentiment',
-    price: 0.001,
-    currency: 'USDC',
-    chains: ['solana'],
-    category: 'AI / ML',
-    tags: ['nlp', 'sentiment', 'analysis'],
-    totalCalls: 112000,
-    avgLatencyMs: 180,
-    rating: 4.5,
-    ratingCount: 98,
-    isVerified: false,
-    isFeatured: false,
-    listingTier: 'free' as const,
+    isActive: true,
   },
 ]
 
-function ToolCard({ tool }: { tool: typeof mockTools[0] }) {
+type Tool = typeof seedTools[0]
+
+function ToolCard({ tool }: { tool: Tool }) {
   return (
     <div className="group rounded-xl border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-md">
       <div className="flex items-start justify-between">
@@ -234,7 +95,7 @@ function ToolCard({ tool }: { tool: typeof mockTools[0] }) {
 
       {/* Tags */}
       <div className="mt-3 flex flex-wrap gap-1.5">
-        {tool.tags.slice(0, 3).map((tag) => (
+        {(tool.tags ?? []).slice(0, 3).map((tag) => (
           <span
             key={tag}
             className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
@@ -261,7 +122,7 @@ function ToolCard({ tool }: { tool: typeof mockTools[0] }) {
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-            {tool.rating} ({tool.ratingCount})
+            {tool.rating.toFixed(1)} ({tool.ratingCount})
           </span>
           <span className="flex items-center gap-1">
             <Zap className="h-3 w-3" />
@@ -276,6 +137,19 @@ function ToolCard({ tool }: { tool: typeof mockTools[0] }) {
           <span className="text-[10px] text-muted-foreground">/call</span>
         </div>
       </div>
+
+      {/* Base URL link */}
+      <div className="mt-3 flex items-center gap-1.5">
+        <a
+          href={`${tool.baseUrl}${tool.path}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 truncate"
+        >
+          {tool.baseUrl}
+          <ExternalLink className="h-3 w-3 shrink-0" />
+        </a>
+      </div>
     </div>
   )
 }
@@ -283,9 +157,23 @@ function ToolCard({ tool }: { tool: typeof mockTools[0] }) {
 export default function DiscoveryPage() {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
-  const [sortBy, setSortBy] = useState<'popular' | 'rating' | 'price_low' | 'price_high' | 'newest'>('popular')
+  const [sortBy, setSortBy] = useState<'popular' | 'rating' | 'price_low' | 'price_high'>('popular')
+  const [showAddTool, setShowAddTool] = useState(false)
+  const orgId = useOrgId()
 
-  const filtered = mockTools
+  // Query Convex for real tools
+  const convexTools = useQuery(api.tools.search, {
+    query: search || undefined,
+    category: selectedCategory !== 'All' ? selectedCategory : undefined,
+    limit: 50,
+  })
+
+  // Use Convex tools if available, otherwise seed tools
+  const tools: Tool[] = (convexTools && convexTools.length > 0
+    ? convexTools
+    : seedTools) as Tool[]
+
+  const filtered = tools
     .filter((t) => {
       if (selectedCategory !== 'All' && t.category !== selectedCategory) return false
       if (search) {
@@ -293,7 +181,7 @@ export default function DiscoveryPage() {
         return (
           t.name.toLowerCase().includes(q) ||
           t.description.toLowerCase().includes(q) ||
-          t.tags.some((tag) => tag.includes(q))
+          (t.tags ?? []).some((tag: string) => tag.includes(q))
         )
       }
       return true
@@ -303,27 +191,37 @@ export default function DiscoveryPage() {
         case 'rating': return b.rating - a.rating
         case 'price_low': return a.price - b.price
         case 'price_high': return b.price - a.price
-        case 'newest': return 0
         default: return b.totalCalls - a.totalCalls
       }
     })
 
-  const featured = mockTools.filter((t) => t.isFeatured)
-  const totalCalls = mockTools.reduce((sum, t) => sum + t.totalCalls, 0)
-  const avgRating = mockTools.reduce((sum, t) => sum + t.rating, 0) / mockTools.length
+  const featured = tools.filter((t) => t.isFeatured)
+  const totalCalls = tools.reduce((sum, t) => sum + t.totalCalls, 0)
+  const avgRating = tools.length > 0
+    ? tools.reduce((sum, t) => sum + t.rating, 0) / tools.length
+    : 0
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Discovery</h1>
-        <p className="text-sm text-muted-foreground">
-          Browse and connect to paid APIs. Every endpoint accepts x402 micropayments.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Discovery</h1>
+          <p className="text-sm text-muted-foreground">
+            Browse and connect to paid APIs. Every endpoint accepts x402 micropayments.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowAddTool(true)}
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          <Plus className="h-4 w-4" />
+          List Your API
+        </button>
       </div>
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-4">
-        <StatCard title="Total APIs" value={String(mockTools.length)} icon={Globe} />
+        <StatCard title="Total APIs" value={String(tools.length)} icon={Globe} />
         <StatCard title="Total Calls" value={formatCompact(totalCalls)} icon={Zap} />
         <StatCard title="Avg Rating" value={avgRating.toFixed(1)} icon={Star} />
         <StatCard title="Featured" value={String(featured.length)} icon={TrendingUp} />
@@ -388,6 +286,234 @@ export default function DiscoveryPage() {
           </p>
         </div>
       )}
+
+      {/* Add Tool Modal */}
+      {showAddTool && (
+        <AddToolModal onClose={() => setShowAddTool(false)} />
+      )}
+    </div>
+  )
+}
+
+function AddToolModal({ onClose }: { onClose: () => void }) {
+  const createTool = useMutation(api.tools.create)
+  const orgId = useOrgId()
+  const sellers = useSellers(orgId)
+
+  const [name, setName] = useState('')
+  const [slug, setSlug] = useState('')
+  const [description, setDescription] = useState('')
+  const [baseUrl, setBaseUrl] = useState('')
+  const [method, setMethod] = useState('GET')
+  const [path, setPath] = useState('')
+  const [price, setPrice] = useState('')
+  const [category, setCategory] = useState('Data')
+  const [tags, setTags] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+
+  // Auto-generate slug from name
+  const handleNameChange = (val: string) => {
+    setName(val)
+    setSlug(val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name || !description || !baseUrl || !path || !price) {
+      setError('All fields are required')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+    try {
+      await createTool({
+        name,
+        slug,
+        description,
+        baseUrl,
+        method,
+        path,
+        price: parseFloat(price),
+        chains: ['base'],
+        category,
+        tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+      })
+      setSuccess(true)
+      setTimeout(onClose, 1500)
+    } catch (err: any) {
+      setError(err.message || 'Failed to list tool')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (success) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="w-full max-w-md rounded-xl border bg-card p-6 shadow-xl text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
+            <BadgeCheck className="h-6 w-6 text-emerald-500" />
+          </div>
+          <h2 className="text-lg font-semibold">API Listed!</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Your API is now in the discovery directory. Agents can find and pay for it.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-8">
+      <div className="w-full max-w-lg rounded-xl border bg-card p-6 shadow-xl">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">List Your API</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">API Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                placeholder="e.g. Weather API"
+                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Slug</label>
+              <input
+                type="text"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                placeholder="weather-api"
+                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What does your API do?"
+              rows={2}
+              className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm font-medium">Method</label>
+              <select
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option>GET</option>
+                <option>POST</option>
+                <option>PUT</option>
+                <option>DELETE</option>
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="text-sm font-medium">Base URL</label>
+              <input
+                type="url"
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+                placeholder="https://api.example.com"
+                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Path</label>
+              <input
+                type="text"
+                value={path}
+                onChange={(e) => setPath(e.target.value)}
+                placeholder="/v1/endpoint"
+                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Price per call (USDC)</label>
+              <input
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="0.001"
+                step="0.0001"
+                min="0.0001"
+                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {categories.filter(c => c !== 'All').map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Tags (comma-separated)</label>
+              <input
+                type="text"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="api, data, live"
+                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border px-4 py-2.5 text-sm font-medium hover:bg-accent"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Listing...
+                </>
+              ) : (
+                'List API'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
