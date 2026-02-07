@@ -3,67 +3,6 @@ main = "src/index.ts"
 compatibility_date = "2024-01-15"
 compatibility_flags = ["nodejs_compat"]
 
-# Cloudflare Workers Configuration
-type = "javascript"
-account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
-workers_dev = false
-
-# Environment-specific configs
-[env.production]
-name = "apitoll-production"
-routes = [
-  { pattern = "apitoll.com", zone_name = "apitoll.com" },
-  { pattern = "*.apitoll.com", zone_name = "apitoll.com" }
-]
-
-[env.staging]
-name = "apitoll-staging"
-routes = [
-  { pattern = "staging.apitoll.com", zone_name = "apitoll.com" }
-]
-
-# KV Namespaces (for caching, sessions, rate limiting)
-[[kv_namespaces]]
-binding = "CACHE"
-id = "YOUR_KV_NAMESPACE_ID"
-preview_id = "YOUR_KV_PREVIEW_ID"
-
-[[kv_namespaces]]
-binding = "SESSIONS"
-id = "YOUR_KV_SESSION_ID"
-preview_id = "YOUR_KV_SESSION_PREVIEW_ID"
-
-# D1 Database (for persistent storage)
-[[d1_databases]]
-binding = "DB"
-database_name = "apitoll"
-database_id = "YOUR_D1_DATABASE_ID"
-
-# R2 Bucket (for file storage)
-[[r2_buckets]]
-binding = "BUCKET"
-bucket_name = "apitoll-files"
-preview_bucket_name = "apitoll-files-preview"
-
-# Environment variables
-[env.production.vars]
-ENVIRONMENT = "production"
-STRIPE_SECRET_KEY = "sk_live_..."
-STRIPE_WEBHOOK_SECRET = "whsec_..."
-EXECUTOR_PRIVATE_KEY = "0x..."
-BASE_RPC_URL = "https://mainnet.base.org"
-ALLOWED_ORIGINS = "https://apitoll.com,https://app.apitoll.com"
-LOG_LEVEL = "info"
-
-[env.staging.vars]
-ENVIRONMENT = "staging"
-STRIPE_SECRET_KEY = "sk_test_..."
-STRIPE_WEBHOOK_SECRET = "whsec_test_..."
-EXECUTOR_PRIVATE_KEY = "0x..."
-BASE_RPC_URL = "https://sepolia.base.org"
-ALLOWED_ORIGINS = "https://staging.apitoll.com,http://localhost:3000"
-LOG_LEVEL = "debug"
-
 # Build configuration
 [build]
 command = "npm run build"
@@ -73,3 +12,51 @@ watch_paths = ["src/**/*.ts"]
 # Observability
 [observability]
 enabled = true
+
+# ═══════════════════════════════════════════════════════════
+# DEPLOYMENT NOTES
+# ═══════════════════════════════════════════════════════════
+# Before deploying, create the required resources and update
+# the IDs below. Uncomment bindings as you provision them.
+#
+# 1. Create KV namespaces:
+#    wrangler kv:namespace create CACHE
+#    wrangler kv:namespace create SESSIONS
+#
+# 2. Create D1 database:
+#    wrangler d1 create apitoll
+#
+# 3. Create R2 bucket:
+#    wrangler r2 bucket create apitoll-files
+#
+# 4. Set secrets (don't put real values in this file):
+#    wrangler secret put STRIPE_SECRET_KEY
+#    wrangler secret put STRIPE_WEBHOOK_SECRET
+#    wrangler secret put EXECUTOR_PRIVATE_KEY
+#
+# 5. Configure routes after adding domain to Cloudflare:
+#    [env.production]
+#    routes = [
+#      { pattern = "apitoll.com", zone_name = "apitoll.com" },
+#      { pattern = "*.apitoll.com", zone_name = "apitoll.com" }
+#    ]
+# ═══════════════════════════════════════════════════════════
+
+# Uncomment and fill in after provisioning resources:
+#
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "<your-kv-cache-id>"
+#
+# [[kv_namespaces]]
+# binding = "SESSIONS"
+# id = "<your-kv-sessions-id>"
+#
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "apitoll"
+# database_id = "<your-d1-id>"
+#
+# [[r2_buckets]]
+# binding = "BUCKET"
+# bucket_name = "apitoll-files"
