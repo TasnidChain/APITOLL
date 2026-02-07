@@ -1,0 +1,6 @@
+name = "apitoll"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Environment variables are set in Cloudflare Pages dashboard
