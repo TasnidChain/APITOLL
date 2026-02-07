@@ -1,6 +1,6 @@
 import { type Transaction, type PaymentReceipt, type FeeBreakdown, generateId, computeHmacSignature } from "@apitoll/shared";
 
-const PLATFORM_API_URL = "https://api.apitoll.xyz";
+const PLATFORM_API_URL = "https://api.apitoll.com";
 
 export interface ReporterConfig {
   /** Platform API key for authentication */
