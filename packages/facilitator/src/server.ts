@@ -1,26 +1,80 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { ethers } from 'ethers';
 import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 import pino from 'pino';
-import { AgentWallet } from '@apitoll/buyer-sdk';
-import { PaymentRequired } from '@apitoll/shared';
+import {
+  PaymentRequirement,
+  SECURITY_HEADERS,
+  isOriginAllowed,
+  secureCompare,
+} from '@apitoll/shared';
 
 const logger = pino();
-const app = express();
 
-// Constants
+// ─── Environment Validation ─────────────────────────────────────
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    logger.fatal({ variable: name }, 'Missing required environment variable');
+    process.exit(1);
+  }
+  return value;
+}
+
+// Validate critical env vars at startup
+const FACILITATOR_PRIVATE_KEY = requireEnv('FACILITATOR_PRIVATE_KEY');
+const BASE_RPC_URL = process.env.BASE_RPC_URL || 'https://mainnet.base.org';
+const PORT = parseInt(process.env.PORT || '3000', 10);
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
+const API_KEYS = (process.env.FACILITATOR_API_KEYS || '').split(',').filter(Boolean);
+
+// ─── Constants ──────────────────────────────────────────────────
+
 const USDC_ADDRESS_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const USDC_ABI = ['function transfer(address to, uint256 amount) returns (bool)'];
-const PORT = process.env.PORT || 3000;
+const MAX_PAYMENT_AMOUNT = 100; // $100 USDC max per single payment (safety cap)
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests per minute per API key
 
-// Types
-interface PaymentRequest {
+// ─── Zod Schemas ────────────────────────────────────────────────
+
+const PaymentRequirementSchema = z.object({
+  amount: z.union([z.string(), z.number()]).transform((v) => String(v)),
+  currency: z.string().default('USDC'),
+  recipient: z.string().refine((addr) => ethers.isAddress(addr), {
+    message: 'Invalid recipient address',
+  }),
+  chain: z.enum(['base', 'solana']).default('base'),
+  description: z.string().optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+const PayRequestSchema = z.object({
+  original_url: z.string().url('Invalid original URL'),
+  original_method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']).default('GET'),
+  original_headers: z.record(z.string()).optional(),
+  original_body: z.unknown().optional(),
+  payment_required: PaymentRequirementSchema,
+  agent_wallet: z.string().refine((addr) => ethers.isAddress(addr), {
+    message: 'Invalid agent wallet address',
+  }),
+  signed_tx: z.string().optional(),
+});
+
+// ─── Types ──────────────────────────────────────────────────────
+
+interface PaymentRecord {
   id: string;
   originalUrl: string;
   originalMethod: string;
-  paymentRequired: PaymentRequired;
+  originalHeaders?: Record<string, string>;
+  originalBody?: unknown;
+  paymentRequired: z.infer<typeof PaymentRequirementSchema>;
   agentWallet: string;
   sellerAddress: string;
+  apiKey: string; // track which API key initiated
   status: 'pending' | 'processing' | 'completed' | 'failed';
   createdAt: number;
   completedAt?: number;
@@ -28,70 +82,178 @@ interface PaymentRequest {
   error?: string;
 }
 
-// In-memory store (use Redis in production)
-const pendingPayments = new Map<string, PaymentRequest>();
+// ─── In-Memory Stores ───────────────────────────────────────────
+// TODO: Replace with Redis for production persistence
 
-// Middleware
-app.use(express.json());
+const pendingPayments = new Map<string, PaymentRecord>();
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
-// Health check
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Cleanup stale payments every 10 minutes (prevent memory leaks)
+setInterval(() => {
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24h
+  for (const [id, payment] of pendingPayments) {
+    if (payment.completedAt && payment.completedAt < cutoff) {
+      pendingPayments.delete(id);
+    }
+  }
+}, 10 * 60 * 1000);
+
+// ─── Express App ────────────────────────────────────────────────
+
+const app = express();
+app.use(express.json({ limit: '1mb' }));
+
+// ─── Security Headers Middleware ────────────────────────────────
+
+app.use((_req: Request, res: Response, next: NextFunction) => {
+  for (const [header, value] of Object.entries(SECURITY_HEADERS)) {
+    res.setHeader(header, value);
+  }
+  next();
 });
 
-/**
- * POST /pay
- * Initiates payment for a 402 response
- *
- * Body:
- * {
- *   "original_url": "https://api.example.com/weather?location=nyc",
- *   "original_method": "GET",
- *   "payment_required": {
- *     "amount": 1000,
- *     "currency": "USDC",
- *     "recipient": "0x...",
- *     "chain": "base",
- *     "metadata": {...}
- *   },
- *   "agent_wallet": "0x...",
- *   "agent_private_key": "0x..." (optional - for signing)
- * }
- *
- * Returns:
- * {
- *   "payment_id": "uuid",
- *   "tx_hash": "0x...",
- *   "status": "processing"
- * }
- */
-app.post('/pay', async (req: Request, res: Response) => {
-  try {
-    const {
-      original_url,
-      original_method,
-      payment_required,
-      agent_wallet,
-      agent_private_key,
-    } = req.body;
+// ─── CORS Middleware ────────────────────────────────────────────
 
-    // Validate inputs
-    if (!payment_required?.amount || !payment_required?.recipient) {
-      return res.status(400).json({ error: 'Missing payment details' });
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const origin = req.headers.origin || null;
+
+  if (ALLOWED_ORIGINS.length === 0) {
+    // Development: allow all
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  } else if (origin && isOriginAllowed(origin, ALLOWED_ORIGINS)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
+
+// ─── Rate Limiting Middleware ───────────────────────────────────
+
+function rateLimit(req: Request, res: Response, next: NextFunction) {
+  const key = req.headers.authorization || req.ip || 'unknown';
+  const now = Date.now();
+
+  const entry = rateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return next();
+  }
+
+  entry.count++;
+  if (entry.count > RATE_LIMIT_MAX_REQUESTS) {
+    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+    res.setHeader('Retry-After', String(retryAfter));
+    return res.status(429).json({
+      error: 'Too many requests',
+      retry_after_seconds: retryAfter,
+    });
+  }
+
+  next();
+}
+
+// Cleanup rate limit entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitMap) {
+    if (now > entry.resetAt) rateLimitMap.delete(key);
+  }
+}, 5 * 60 * 1000);
+
+// ─── API Key Auth Middleware ────────────────────────────────────
+
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Missing Authorization header (Bearer <api-key>)' });
+  }
+
+  const providedKey = authHeader.slice(7);
+
+  // If no API keys configured, allow all (development mode)
+  if (API_KEYS.length === 0) {
+    logger.warn('No FACILITATOR_API_KEYS configured — running in open mode (development only)');
+    (req as any).apiKey = 'dev';
+    return next();
+  }
+
+  const isValid = API_KEYS.some((key) => secureCompare(key, providedKey));
+  if (!isValid) {
+    return res.status(403).json({ error: 'Invalid API key' });
+  }
+
+  (req as any).apiKey = providedKey.slice(0, 8) + '...'; // truncated for logging
+  next();
+}
+
+// ─── Health Check (no auth required) ────────────────────────────
+
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    pending_payments: pendingPayments.size,
+  });
+});
+
+// ─── POST /pay — Initiate Payment ──────────────────────────────
+
+/**
+ * Initiates a USDC payment on behalf of the agent.
+ *
+ * The facilitator holds a custodial hot wallet (FACILITATOR_PRIVATE_KEY)
+ * that agents pre-fund. Agents never send their private keys — instead,
+ * they call this endpoint with their wallet address and the facilitator
+ * executes the transfer from its own funded wallet.
+ *
+ * For agents that prefer self-custody, they can provide a pre-signed
+ * transaction in `signed_tx` and the facilitator will broadcast it.
+ */
+app.post('/pay', rateLimit, requireAuth, async (req: Request, res: Response) => {
+  try {
+    // Validate request body with Zod
+    const parseResult = PayRequestSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      const errors = parseResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
+      return res.status(400).json({ error: 'Validation failed', details: errors });
     }
 
-    if (!ethers.isAddress(agent_wallet) || !ethers.isAddress(payment_required.recipient)) {
-      return res.status(400).json({ error: 'Invalid wallet addresses' });
+    const data = parseResult.data;
+
+    // Safety check: enforce max payment amount
+    const amountNum = parseFloat(data.payment_required.amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return res.status(400).json({ error: 'Payment amount must be positive' });
+    }
+    if (amountNum > MAX_PAYMENT_AMOUNT) {
+      return res.status(400).json({
+        error: `Payment amount $${amountNum} exceeds safety cap of $${MAX_PAYMENT_AMOUNT}`,
+      });
+    }
+
+    // Only Base chain supported for now
+    if (data.payment_required.chain !== 'base') {
+      return res.status(400).json({ error: 'Only Base chain is supported currently' });
     }
 
     const paymentId = uuidv4();
-    const payment: PaymentRequest = {
+    const payment: PaymentRecord = {
       id: paymentId,
-      originalUrl: original_url,
-      originalMethod: original_method || 'GET',
-      paymentRequired,
-      agentWallet: agent_wallet,
-      sellerAddress: payment_required.recipient,
+      originalUrl: data.original_url,
+      originalMethod: data.original_method,
+      originalHeaders: data.original_headers,
+      originalBody: data.original_body,
+      paymentRequired: data.payment_required,
+      agentWallet: data.agent_wallet,
+      sellerAddress: data.payment_required.recipient,
+      apiKey: (req as any).apiKey || 'unknown',
       status: 'processing',
       createdAt: Date.now(),
     };
@@ -99,10 +261,10 @@ app.post('/pay', async (req: Request, res: Response) => {
     pendingPayments.set(paymentId, payment);
 
     // Process payment asynchronously
-    processPayment(paymentId, agent_private_key).catch((err) => {
+    processPayment(paymentId, data.signed_tx).catch((err) => {
       logger.error({ paymentId, error: err.message }, 'Payment processing failed');
       payment.status = 'failed';
-      payment.error = err.message;
+      payment.error = 'Payment processing failed. Please try again.';
       payment.completedAt = Date.now();
     });
 
@@ -117,11 +279,9 @@ app.post('/pay', async (req: Request, res: Response) => {
   }
 });
 
-/**
- * GET /pay/:paymentId
- * Check status of a payment
- */
-app.get('/pay/:paymentId', (req: Request, res: Response) => {
+// ─── GET /pay/:paymentId — Check Status ─────────────────────────
+
+app.get('/pay/:paymentId', rateLimit, requireAuth, (req: Request, res: Response) => {
   const { paymentId } = req.params;
   const payment = pendingPayments.get(paymentId);
 
@@ -134,75 +294,75 @@ app.get('/pay/:paymentId', (req: Request, res: Response) => {
     status: payment.status,
     tx_hash: payment.txHash,
     error: payment.error,
+    created_at: payment.createdAt,
     completed_at: payment.completedAt,
   });
 });
 
-/**
- * Process the actual payment
- */
-async function processPayment(paymentId: string, agentPrivateKey?: string) {
+// ─── Payment Processing ─────────────────────────────────────────
+
+async function processPayment(paymentId: string, signedTx?: string) {
   const payment = pendingPayments.get(paymentId);
   if (!payment) throw new Error('Payment not found');
 
-  logger.info({ paymentId }, 'Processing payment');
+  logger.info(
+    { paymentId, amount: payment.paymentRequired.amount, to: payment.sellerAddress },
+    'Processing payment'
+  );
 
   try {
-    // Get RPC provider
-    const provider = new ethers.JsonRpcProvider(process.env.BASE_RPC_URL || 'https://mainnet.base.org');
+    const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
 
-    // Determine signer
-    let signer: ethers.Signer;
-    if (agentPrivateKey) {
-      // Use provided private key (for testing/internal agents)
-      signer = new ethers.Wallet(agentPrivateKey, provider);
+    if (signedTx) {
+      // Agent provided a pre-signed transaction — just broadcast it
+      logger.info({ paymentId }, 'Broadcasting pre-signed transaction');
+      const txResponse = await provider.broadcastTransaction(signedTx);
+      const receipt = await txResponse.wait(2);
+
+      if (!receipt) throw new Error('Transaction failed — no receipt');
+
+      payment.status = 'completed';
+      payment.txHash = receipt.hash;
+      payment.completedAt = Date.now();
+      logger.info({ paymentId, txHash: receipt.hash }, 'Pre-signed payment confirmed');
     } else {
-      // In production, this would use a wallet connected to the agent
-      // For now, we require the private key
-      throw new Error('Agent private key required for payment signing');
+      // Facilitator custodial wallet pays on behalf of the agent
+      const signer = new ethers.Wallet(FACILITATOR_PRIVATE_KEY, provider);
+      const usdc = new ethers.Contract(USDC_ADDRESS_BASE, USDC_ABI, signer);
+
+      const amount = ethers.parseUnits(payment.paymentRequired.amount, 6);
+
+      logger.info(
+        { paymentId, to: payment.sellerAddress, amount: amount.toString() },
+        'Submitting USDC transfer from facilitator wallet'
+      );
+
+      const tx = await usdc.transfer(payment.sellerAddress, amount);
+      const receipt = await tx.wait(2); // 2 block confirmations
+
+      if (!receipt) throw new Error('Transaction failed — no receipt');
+
+      payment.status = 'completed';
+      payment.txHash = receipt.hash;
+      payment.completedAt = Date.now();
+      logger.info({ paymentId, txHash: receipt.hash }, 'Payment confirmed');
     }
-
-    // Create USDC contract instance
-    const usdc = new ethers.Contract(USDC_ADDRESS_BASE, USDC_ABI, signer);
-
-    // Convert amount to USDC decimals (6)
-    const amount = ethers.parseUnits(payment.paymentRequired.amount.toString(), 6);
-
-    logger.info(
-      { paymentId, to: payment.sellerAddress, amount: amount.toString() },
-      'Submitting USDC transfer'
-    );
-
-    // Submit transfer
-    const tx = await usdc.transfer(payment.sellerAddress, amount);
-    const receipt = await tx.wait(2); // Wait for 2 confirmations
-
-    if (!receipt) {
-      throw new Error('Transaction failed - no receipt');
-    }
-
-    logger.info({ paymentId, txHash: receipt.hash }, 'Payment confirmed');
-
-    // Update payment status
-    payment.status = 'completed';
-    payment.txHash = receipt.hash;
-    payment.completedAt = Date.now();
   } catch (error: any) {
     logger.error({ paymentId, error: error.message }, 'Payment processing error');
     payment.status = 'failed';
-    payment.error = error.message;
+    payment.error = 'Payment processing failed. Please try again.';
     payment.completedAt = Date.now();
     throw error;
   }
 }
 
+// ─── POST /forward/:paymentId — Forward to Seller ───────────────
+
 /**
- * POST /forward
- * Complete payment and forward original request to seller
- *
- * After payment completes, forward the original request
+ * After payment completes, forward the original request to the seller
+ * with the payment receipt in X-PAYMENT header.
  */
-app.post('/forward/:paymentId', async (req: Request, res: Response) => {
+app.post('/forward/:paymentId', rateLimit, requireAuth, async (req: Request, res: Response) => {
   try {
     const { paymentId } = req.params;
     const payment = pendingPayments.get(paymentId);
@@ -212,35 +372,120 @@ app.post('/forward/:paymentId', async (req: Request, res: Response) => {
     }
 
     if (payment.status !== 'completed') {
-      return res.status(402).json({ error: 'Payment not yet completed', payment_id: paymentId });
+      return res.status(402).json({
+        error: 'Payment not yet completed',
+        payment_id: paymentId,
+        status: payment.status,
+      });
     }
 
-    // Forward original request to seller with receipt
-    // This would typically call the original URL with a receipt header
+    // Build receipt for the seller
     const receipt = {
       payment_id: paymentId,
       tx_hash: payment.txHash,
       amount: payment.paymentRequired.amount,
       currency: payment.paymentRequired.currency,
+      chain: payment.paymentRequired.chain,
+      payer: payment.agentWallet,
     };
 
-    // In production, forward to original seller URL
-    logger.info({ paymentId, originalUrl: payment.originalUrl }, 'Forwarding to seller');
+    logger.info(
+      { paymentId, originalUrl: payment.originalUrl, method: payment.originalMethod },
+      'Forwarding request to seller'
+    );
 
-    res.json({
-      success: true,
+    // Actually forward the original request to the seller
+    const forwardHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-PAYMENT': JSON.stringify(receipt),
+      'X-PAYMENT-TX-HASH': payment.txHash || '',
+      ...(payment.originalHeaders || {}),
+    };
+
+    // Remove auth headers — don't forward the agent's facilitator API key to the seller
+    delete forwardHeaders['authorization'];
+    delete forwardHeaders['Authorization'];
+
+    const fetchOptions: RequestInit = {
+      method: payment.originalMethod,
+      headers: forwardHeaders,
+    };
+
+    // Include body for non-GET/HEAD requests
+    if (payment.originalBody && !['GET', 'HEAD'].includes(payment.originalMethod)) {
+      fetchOptions.body = typeof payment.originalBody === 'string'
+        ? payment.originalBody
+        : JSON.stringify(payment.originalBody);
+    }
+
+    const sellerResponse = await fetch(payment.originalUrl, fetchOptions);
+    const sellerContentType = sellerResponse.headers.get('content-type') || '';
+    let sellerData: unknown;
+
+    if (sellerContentType.includes('application/json')) {
+      sellerData = await sellerResponse.json();
+    } else {
+      sellerData = await sellerResponse.text();
+    }
+
+    res.status(sellerResponse.status).json({
+      success: sellerResponse.ok,
       payment_id: paymentId,
       tx_hash: payment.txHash,
       receipt,
-      // In real implementation, would include seller response here
+      seller_status: sellerResponse.status,
+      seller_response: sellerData,
     });
   } catch (error: any) {
     logger.error({ error: error.message }, 'Forward request failed');
-    res.status(500).json({ error: 'Forward failed' });
+    res.status(502).json({ error: 'Failed to forward request to seller' });
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  logger.info({ port: PORT }, 'Apitoll Facilitator listening');
+// ─── 404 Handler ────────────────────────────────────────────────
+
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ error: 'Not found' });
 });
+
+// ─── Error Handler ──────────────────────────────────────────────
+
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error({ error: err.message }, 'Unhandled error');
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// ─── Graceful Shutdown ──────────────────────────────────────────
+
+let server: ReturnType<typeof app.listen>;
+
+function shutdown(signal: string) {
+  logger.info({ signal }, 'Shutdown signal received, closing server...');
+  server.close(() => {
+    logger.info('Server closed. Pending payments will be lost (use Redis for persistence).');
+    process.exit(0);
+  });
+
+  // Force exit after 10s if graceful shutdown hangs
+  setTimeout(() => {
+    logger.warn('Graceful shutdown timed out, forcing exit');
+    process.exit(1);
+  }, 10_000);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
+// ─── Start Server ───────────────────────────────────────────────
+
+server = app.listen(PORT, () => {
+  logger.info({ port: PORT }, 'Apitoll Facilitator listening');
+  if (API_KEYS.length === 0) {
+    logger.warn('No FACILITATOR_API_KEYS set — running in open mode (development only)');
+  }
+  if (ALLOWED_ORIGINS.length === 0) {
+    logger.warn('No ALLOWED_ORIGINS set — CORS allows all origins (development only)');
+  }
+});
+
+export { app };
