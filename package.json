@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.3",
+    "@cloudflare/next-on-pages": "^1.13.16",
     "convex": "^1.10.0",
     "stripe": "^20.3.1"
   },
