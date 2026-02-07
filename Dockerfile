@@ -1,46 +1,26 @@
-# Build stage
-FROM node:20-alpine AS builder
+FROM node:20-slim
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY packages ./packages
-COPY apps ./apps
-COPY convex ./convex
-COPY tsconfig.json ./
-COPY vitest.config.ts ./
+# Copy root package files + tsconfig
+COPY package.json package-lock.json tsconfig.base.json ./
 
-# Install dependencies
-RUN npm ci
+# Copy shared package
+COPY packages/shared/ packages/shared/
 
-# Build all packages
-RUN npm run build --workspaces
+# Copy facilitator package
+COPY packages/facilitator/ packages/facilitator/
 
-# Runtime stage
-FROM node:20-alpine
+# Install all deps from root (monorepo)
+RUN npm install --workspace=packages/shared --workspace=packages/facilitator
 
-WORKDIR /app
+# Build shared package first (facilitator depends on it)
+RUN cd packages/shared && npm run build
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install tsx globally for fast startup
+RUN npm install -g tsx
 
-# Copy built artifacts from builder
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/apps ./apps
-COPY --from=builder /app/convex ./convex
-COPY package*.json ./
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
-
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["/sbin/dumb-init", "--"]
-
-# Start the indexer service
-CMD ["npm", "start", "--workspace=apps/indexer"]
-
-# Expose port
 EXPOSE 3000
+
+WORKDIR /app/packages/facilitator
+CMD ["tsx", "src/server.ts"]

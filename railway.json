@@ -1,26 +1,12 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
   },
   "deploy": {
     "numReplicas": 1,
-    "startCommand": "npm run build && npm start --workspace=apps/indexer",
-    "healthcheckPath": "/health",
-    "healthcheckTimeout": 30
-  },
-  "environments": {
-    "production": {
-      "variables": {
-        "NODE_ENV": "production",
-        "LOG_LEVEL": "info"
-      }
-    },
-    "development": {
-      "variables": {
-        "NODE_ENV": "development",
-        "LOG_LEVEL": "debug"
-      }
-    }
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
   }
 }

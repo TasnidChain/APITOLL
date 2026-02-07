@@ -1,0 +1,35 @@
+FROM node:20-slim
+
+WORKDIR /app
+
+# Copy root package files + tsconfig
+COPY package.json package-lock.json tsconfig.base.json ./
+
+# Copy shared package
+COPY packages/shared/ packages/shared/
+
+# Copy seller-sdk package
+COPY packages/seller-sdk/ packages/seller-sdk/
+
+# Copy seller API app
+COPY apps/seller-api/ apps/seller-api/
+
+# Install deps for shared + seller-sdk
+RUN npm install --workspace=packages/shared --workspace=packages/seller-sdk
+
+# Install seller-api deps manually (it's an app, not a workspace)
+RUN cd apps/seller-api && npm install
+
+# Build shared package
+RUN cd packages/shared && npm run build
+
+# Build seller-sdk
+RUN cd packages/seller-sdk && npm run build
+
+# Install tsx globally
+RUN npm install -g tsx
+
+EXPOSE 4402
+
+WORKDIR /app/apps/seller-api
+CMD ["tsx", "server.ts"]
