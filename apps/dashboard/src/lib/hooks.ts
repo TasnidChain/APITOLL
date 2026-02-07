@@ -66,7 +66,7 @@ export interface DashboardTransaction {
 // Falls back to mock data when Convex is unavailable.
 // ═══════════════════════════════════════════════════
 
-const CONVEX_TIMEOUT_MS = 3000
+const CONVEX_TIMEOUT_MS = 800
 
 function useMockFallback<T>(convexData: T | undefined, mockData: T): T | undefined {
   const [timedOut, setTimedOut] = useState(false)
