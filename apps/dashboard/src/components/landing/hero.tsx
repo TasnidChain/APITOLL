@@ -58,8 +58,31 @@ export function Hero() {
           </div>
         </div>
 
+        {/* Social proof stats */}
+        <div className="mx-auto mt-16 flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-white">2s</p>
+            <p className="text-xs text-slate-500">Settlement on Base</p>
+          </div>
+          <div className="h-8 w-px bg-slate-800 hidden sm:block" />
+          <div className="text-center">
+            <p className="text-2xl font-bold text-white">400ms</p>
+            <p className="text-xs text-slate-500">Settlement on Solana</p>
+          </div>
+          <div className="h-8 w-px bg-slate-800 hidden sm:block" />
+          <div className="text-center">
+            <p className="text-2xl font-bold text-white">$0.001</p>
+            <p className="text-xs text-slate-500">Min payment</p>
+          </div>
+          <div className="h-8 w-px bg-slate-800 hidden sm:block" />
+          <div className="text-center">
+            <p className="text-2xl font-bold text-white">0%</p>
+            <p className="text-xs text-slate-500">Chargebacks</p>
+          </div>
+        </div>
+
         {/* Terminal / Code preview */}
-        <div className="mx-auto mt-20 max-w-3xl">
+        <div className="mx-auto mt-16 max-w-3xl">
           <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/80 shadow-2xl shadow-blue-500/5 backdrop-blur">
             {/* Terminal header */}
             <div className="flex items-center gap-2 border-b border-slate-800 px-4 py-3">

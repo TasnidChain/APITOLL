@@ -1,4 +1,4 @@
-import { Wallet, Zap, DollarSign, ArrowRight } from 'lucide-react'
+import { Wallet, Zap, DollarSign, ArrowRight, ShieldCheck, CreditCard } from 'lucide-react'
 
 const steps = [
   {
@@ -6,10 +6,11 @@ const steps = [
     title: 'Fund',
     subtitle: 'Load Agent Wallets',
     description:
-      'Organizations deposit USDC or use the fiat on-ramp. Set daily budgets, vendor allowlists, and spending policies for each agent.',
+      'Deposit USDC directly or convert fiat instantly via built-in on-ramp. Set daily budgets, vendor allowlists, and spending policies per agent.',
     color: 'from-blue-500 to-blue-600',
     iconBg: 'bg-blue-500/10',
     iconColor: 'text-blue-400',
+    badge: { icon: CreditCard, label: 'Fiat on-ramp included' },
   },
   {
     icon: Zap,
@@ -20,6 +21,7 @@ const steps = [
     color: 'from-amber-500 to-orange-500',
     iconBg: 'bg-amber-500/10',
     iconColor: 'text-amber-400',
+    badge: { icon: ShieldCheck, label: 'Escrow protected' },
   },
   {
     icon: DollarSign,
@@ -30,6 +32,7 @@ const steps = [
     color: 'from-emerald-500 to-green-500',
     iconBg: 'bg-emerald-500/10',
     iconColor: 'text-emerald-400',
+    badge: null,
   },
 ]
 
@@ -79,6 +82,13 @@ export function HowItWorks() {
                 <p className="mt-2 text-sm leading-relaxed text-slate-400">
                   {step.description}
                 </p>
+
+                {step.badge && (
+                  <div className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800/50 px-3 py-1 text-xs font-medium text-slate-300">
+                    <step.badge.icon className="h-3 w-3 text-emerald-400" />
+                    {step.badge.label}
+                  </div>
+                )}
               </div>
             </div>
           ))}
