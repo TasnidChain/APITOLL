@@ -166,6 +166,8 @@ export function getOverviewStats() {
     .filter(t => t.status === 'settled')
     .reduce((sum, t) => sum + t.latencyMs, 0) / mockTransactions.filter(t => t.status === 'settled').length
 
+  const totalPlatformFees = totalSpend * 0.029 // 2.9% platform fee
+
   return {
     totalSpend,
     todaySpend,
@@ -174,5 +176,6 @@ export function getOverviewStats() {
     totalAgents: mockAgents.length,
     avgLatency: Math.round(avgLatency),
     successRate: (mockTransactions.filter(t => t.status === 'settled').length / mockTransactions.length) * 100,
+    totalPlatformFees: Math.round(totalPlatformFees * 100) / 100,
   }
 }
