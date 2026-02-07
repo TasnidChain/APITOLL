@@ -13,6 +13,48 @@ import {
 } from './mock-data'
 
 // ═══════════════════════════════════════════════════
+// Shared types for dashboard data (Convex + mock)
+// ═══════════════════════════════════════════════════
+
+export interface DashboardAgent {
+  _id: string
+  name: string
+  walletAddress: string
+  chain: 'base' | 'solana'
+  balance: number
+  status: 'active' | 'paused' | 'depleted'
+  dailySpend: number
+  dailyLimit: number
+  totalTransactions: number
+}
+
+export interface DashboardSeller {
+  _id: string
+  name: string
+  walletAddress: string
+  totalRevenue: number
+  totalPlatformFees: number
+  totalCalls: number
+  endpoints: number
+}
+
+export interface DashboardTransaction {
+  _id: string
+  txHash: string | null
+  agentName: string
+  sellerName: string
+  endpointPath: string
+  method: string
+  amount: number
+  chain: 'base' | 'solana'
+  status: 'pending' | 'settled' | 'failed' | 'refunded'
+  latencyMs: number
+  requestedAt: number | Date
+  platformFee?: number
+  sellerAmount?: number
+}
+
+// ═══════════════════════════════════════════════════
 // Org context — In production, this would come from auth.
 // For now, use the first org or a configured env var.
 // Falls back to mock data when Convex is unavailable.
@@ -62,7 +104,7 @@ export function useDailyStats(orgId: Id<"organizations"> | null, days?: number) 
 export function useTransactions(
   orgId: Id<"organizations"> | null,
   options?: { limit?: number; status?: string; chain?: string }
-) {
+): DashboardTransaction[] | undefined {
   const convexData = useQuery(
     api.dashboard.listTransactions,
     orgId ? { orgId, ...options } : "skip"
@@ -74,32 +116,71 @@ export function useTransactions(
   if (options?.chain) {
     filtered = filtered.filter((t) => t.chain === options.chain)
   }
-  const mockTxs = filtered
+  const mockTxs: DashboardTransaction[] = filtered
     .slice(0, options?.limit ?? 100)
-    .map((tx) => ({ ...tx, _id: tx.id, requestedAt: tx.requestedAt.getTime() }))
-  return useMockFallback(convexData, mockTxs as any)
+    .map((tx) => ({
+      _id: tx.id,
+      txHash: tx.txHash,
+      agentName: tx.agentName,
+      sellerName: tx.sellerName,
+      endpointPath: tx.endpointPath,
+      method: tx.method,
+      amount: tx.amount,
+      chain: tx.chain,
+      status: tx.status,
+      latencyMs: tx.latencyMs,
+      requestedAt: tx.requestedAt.getTime(),
+    }))
+  return useMockFallback(
+    convexData as DashboardTransaction[] | undefined,
+    mockTxs
+  )
 }
 
-export function useAgents(orgId: Id<"organizations"> | null) {
+export function useAgents(
+  orgId: Id<"organizations"> | null
+): DashboardAgent[] | undefined {
   const convexData = useQuery(
     api.dashboard.listAgents,
     orgId ? { orgId } : "skip"
   )
-  const mockAgentsWithId = mockAgents.map((a) => ({ ...a, _id: a.id }))
-  return useMockFallback(convexData, mockAgentsWithId as any)
+  const mockAgentsWithId: DashboardAgent[] = mockAgents.map((a) => ({
+    _id: a.id,
+    name: a.name,
+    walletAddress: a.walletAddress,
+    chain: a.chain,
+    balance: a.balance,
+    status: a.status,
+    dailySpend: a.dailySpend,
+    dailyLimit: a.dailyLimit,
+    totalTransactions: a.totalTransactions,
+  }))
+  return useMockFallback(
+    convexData as DashboardAgent[] | undefined,
+    mockAgentsWithId
+  )
 }
 
-export function useSellers(orgId: Id<"organizations"> | null) {
+export function useSellers(
+  orgId: Id<"organizations"> | null
+): DashboardSeller[] | undefined {
   const convexData = useQuery(
     api.dashboard.listSellers,
     orgId ? { orgId } : "skip"
   )
-  const mockSellersWithId = mockSellers.map((s) => ({
-    ...s,
+  const mockSellersWithId: DashboardSeller[] = mockSellers.map((s) => ({
     _id: s.id,
+    name: s.name,
+    walletAddress: s.walletAddress,
+    totalRevenue: s.totalRevenue,
     totalPlatformFees: Math.round(s.totalRevenue * 0.029 * 100) / 100,
+    totalCalls: s.totalCalls,
+    endpoints: s.endpoints,
   }))
-  return useMockFallback(convexData, mockSellersWithId as any)
+  return useMockFallback(
+    convexData as DashboardSeller[] | undefined,
+    mockSellersWithId
+  )
 }
 
 // ═══════════════════════════════════════════════════
