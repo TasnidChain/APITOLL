@@ -8,12 +8,19 @@ import {
 import { Sidebar } from '@/components/sidebar'
 import { ConvexClientProvider } from '@/lib/convex'
 import { PWAInstallButton } from '@/components/pwa'
+import { useClerkReady } from '@/components/clerk-provider'
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const clerkReady = useClerkReady()
+
+  if (!clerkReady) {
+    return null
+  }
+
   return (
     <>
       <SignedOut>
