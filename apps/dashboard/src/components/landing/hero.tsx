@@ -101,7 +101,7 @@ export function Hero() {
               <div className="text-slate-500">{'// 1. Agent requests a paid API'}</div>
               <div className="mt-1">
                 <span className="text-blue-400">GET</span>{' '}
-                <span className="text-slate-300">https://seller-api-production.up.railway.app/api/joke</span>
+                <span className="text-slate-300">https://api.apitoll.com/api/joke</span>
               </div>
               <div className="mt-4 text-slate-500">{'// 2. Server returns 402 with payment details'}</div>
               <div className="mt-1">

@@ -38,20 +38,37 @@ export function LiveTicker() {
   const [events, setEvents] = useState<TickerEvent[]>(DEMO_EVENTS)
   const [liveCount, setLiveCount] = useState(0)
 
-  // Try to fetch real gossip data
+  // Try to fetch real gossip data — fall back to demo if anything is off
   useEffect(() => {
     fetch('/api/gossip?limit=10&window=1h')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('gossip unavailable')
+        return r.json()
+      })
       .then((data) => {
         if (data?.trending?.length > 0) {
-          const realEvents = data.trending.map((item: any) => ({
-            agent: `Agent-${item.unique_agents}`,
-            amount: (item.total_volume_usdc / item.discoveries).toFixed(3),
-            endpoint: item.endpoint,
-            chain: item.chains?.[0] || 'Base',
-            timeAgo: 'just now',
-          }))
-          setEvents(realEvents.length >= 4 ? realEvents : [...realEvents, ...DEMO_EVENTS.slice(realEvents.length)])
+          const realEvents: TickerEvent[] = []
+          for (const item of data.trending) {
+            const volume = Number(item.total_volume_usdc)
+            const count = Number(item.discoveries)
+            // Skip entries with bad data to avoid $NaN
+            if (!volume || !count || isNaN(volume) || isNaN(count)) continue
+            const agentName = item.seller_name || item.endpoint?.split('/').pop() || 'Agent'
+            realEvents.push({
+              agent: agentName,
+              amount: (volume / count).toFixed(3),
+              endpoint: item.endpoint || '/api/unknown',
+              chain: item.chains?.[0] || 'Base',
+              timeAgo: 'just now',
+            })
+          }
+          if (realEvents.length > 0) {
+            setEvents(
+              realEvents.length >= 4
+                ? realEvents
+                : [...realEvents, ...DEMO_EVENTS.slice(realEvents.length)]
+            )
+          }
         }
         if (data?.meta?.active_agents_1h) {
           setLiveCount(data.meta.active_agents_1h)

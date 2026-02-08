@@ -7,7 +7,7 @@ const sellerCode = `// seller.ts — Monetize any Express API
 import { paymentMiddleware } from "@apitoll/seller-sdk";
 
 app.use(paymentMiddleware({
-  facilitatorUrl: "https://facilitator-production-fbd7.up.railway.app",
+  facilitatorUrl: "https://pay.apitoll.com",
   routePricing: {
     "GET /api/joke":    { price: "0.001", network: "base-mainnet" },
     "POST /api/analyze": { price: "0.02",  network: "base-mainnet" },
@@ -21,14 +21,14 @@ import { createAgentWallet, createFacilitatorSigner }
 
 const wallet = createAgentWallet({
   signer: createFacilitatorSigner({
-    facilitatorUrl: "https://facilitator-production-fbd7.up.railway.app",
+    facilitatorUrl: "https://pay.apitoll.com",
     apiKey: process.env.FACILITATOR_API_KEY,
   }),
 });
 
 // Agent calls paid API — payment handled automatically
 const res = await wallet.fetch(
-  "https://seller-api-production.up.railway.app/api/joke"
+  "https://api.apitoll.com/api/joke"
 );
 console.log(await res.json()); // { joke: "..." }`
 

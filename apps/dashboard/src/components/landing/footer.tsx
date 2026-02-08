@@ -6,7 +6,7 @@ const footerLinks = {
     { label: 'Features', href: '#features' },
     { label: 'Pricing', href: '#pricing' },
     { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Seller API (Live)', href: 'https://seller-api-production.up.railway.app/health' },
+    { label: 'API Status', href: 'https://api.apitoll.com/health' },
   ],
   Developers: [
     { label: 'x402 Protocol Spec', href: 'https://www.x402.org/' },
