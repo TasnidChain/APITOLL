@@ -5,7 +5,7 @@ import { AgentWalletConfig } from './types'
 // Discovery API Integration
 // ═══════════════════════════════════════════════════
 
-const DEFAULT_DISCOVERY_URL = 'http://localhost:3003'
+const DEFAULT_DISCOVERY_URL = process.env.APITOLL_DISCOVERY_URL || 'https://apitoll.com'
 
 /**
  * Fetch tools from the Discovery API
