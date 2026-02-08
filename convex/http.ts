@@ -14,7 +14,7 @@ function validateEnvOnStartup() {
   const missing = required.filter((name) => !process.env[name]);
   if (missing.length > 0) {
     console.error(
-      `Apitoll: Missing required environment variables: ${missing.join(", ")}. ` +
+      `API Toll: Missing required environment variables: ${missing.join(", ")}. ` +
       `Some features will be unavailable.`
     );
   }

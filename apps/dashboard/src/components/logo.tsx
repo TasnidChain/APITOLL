@@ -47,6 +47,3 @@ export function ApiTollLogo({ size = 32, id = 'logo' }: { size?: number; id?: st
     </svg>
   )
 }
-
-/** @deprecated Use ApiTollLogo instead */
-export const ApitollLogo = ApiTollLogo

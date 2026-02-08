@@ -1,7 +1,7 @@
 {
   "name": "@apitoll/langchain",
   "version": "0.1.0-beta.1",
-  "description": "LangChain and CrewAI adapters for Apitoll paid tools",
+  "description": "LangChain and CrewAI adapters for API Toll paid tools",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TasnidChain/Apitoll"
+    "url": "https://github.com/TasnidChain/APITOLL"
   },
   "publishConfig": {
     "access": "public"

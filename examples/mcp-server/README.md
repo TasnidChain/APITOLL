@@ -1,6 +1,6 @@
 # Paid MCP Server Example
 
-This example shows how to create an MCP server with paid tools using Apitoll.
+This example shows how to create an MCP server with paid tools using API Toll.
 
 ## Tools
 

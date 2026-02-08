@@ -2,7 +2,7 @@ import type { PaymentRequirement, SupportedChain } from "@apitoll/shared";
 import type { PaymentSigner } from "../agent-wallet";
 
 /**
- * Creates a signer that uses the Apitoll facilitator's custodial wallet.
+ * Creates a signer that uses the API Toll facilitator's custodial wallet.
  *
  * Flow:
  * 1. Agent calls facilitator POST /pay with payment requirements

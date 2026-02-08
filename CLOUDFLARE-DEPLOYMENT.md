@@ -1,6 +1,6 @@
-# Apitoll Cloudflare Workers Deployment
+# API Toll Cloudflare Workers Deployment
 
-Deploy Apitoll to Cloudflare Workers + Pages in 10 minutes.
+Deploy API Toll to Cloudflare Workers + Pages in 10 minutes.
 
 ## Prerequisites
 

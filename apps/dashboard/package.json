@@ -1,7 +1,7 @@
 {
   "name": "@apitoll/dashboard",
   "version": "0.1.0-beta.1",
-  "description": "Apitoll Dashboard - unified platform for agents, sellers, and transactions",
+  "description": "API Toll Dashboard — unified platform for agents, sellers, and transactions",
   "private": true,
   "license": "MIT",
   "main": "dist/index.js",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TasnidChain/Apitoll"
+    "url": "https://github.com/TasnidChain/APITOLL"
   },
   "scripts": {
     "dev": "next dev",

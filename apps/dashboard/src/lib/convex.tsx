@@ -3,10 +3,10 @@
 import { ConvexProvider, ConvexReactClient } from 'convex/react'
 import { ReactNode } from 'react'
 
-// Fallback to a placeholder URL during static export (SSR prerendering).
-// At runtime in the browser, the real NEXT_PUBLIC_CONVEX_URL will be baked
-// into the JS bundle by Next.js at build time.
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || 'https://placeholder.convex.cloud'
+// NEXT_PUBLIC_CONVEX_URL is baked into the JS bundle at build time.
+// During SSR/prerendering it may not exist yet, so we fall back to
+// a dummy URL that gets replaced when the real env var is set at build.
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL ?? 'https://placeholder.convex.cloud'
 
 const convex = new ConvexReactClient(convexUrl)
 

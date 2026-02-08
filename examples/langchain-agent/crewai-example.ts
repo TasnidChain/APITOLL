@@ -2,7 +2,7 @@
  * Example: CrewAI with Paid Tools
  *
  * This example shows how to create a CrewAI crew with agents
- * that can use paid tools via Apitoll.
+ * that can use paid tools via API Toll.
  */
 
 import {
@@ -121,7 +121,7 @@ const analystAgent = createCrewAIAgent({
 
 async function main() {
   console.log('╔═══════════════════════════════════════════════════╗')
-  console.log('║   CrewAI + Apitoll Example                  ║')
+  console.log('║   CrewAI + API Toll Example                 ║')
   console.log('╚═══════════════════════════════════════════════════╝')
 
   console.log('\n📋 Researcher Agent Config:')

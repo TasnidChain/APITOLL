@@ -40,7 +40,7 @@ interface TransactionWithFee extends Transaction {
 }
 
 /**
- * Analytics reporter that sends transaction data to the Apitoll platform.
+ * Analytics reporter that sends transaction data to the API Toll platform.
  * Now includes platform fee tracking for revenue reporting.
  * Falls back to local logging if no API key is configured.
  */
@@ -91,7 +91,7 @@ export class AnalyticsReporter {
         ? ` fee=$${report.feeBreakdown.platformFee} seller=$${report.feeBreakdown.sellerAmount}`
         : "";
       console.log(
-        `[apitoll] tx=${transaction.id} endpoint=${transaction.endpoint} amount=$${transaction.amount}${feeInfo} chain=${transaction.chain} status=${transaction.status}`
+        `[api-toll] tx=${transaction.id} endpoint=${transaction.endpoint} amount=$${transaction.amount}${feeInfo} chain=${transaction.chain} status=${transaction.status}`
       );
     }
 
@@ -102,7 +102,7 @@ export class AnalyticsReporter {
     if (this.config.webhookUrl) {
       this.sendWebhook(transaction).catch((err) => {
         if (this.config.verbose) {
-          console.error(`[apitoll] webhook error:`, err);
+          console.error(`[api-toll] webhook error:`, err);
         }
       });
     }
@@ -118,7 +118,7 @@ export class AnalyticsReporter {
    */
   async reportRejection(endpoint: string, method: string, reason: string): Promise<void> {
     if (this.config.verbose) {
-      console.log(`[apitoll] rejected endpoint=${endpoint} reason=${reason}`);
+      console.log(`[api-toll] rejected endpoint=${endpoint} reason=${reason}`);
     }
   }
 
@@ -149,13 +149,13 @@ export class AnalyticsReporter {
         this.queue.unshift(...batch);
       }
       if (this.config.verbose) {
-        console.error(`[apitoll] flush error:`, err);
+        console.error(`[api-toll] flush error:`, err);
       }
     }
   }
 
   /**
-   * Send a real-time webhook notification to the Apitoll platform (Convex).
+   * Send a real-time webhook notification to the API Toll platform (Convex).
    * Formats the transaction in the Convex /webhook/transactions format.
    */
   private async sendWebhook(transaction: TransactionWithFee): Promise<void> {

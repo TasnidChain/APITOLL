@@ -1,5 +1,5 @@
 /**
- * Apitoll Cloudflare Worker
+ * API Toll Cloudflare Worker
  * 
  * Routes:
  * - /api/* → Backend API (indexer, payments, discovery)
@@ -226,7 +226,7 @@ router.get('/api/pay/:paymentId', async (req, env) => {
  * Dashboard static files (placeholder)
  */
 router.get('/*', () => {
-  return new Response('Apitoll Dashboard - Deploy static assets from apps/dashboard', {
+  return new Response('API Toll Dashboard - Deploy static assets from apps/dashboard', {
     headers: { 'Content-Type': 'text/html' },
   });
 });

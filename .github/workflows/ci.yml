@@ -32,8 +32,14 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Type check
+      - name: Type check shared
         run: npx tsc --noEmit --project packages/shared/tsconfig.json
+
+      - name: Type check seller-sdk
+        run: npx tsc --noEmit --project packages/seller-sdk/tsconfig.json
+
+      - name: Type check buyer-sdk
+        run: npx tsc --noEmit --project packages/buyer-sdk/tsconfig.json
 
   lint:
     name: Lint

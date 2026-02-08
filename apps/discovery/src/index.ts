@@ -27,7 +27,7 @@ app.get('/health', async (c) => {
 // Landing page with API docs
 app.get('/', (c) => {
   return c.json({
-    name: 'Apitoll Discovery API',
+    name: 'API Toll Discovery API',
     version: '0.1.0',
     description: 'Find and discover paid AI tools and APIs',
     endpoints: {
@@ -77,7 +77,7 @@ const port = parseInt(process.env.PORT || '3003')
 console.log(`
 ╔═══════════════════════════════════════════════════╗
 ║                                                   ║
-║   Apitoll Discovery API                     ║
+║   API Toll Discovery API                    ║
 ║                                                   ║
 ║   Port: ${port}                                    ║
 ║   Docs: http://localhost:${port}/                   ║

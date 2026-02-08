@@ -578,7 +578,7 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 // ─── Start Server ───────────────────────────────────────────────
 
 server = app.listen(PORT, () => {
-  logger.info({ port: PORT }, 'Apitoll Facilitator listening');
+  logger.info({ port: PORT }, 'API Toll Facilitator listening');
   if (API_KEYS.length === 0) {
     logger.warn('No FACILITATOR_API_KEYS set — running in open mode (development only)');
   }

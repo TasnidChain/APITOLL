@@ -1,6 +1,6 @@
 {
   "name": "apitoll",
-  "description": "The commerce layer for the x402 agent economy — micropayments for AI agents on Base and Solana",
+  "description": "API Toll — the payment layer for the AI agent economy. USDC micropayments on Base via x402.",
   "private": true,
   "workspaces": [
     "packages/*",
