@@ -434,4 +434,35 @@ export default defineSchema({
     .index("by_org", ["orgId"])
     .index("by_stripe_pi", ["stripePaymentIntentId"])
     .index("by_status", ["status"]),
+
+  // ═══════════════════════════════════════════════════
+  // Webhooks (seller payment notifications)
+  // ═══════════════════════════════════════════════════
+  webhooks: defineTable({
+    orgId: v.id("organizations"),
+    sellerId: v.optional(v.id("sellers")),
+    url: v.string(),
+    secret: v.string(),
+    events: v.array(v.string()),
+    isActive: v.boolean(),
+    failureCount: v.number(),
+    lastTriggeredAt: v.optional(v.number()),
+    lastFailureAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_org", ["orgId"])
+    .index("by_seller", ["sellerId"]),
+
+  webhookDeliveries: defineTable({
+    webhookId: v.id("webhooks"),
+    event: v.string(),
+    payload: v.string(),
+    status: v.union(v.literal("pending"), v.literal("delivered"), v.literal("failed")),
+    httpStatus: v.optional(v.number()),
+    attempts: v.number(),
+    lastAttemptAt: v.number(),
+    responseBody: v.optional(v.string()),
+  })
+    .index("by_webhook", ["webhookId"])
+    .index("by_status", ["status"]),
 });

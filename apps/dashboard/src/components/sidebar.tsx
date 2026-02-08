@@ -15,6 +15,11 @@ import {
   Compass,
   Trophy,
   ShieldCheck,
+  Webhook,
+  Key,
+  Shield,
+  Play,
+  Banknote,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { UserButton } from '@clerk/nextjs'
@@ -27,11 +32,16 @@ const navigation = [
   { name: 'Transactions', href: '/dashboard/transactions', icon: ArrowLeftRight },
   { name: 'Agents', href: '/dashboard/agents', icon: Bot },
   { name: 'Sellers', href: '/dashboard/sellers', icon: Store },
+  { name: 'Playground', href: '/dashboard/playground', icon: Play },
+  { name: 'Webhooks', href: '/dashboard/webhooks', icon: Webhook },
+  { name: 'API Keys', href: '/dashboard/api-keys', icon: Key },
   { name: 'Policies', href: '/dashboard/policies', icon: ShieldCheck },
+  { name: 'Fund Wallet', href: '/dashboard/fund', icon: Banknote },
   { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
   { name: 'Deposits', href: '/dashboard/deposits', icon: Wallet },
   { name: 'Disputes', href: '/dashboard/disputes', icon: AlertTriangle },
   { name: 'Revenue', href: '/dashboard/revenue', icon: BarChart3 },
+  { name: 'Admin', href: '/dashboard/admin', icon: Shield },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 

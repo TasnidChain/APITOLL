@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as admin from "../admin.js";
 import type * as agents from "../agents.js";
 import type * as alertRules from "../alertRules.js";
 import type * as analytics from "../analytics.js";
@@ -26,6 +27,7 @@ import type * as referrals from "../referrals.js";
 import type * as sellers from "../sellers.js";
 import type * as tools from "../tools.js";
 import type * as transactions from "../transactions.js";
+import type * as webhooks from "../webhooks.js";
 
 import type {
   ApiFromModules,
@@ -34,6 +36,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  admin: typeof admin;
   agents: typeof agents;
   alertRules: typeof alertRules;
   analytics: typeof analytics;
@@ -52,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   sellers: typeof sellers;
   tools: typeof tools;
   transactions: typeof transactions;
+  webhooks: typeof webhooks;
 }>;
 
 /**

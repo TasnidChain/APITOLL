@@ -1,12 +1,34 @@
-import { Bot, Cpu, Wrench, Globe, Code2, Blocks } from 'lucide-react'
+import { Bot, Cpu, Wrench, Globe, Code2, Blocks, Zap, Layers, Server, Brain, Sparkles, Network } from 'lucide-react'
 
-const frameworks = [
-  { name: 'LangChain', icon: Bot, description: 'Native tool integration' },
-  { name: 'CrewAI', icon: Cpu, description: 'Multi-agent payments' },
-  { name: 'AutoGen', icon: Blocks, description: 'Agent wallet support' },
-  { name: 'MCP Servers', icon: Wrench, description: 'Tool monetization' },
-  { name: 'Express / Hono', icon: Code2, description: 'Middleware SDK' },
-  { name: 'Any HTTP Client', icon: Globe, description: 'Fetch, axios, curl' },
+const categories = [
+  {
+    title: 'Agent Frameworks',
+    items: [
+      { name: 'LangChain', icon: Bot, description: 'Native tool integration' },
+      { name: 'CrewAI', icon: Cpu, description: 'Multi-agent payments' },
+      { name: 'AutoGen', icon: Blocks, description: 'Agent wallet support' },
+      { name: 'OpenAI Agents SDK', icon: Brain, description: 'Built-in tool calling' },
+      { name: 'Vercel AI SDK', icon: Sparkles, description: 'Streaming + payments' },
+      { name: 'LlamaIndex', icon: Layers, description: 'RAG with paid sources' },
+    ],
+  },
+  {
+    title: 'Protocols & Standards',
+    items: [
+      { name: 'MCP Servers', icon: Wrench, description: 'Tool monetization' },
+      { name: 'A2A Protocol', icon: Network, description: 'Agent-to-agent commerce' },
+      { name: 'OpenAPI / Swagger', icon: Code2, description: 'Auto-discovery' },
+      { name: 'x402 Protocol', icon: Zap, description: 'HTTP native payments' },
+    ],
+  },
+  {
+    title: 'Server Frameworks',
+    items: [
+      { name: 'Express / Hono', icon: Server, description: 'Middleware SDK' },
+      { name: 'FastAPI / Flask', icon: Server, description: 'Python middleware' },
+      { name: 'Any HTTP Client', icon: Globe, description: 'Fetch, axios, curl' },
+    ],
+  },
 ]
 
 export function Integrations() {
@@ -23,26 +45,48 @@ export function Integrations() {
             Works with your stack
           </h2>
           <p className="mt-4 text-lg text-slate-400">
-            Native support for popular agent frameworks and HTTP servers
+            Native support for popular agent frameworks, protocols, and HTTP servers.
+            Drop in x402 payments in minutes.
           </p>
         </div>
 
-        <div className="mx-auto mt-12 grid max-w-3xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {frameworks.map((fw) => (
-            <div
-              key={fw.name}
-              className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900/40 px-5 py-4 transition-all hover:border-slate-700"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
-                <fw.icon className="h-5 w-5 text-blue-400" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white">{fw.name}</p>
-                <p className="text-xs text-slate-500">{fw.description}</p>
+        <div className="mx-auto mt-16 space-y-12">
+          {categories.map((category) => (
+            <div key={category.title}>
+              <h3 className="mb-4 text-center text-sm font-semibold uppercase tracking-wider text-slate-500">
+                {category.title}
+              </h3>
+              <div className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {category.items.map((fw) => (
+                  <div
+                    key={fw.name}
+                    className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900/40 px-5 py-4 transition-all hover:border-slate-700 hover:bg-slate-900/60"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
+                      <fw.icon className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{fw.name}</p>
+                      <p className="text-xs text-slate-500">{fw.description}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
+
+        <p className="mt-12 text-center text-sm text-slate-500">
+          Don&apos;t see your framework?{' '}
+          <a
+            href="https://github.com/TasnidChain/APITOLL/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300"
+          >
+            Request an integration
+          </a>
+        </p>
       </div>
     </section>
   )

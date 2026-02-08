@@ -195,3 +195,21 @@ export function useRevenueOverview() {
 export function useDailyRevenue(days?: number) {
   return useQuery(api.platformRevenue.getDailyRevenue, { days })
 }
+
+// ═══════════════════════════════════════════════════
+// Webhook queries
+// ═══════════════════════════════════════════════════
+
+export function useWebhooks(orgId: Id<"organizations"> | null) {
+  return useQuery(
+    api.webhooks.listByOrg,
+    orgId ? { orgId } : "skip"
+  )
+}
+
+export function useWebhookStats(orgId: Id<"organizations"> | null) {
+  return useQuery(
+    api.webhooks.getStats,
+    orgId ? { orgId } : "skip"
+  )
+}
