@@ -1,0 +1,77 @@
+FROM node:20-slim AS base
+
+# ── Stage 1: Install dependencies ────────────────────
+FROM base AS deps
+WORKDIR /app
+
+# Copy root package files for monorepo install
+COPY package.json package-lock.json ./
+
+# Copy workspace package.json files (needed for npm ci to resolve workspaces)
+COPY packages/shared/package.json packages/shared/package.json
+COPY packages/seller-sdk/package.json packages/seller-sdk/package.json
+COPY packages/buyer-sdk/package.json packages/buyer-sdk/package.json
+COPY packages/facilitator/package.json packages/facilitator/package.json
+COPY packages/mcp-server/package.json packages/mcp-server/package.json
+COPY packages/langchain/package.json packages/langchain/package.json
+COPY apps/dashboard/package.json apps/dashboard/package.json
+COPY apps/seller-api/package.json apps/seller-api/package.json
+COPY apps/agent-client/package.json apps/agent-client/package.json
+COPY apps/indexer/package.json apps/indexer/package.json
+COPY apps/discovery/package.json apps/discovery/package.json
+
+# Install all deps (monorepo-aware)
+RUN npm ci --ignore-scripts
+
+# ── Stage 2: Build ───────────────────────────────────
+FROM base AS builder
+WORKDIR /app
+
+# Copy all node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source files needed for build
+COPY package.json package-lock.json tsconfig.base.json ./
+COPY packages/shared/ packages/shared/
+COPY apps/dashboard/ apps/dashboard/
+COPY convex/ convex/
+
+# Build shared package first (dashboard imports from it)
+RUN cd packages/shared && npx tsc
+
+# Build Next.js dashboard
+# NEXT_PUBLIC_ vars are baked into the client JS bundle at build time.
+# These are public (non-secret) values — safe to hardcode in the Dockerfile.
+ENV NEXT_PUBLIC_CONVEX_URL=https://cheery-parrot-104.convex.cloud
+ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_c3BsZW5kaWQtbWFybW90LTE3LmNsZXJrLmFjY291bnRzLmRldiQ
+ENV NEXT_PUBLIC_APP_URL=https://apitoll.com
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN cd apps/dashboard && npx next build
+
+# ── Stage 3: Production runner ───────────────────────
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy public assets
+COPY --from=builder /app/apps/dashboard/public ./apps/dashboard/public
+
+# Copy standalone server (includes node_modules needed at runtime)
+COPY --from=builder --chown=nextjs:nodejs /app/apps/dashboard/.next/standalone ./
+
+# Copy static assets
+COPY --from=builder --chown=nextjs:nodejs /app/apps/dashboard/.next/static ./apps/dashboard/.next/static
+
+USER nextjs
+
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node", "apps/dashboard/server.js"]
