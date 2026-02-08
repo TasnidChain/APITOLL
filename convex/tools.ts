@@ -1,6 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// Auth helper: require a logged-in Clerk user
+async function requireAuth(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error("Not authenticated");
+  return identity;
+}
+
 // ═══════════════════════════════════════════════════
 // Create Tool (for Discovery)
 // ═══════════════════════════════════════════════════
@@ -23,6 +30,7 @@ export const create = mutation({
     mcpToolSpec: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     // Check if slug already exists
     const existing = await ctx.db
       .query("tools")
@@ -188,6 +196,7 @@ export const update = mutation({
     outputSchema: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const { id, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
       Object.entries(updates).filter(([_, v]) => v !== undefined)
@@ -204,6 +213,7 @@ export const update = mutation({
 export const deactivate = mutation({
   args: { id: v.id("tools") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     await ctx.db.patch(args.id, { isActive: false });
   },
 });
@@ -329,6 +339,7 @@ export const setFeatured = mutation({
     boostScore: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const updates: any = {
       isFeatured: args.isFeatured,
       listingTier: args.listingTier ?? (args.isFeatured ? "featured" : "free"),
@@ -358,6 +369,7 @@ export const setVerified = mutation({
     isVerified: v.boolean(),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     await ctx.db.patch(args.id, {
       isVerified: args.isVerified,
       listingTier: args.isVerified ? "verified" : "free",
@@ -375,6 +387,7 @@ export const rateTool = mutation({
     rating: v.number(), // 1-5
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     if (args.rating < 1 || args.rating > 5) {
       throw new Error("Rating must be between 1 and 5");
     }

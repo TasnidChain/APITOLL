@@ -1,0 +1,37 @@
+# Environment files — NEVER copy into images
+.env
+.env.*
+.env.local
+.env.production
+*.env
+
+# Dependencies (rebuild in container)
+node_modules/
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts (rebuild in container)
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test files
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+__tests__/
+coverage/

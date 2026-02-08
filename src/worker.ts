@@ -113,7 +113,13 @@ router.post('/api/webhook/stripe', async (req, env) => {
     const signed = await crypto.subtle.sign('HMAC', key, encoder.encode(`${timestamp}.${body}`));
     const expected = Array.from(new Uint8Array(signed), (b) => b.toString(16).padStart(2, '0')).join('');
 
-    if (expected !== signature) {
+    // Constant-time comparison to prevent timing attacks on signature
+    const len = Math.max(expected.length, signature.length);
+    let diff = expected.length ^ signature.length;
+    for (let i = 0; i < len; i++) {
+      diff |= (expected.charCodeAt(i) || 0) ^ (signature.charCodeAt(i) || 0);
+    }
+    if (diff !== 0) {
       return new Response(JSON.stringify({ error: 'Invalid webhook signature' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },

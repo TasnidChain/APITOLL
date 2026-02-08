@@ -1,6 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// Auth helper: require a logged-in Clerk user
+async function requireAuth(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error("Not authenticated");
+  return identity;
+}
+
 // ─── Secure API Key Generation ───────────────────────────────────
 
 function generateSecureKey(prefix: string): string {
@@ -93,6 +100,7 @@ export const updatePlan = mutation({
     plan: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     await ctx.db.patch(args.id, { plan: args.plan });
   },
 });
@@ -107,6 +115,7 @@ export const updateBillingWallet = mutation({
     billingWallet: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     await ctx.db.patch(args.id, { billingWallet: args.billingWallet });
   },
 });
@@ -118,6 +127,7 @@ export const updateBillingWallet = mutation({
 export const regenerateApiKey = mutation({
   args: { id: v.id("organizations") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const newApiKey = generateSecureKey("org");
     await ctx.db.patch(args.id, { apiKey: newApiKey });
     return newApiKey;

@@ -1,6 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// Auth helper: require a logged-in Clerk user
+async function requireAuth(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error("Not authenticated");
+  return identity;
+}
+
 // ═══════════════════════════════════════════════════
 // Create Agent
 // ═══════════════════════════════════════════════════
@@ -14,6 +21,7 @@ export const create = mutation({
     policies: v.optional(v.array(v.any())),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const id = await ctx.db.insert("agents", {
       orgId: args.orgId,
       name: args.name,
@@ -78,6 +86,7 @@ export const updateBalance = mutation({
     balance: v.number(),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const agent = await ctx.db.get(args.id);
     if (!agent) throw new Error("Agent not found");
 
@@ -101,6 +110,7 @@ export const updateStatus = mutation({
     status: v.union(v.literal("active"), v.literal("paused"), v.literal("depleted")),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     await ctx.db.patch(args.id, { status: args.status });
   },
 });
@@ -115,6 +125,7 @@ export const updatePolicies = mutation({
     policies: v.array(v.any()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     await ctx.db.patch(args.id, { policiesJson: args.policies });
   },
 });

@@ -340,13 +340,15 @@ export function generateSecureApiKey(prefix: string): string {
 
 /**
  * Constant-time string comparison for API keys.
- * Prevents timing attacks.
+ * Prevents timing attacks — including length-based leaks.
  */
 export function secureCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  // Use the longer length so we always iterate the same amount
+  // regardless of which string is shorter — prevents length oracle
+  const len = Math.max(a.length, b.length);
+  let result = a.length ^ b.length; // non-zero if lengths differ
+  for (let i = 0; i < len; i++) {
+    result |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
   }
   return result === 0;
 }
