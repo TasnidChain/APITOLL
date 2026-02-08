@@ -15,8 +15,8 @@ const footerLinks = {
     { label: 'npm: @apitoll/buyer-sdk', href: 'https://www.npmjs.com/package/@apitoll/buyer-sdk' },
   ],
   Company: [
-    { label: 'Twitter / X', href: '#' },
-    { label: 'Discord', href: '#' },
+    { label: 'Twitter / X', href: 'https://x.com/apitoll' },
+    { label: 'Discord', href: 'https://discord.gg/apitoll' },
     { label: 'Terms of Service', href: '/terms' },
     { label: 'Privacy Policy', href: '/privacy' },
   ],

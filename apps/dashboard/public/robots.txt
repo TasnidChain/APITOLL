@@ -1,0 +1,11 @@
+# API Toll — Payment Infrastructure for AI Agents
+# https://apitoll.com
+
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /sign-in
+Disallow: /sign-up
+
+Sitemap: https://apitoll.com/sitemap.xml
