@@ -9,6 +9,7 @@ import {
   usdcFromSmallestUnit,
 } from "@apitoll/shared";
 import { PolicyEngine, type PolicyCheckResult } from "./policy-engine";
+import { APITOLLMutator, type MutatorConfig } from "./mutator";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -21,6 +22,8 @@ export interface AgentWalletOptions extends AgentConfig {
   onPayment?: (receipt: PaymentReceipt, url: string) => void;
   /** Callback on errors */
   onError?: (error: Error, url: string) => void;
+  /** Enable evolution — agent self-optimizes after each transaction */
+  evolution?: MutatorConfig | boolean;
 }
 
 export type PaymentSigner = (
@@ -65,6 +68,7 @@ export class AgentWallet {
   private signer?: PaymentSigner;
   private options: AgentWalletOptions;
   private transactionLog: Transaction[] = [];
+  private mutator?: APITOLLMutator;
 
   constructor(options: AgentWalletOptions) {
     this.name = options.name;
@@ -72,12 +76,20 @@ export class AgentWallet {
     this.policyEngine = new PolicyEngine(options.policies);
     this.signer = options.signer;
     this.options = options;
+
+    // Initialize evolution engine if enabled
+    if (options.evolution) {
+      const mutatorConfig =
+        typeof options.evolution === "boolean" ? {} : options.evolution;
+      this.mutator = new APITOLLMutator(mutatorConfig);
+    }
   }
 
   /**
    * Fetch a resource, automatically handling x402 payment if required.
    */
   async fetch(url: string, init?: AgentFetchOptions): Promise<Response> {
+    const startTime = Date.now();
     const { skipPolicyCheck, maxPrice, sellerId, ...fetchInit } = init || {};
 
     // Step 1: Make initial request
@@ -166,7 +178,29 @@ export class AgentWallet {
     this.policyEngine.recordTransaction(transaction);
     this.policyEngine.recordRequest(new URL(url).pathname);
 
-    // Step 10: Notify
+    // Step 10: Feed the evolution engine
+    if (this.mutator) {
+      const latencyMs = Date.now() - startTime;
+      if (paidResponse.ok) {
+        this.mutator.onSuccess({
+          success: true,
+          latencyMs,
+          amount,
+          chain: this.chain,
+          endpoint: new URL(url).pathname,
+        });
+      } else {
+        this.mutator.onFailure({
+          success: false,
+          latencyMs,
+          amount,
+          chain: this.chain,
+          endpoint: new URL(url).pathname,
+        });
+      }
+    }
+
+    // Step 11: Notify
     if (paidResponse.ok) {
       this.options.onPayment?.(
         {
@@ -257,6 +291,35 @@ export class AgentWallet {
    */
   updatePolicies(policies: Policy[]): void {
     this.policyEngine.updatePolicies(policies);
+  }
+
+  /**
+   * Get the evolution engine state (if evolution is enabled).
+   * Returns current preference weights, escrow status, mutation count, etc.
+   */
+  getEvolutionState() {
+    return this.mutator?.getState() ?? null;
+  }
+
+  /**
+   * Get mutation history from the evolution engine.
+   */
+  getEvolutionHistory() {
+    return this.mutator?.getMutations() ?? [];
+  }
+
+  /**
+   * Export evolution state for persistence across sessions.
+   */
+  exportEvolutionState(): string | null {
+    return this.mutator?.exportState() ?? null;
+  }
+
+  /**
+   * Import previously saved evolution state.
+   */
+  importEvolutionState(serialized: string): void {
+    this.mutator?.importState(serialized);
   }
 }
 

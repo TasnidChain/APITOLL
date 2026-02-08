@@ -1,7 +1,7 @@
 {
   "name": "@apitoll/buyer-sdk",
-  "version": "0.1.0-beta.1",
-  "description": "x402 payment client for AI agents. Auto-handles 402 responses with budget controls and spend tracking.",
+  "version": "0.1.0-beta.2",
+  "description": "x402 payment client for AI agents. Auto-handles 402 responses with budget controls, spend tracking, and self-optimization.",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,9 +21,9 @@
     "dev": "tsc --watch",
     "test": "vitest"
   },
-  "keywords": ["x402", "agent", "micropayments", "usdc", "budget", "spend-management"],
+  "keywords": ["x402", "agent", "micropayments", "usdc", "budget", "spend-management", "evolution", "self-optimization"],
   "dependencies": {
-    "@apitoll/shared": "0.1.0-beta.1"
+    "@apitoll/shared": "0.1.0-beta.2"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

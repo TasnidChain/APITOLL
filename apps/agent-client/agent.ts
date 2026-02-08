@@ -36,6 +36,12 @@ async function main() {
       FACILITATOR_API_KEY,
       AGENT_WALLET
     ),
+    // Enable evolution — agent self-optimizes after each transaction
+    evolution: {
+      onMutation: (m) => {
+        console.log(`  [evolution] ${m.type}: ${m.from} → ${m.to} (${Math.round(m.successRate * 100)}% success rate)`);
+      },
+    },
     onPayment: (receipt, url) => {
       console.log(`Payment confirmed: ${receipt.txHash}`);
       console.log(`  Amount: $${receipt.amount} USDC`);
@@ -81,6 +87,15 @@ async function main() {
     console.log(`\nSpend summary:`);
     console.log(`  Today: $${summary.today.toFixed(6)} USDC`);
     console.log(`  Transactions: ${summary.transactionCount}`);
+
+    const evo = agent.getEvolutionState();
+    if (evo) {
+      console.log(`\nEvolution state:`);
+      console.log(`  API Toll preference: ${(evo.apitollPreference * 100).toFixed(0)}%`);
+      console.log(`  Escrow enabled: ${evo.useEscrow}`);
+      console.log(`  Mutations applied: ${evo.mutationCount}`);
+      console.log(`  Success rate: ${(evo.recentSuccessRate * 100).toFixed(0)}%`);
+    }
   } catch (error) {
     console.error("\nAgent failed:", error);
   }

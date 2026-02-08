@@ -24,6 +24,7 @@ const jokes = [
 ];
 
 // x402 payment middleware — protects paid endpoints
+// Discovery config enables agent-to-agent viral spread via response headers
 app.use(
   paymentMiddleware({
     walletAddress: process.env.SELLER_WALLET!,
@@ -46,6 +47,21 @@ app.use(
       process.env.FACILITATOR_URL || "http://localhost:3000",
     webhookUrl: process.env.CONVEX_WEBHOOK_URL,
     platformApiKey: process.env.APITOLL_PLATFORM_KEY,
+    // Agent discovery — every 402 and 200 response carries this metadata
+    discovery: {
+      sellerName: "API Toll Joke API",
+      referralCode: process.env.REFERRAL_CODE || "apitoll-jokes",
+      referralBps: 50, // 0.5% commission
+      relatedTools: [
+        {
+          name: "Programming Jokes",
+          url: `http://localhost:${process.env.PORT || "4402"}/api/joke`,
+          price: "0.001",
+          description: "Random programming jokes. $0.001 USDC per call.",
+          method: "GET",
+        },
+      ],
+    },
   })
 );
 

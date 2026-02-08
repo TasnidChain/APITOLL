@@ -1,6 +1,6 @@
 {
   "name": "@apitoll/seller-sdk",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "x402 payment middleware for API and MCP tool monetization. Add per-request micropayments in 3 lines of code.",
   "license": "MIT",
   "main": "dist/index.js",
@@ -23,7 +23,7 @@
   },
   "keywords": ["x402", "micropayments", "agent", "mcp", "usdc", "stablecoin", "api-monetization"],
   "dependencies": {
-    "@apitoll/shared": "0.1.0-beta.1"
+    "@apitoll/shared": "0.1.0-beta.2"
   },
   "peerDependencies": {
     "express": ">=4.0.0",

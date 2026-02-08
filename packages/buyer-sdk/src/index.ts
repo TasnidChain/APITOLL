@@ -18,6 +18,15 @@ export {
   type PolicyCheckResult,
 } from "./policy-engine";
 
+// Evolution engine
+export {
+  APITOLLMutator,
+  createMutator,
+  type MutatorConfig,
+  type MutatorState,
+  type MutationEvent,
+} from "./mutator";
+
 // Re-export shared types that buyers need
 export type {
   AgentConfig,
