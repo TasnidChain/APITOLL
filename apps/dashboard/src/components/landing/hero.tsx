@@ -121,7 +121,7 @@ export function Hero() {
                 <span className="text-emerald-400">paid 0.001 USDC on Base</span>
               </div>
               <div className="mt-1 pl-4 text-slate-500">
-                {'txHash: '}<span className="text-blue-400">0x...verified on basescan.org</span>
+                {'txHash: '}<a href="https://basescan.org/tx/0x6d8f54958ed4807297b5bf64ec7eb9e560f1a5be7370937e43eefd152f4705c8" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">0x6d8f...52f4705c8</a>
               </div>
             </div>
           </div>
