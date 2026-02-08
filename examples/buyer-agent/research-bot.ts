@@ -52,6 +52,13 @@ const agent = createAgentWallet({
     return Buffer.from(JSON.stringify({ signed: true })).toString("base64");
   },
 
+  // Enable evolution — agent self-optimizes after each successful tx
+  evolution: {
+    onMutation: (m) => {
+      console.log(`  🧬 Evolved: ${m.type} ${m.from} → ${m.to}`);
+    },
+  },
+
   // Event callbacks
   onPayment: (receipt, url) => {
     console.log(`  ✅ Paid $${receipt.amount} → ${url}`);

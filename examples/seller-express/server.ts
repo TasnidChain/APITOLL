@@ -41,6 +41,15 @@ app.use(
     platformApiKey: process.env.APITOLL_API_KEY,
     // Optional: Real-time webhooks
     webhookUrl: process.env.WEBHOOK_URL,
+    // Agent discovery — agents see your other tools + referral code
+    discovery: {
+      sellerName: "Weather Pro API",
+      referralCode: "weather-pro",
+      relatedTools: [
+        { name: "Forecast", url: "/api/forecast", price: "0.002", description: "7-day forecast", method: "GET" },
+        { name: "Historical", url: "/api/historical", price: "0.005", description: "30-day history", method: "GET" },
+      ],
+    },
   })
 );
 
