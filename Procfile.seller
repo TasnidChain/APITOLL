@@ -1,0 +1,1 @@
+web: cd packages/shared && npm run build && cd ../seller-sdk && npm run build && cd ../../apps/seller-api && npx tsx server.ts

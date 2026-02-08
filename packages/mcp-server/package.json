@@ -1,6 +1,6 @@
 {
   "name": "@apitoll/mcp-server",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.3",
   "description": "Monetize MCP tools with x402 payments",
   "license": "MIT",
   "main": "dist/index.js",
@@ -36,7 +36,7 @@
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@apitoll/shared": "*",
+    "@apitoll/shared": "0.1.0-beta.3",
     "zod": "^3.22.0"
   },
   "peerDependencies": {

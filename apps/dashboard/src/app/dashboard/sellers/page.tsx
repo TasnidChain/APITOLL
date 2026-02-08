@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useMutation } from 'convex/react'
+import { useState, useMemo } from 'react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../../../../convex/_generated/api'
 import { useOrgId, useSellers, useSellerLimit } from '@/lib/hooks'
 import { PageLoading, StatCardSkeleton } from '@/components/loading'
@@ -152,20 +152,22 @@ export default function SellersPage() {
                 </div>
               )}
 
-              {/* Trust & Reputation */}
+              {/* Trust & Reputation — real data only */}
               <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1">
                   <ShieldCheck className="h-3 w-3 text-emerald-500" />
                   Verified
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                  {(4.2 + (seller.totalCalls % 8) * 0.1).toFixed(1)}
-                </span>
-                <span className="inline-flex items-center gap-1">
                   <Clock className="h-3 w-3" />
-                  {seller.totalCalls > 1000 ? '99.5%' : '98.2%'} uptime
+                  {formatCompact(seller.totalCalls)} calls
                 </span>
+                {seller.totalRevenue > 0 && (
+                  <span className="inline-flex items-center gap-1">
+                    <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                    Earning
+                  </span>
+                )}
               </div>
 
               <div className="mt-3 border-t pt-3">
@@ -197,7 +199,36 @@ export default function SellersPage() {
 function ReferralPanel() {
   const [copied, setCopied] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
-  const referralCode = 'apitoll-' + Math.random().toString(36).slice(2, 8) // TODO: pull from Convex per-seller
+  const orgId = useOrgId()
+  const sellers = useSellers(orgId)
+
+  // Use the first seller's wallet to look up their referral code from Convex
+  const firstSellerWallet = sellers?.[0]?.walletAddress
+  const referrals = useQuery(
+    api.referrals.getByWallet,
+    firstSellerWallet ? { referrerWallet: firstSellerWallet } : "skip"
+  )
+
+  // Stable referral code: use persisted Convex code or generate a deterministic one from wallet
+  const referralCode = useMemo(() => {
+    if (referrals && referrals.length > 0) return referrals[0].referralCode
+    if (firstSellerWallet) return `apitoll-${firstSellerWallet.slice(2, 8).toLowerCase()}`
+    return 'apitoll-new'
+  }, [referrals, firstSellerWallet])
+
+  // Pull real stats from Convex referral data
+  const referralStats = useMemo(() => {
+    if (!referrals || referrals.length === 0) return { agents: 0, volume: 0, commission: 0 }
+    const totals = referrals.reduce(
+      (acc, r) => ({
+        agents: acc.agents + r.referredTransactions,
+        volume: acc.volume + r.totalVolume,
+        commission: acc.commission + r.totalCommission,
+      }),
+      { agents: 0, volume: 0, commission: 0 }
+    )
+    return totals
+  }, [referrals])
 
   const referralLink = `https://apitoll.com/api/discover?ref=${referralCode}`
   const sdkSnippet = `discovery: {\n  referralCode: "${referralCode}",\n  referralBps: 50, // 0.5% commission\n}`
@@ -278,28 +309,28 @@ function ReferralPanel() {
       {/* Expanded Details */}
       {showDetails && (
         <div className="mt-5 space-y-4">
-          {/* Stats Row */}
+          {/* Stats Row — real Convex data */}
           <div className="grid grid-cols-3 gap-4">
             <div className="rounded-lg border bg-card p-3">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Users className="h-3 w-3" />
-                Referred Agents
+                Referred Transactions
               </div>
-              <p className="mt-1 text-lg font-bold">0</p>
+              <p className="mt-1 text-lg font-bold">{referralStats.agents}</p>
             </div>
             <div className="rounded-lg border bg-card p-3">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <TrendingUp className="h-3 w-3" />
                 Total Volume
               </div>
-              <p className="mt-1 text-lg font-bold">$0.00</p>
+              <p className="mt-1 text-lg font-bold">{formatUSD(referralStats.volume)}</p>
             </div>
             <div className="rounded-lg border bg-card p-3">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Gift className="h-3 w-3" />
                 Commission Earned
               </div>
-              <p className="mt-1 text-lg font-bold text-emerald-400">$0.00</p>
+              <p className="mt-1 text-lg font-bold text-emerald-400">{formatUSD(referralStats.commission)}</p>
             </div>
           </div>
 

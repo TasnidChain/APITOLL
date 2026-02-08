@@ -1,6 +1,6 @@
 {
   "name": "@apitoll/facilitator",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.3",
   "description": "x402 facilitator service - handles HTTP 402 payment flows for agent-to-tool micropayments",
   "type": "module",
   "main": "dist/index.js",
@@ -31,7 +31,7 @@
     "agent-commerce"
   ],
   "dependencies": {
-    "@apitoll/shared": "file:../shared",
+    "@apitoll/shared": "0.1.0-beta.3",
     "express": "^4.18.2",
     "ethers": "^6.10.0",
     "zod": "^3.22.0",

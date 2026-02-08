@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../../../../convex/_generated/api";
 
 /**
  * Agent/Seller Registration Endpoint — POST /api/discover/register
@@ -8,8 +10,12 @@ import { NextRequest, NextResponse } from "next/server";
  * get listed, other agents discover and pay for them.
  *
  * GET — Returns registration instructions (for agent discovery)
- * POST — Accepts tool registration (forward to Convex or manual review)
+ * POST — Registers tool in Convex (starts unverified, auto-listed)
  */
+
+const CONVEX_URL =
+  process.env.NEXT_PUBLIC_CONVEX_URL ??
+  "https://cheery-parrot-104.convex.cloud";
 
 export async function GET(req: NextRequest) {
   const ref = req.nextUrl.searchParams.get("ref");
@@ -127,50 +133,59 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // For now, queue for manual review (later: auto-list via Convex mutation)
-    // In production this would call the Convex API to create the tool listing
-    const registration = {
-      id: `reg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      status: "pending_review",
-      tool: {
+    const chain = body.chain || (isEth ? "base" : "solana");
+
+    // Register tool in Convex via public mutation
+    try {
+      const convex = new ConvexHttpClient(CONVEX_URL);
+      const result = await convex.mutation(api.tools.registerPublic, {
         name: body.name,
-        url: body.url,
+        description: body.description,
+        baseUrl: body.url,
         method: body.method,
         path: body.path,
-        price: body.price,
-        description: body.description,
+        price,
         category: body.category || "uncategorized",
-        wallet_address: body.wallet_address,
-        chain: body.chain || (isEth ? "base" : "solana"),
-        referral_code: body.referral_code || undefined,
-      },
-      submitted_at: new Date().toISOString(),
-    };
+        chains: [chain],
+        walletAddress: wallet,
+        referralCode: body.referral_code || undefined,
+      });
 
-    // TODO: Forward to Convex mutation when we build the admin approval flow
-    console.log("[api-toll] New tool registration:", JSON.stringify(registration));
-
-    return NextResponse.json(
-      {
-        success: true,
-        registration_id: registration.id,
-        status: "pending_review",
-        message:
-          "Your tool has been submitted for review. Once approved, it will be " +
-          "discoverable by AI agents in the API Toll directory. Typical review " +
-          "time: < 24 hours.",
-        dashboard: "https://apitoll.com/dashboard/sellers",
-        next_steps: [
-          "1. Ensure your API is live and returns proper x402 402 responses",
-          "2. Monitor your seller dashboard for approval notification",
-          "3. Share your referral code to earn 0.5% on referred transactions",
-        ],
-      },
-      {
-        status: 201,
-        headers: { "X-APITOLL-DISCOVERY": "true" },
-      }
-    );
+      return NextResponse.json(
+        {
+          success: true,
+          registration_id: result.id,
+          status: result.status === "already_registered" ? "already_registered" : "registered",
+          slug: result.slug,
+          message:
+            result.status === "already_registered"
+              ? "This endpoint is already registered in the API Toll directory."
+              : "Your tool has been registered and is now discoverable by AI agents. " +
+                "It starts as unverified — verified status unlocks higher visibility.",
+          dashboard: "https://apitoll.com/dashboard/sellers",
+          discovery_url: `https://apitoll.com/api/discover?category=${body.category || "uncategorized"}`,
+          next_steps: [
+            "1. Ensure your API is live and returns proper x402 402 responses",
+            "2. Agents will auto-discover your tool via the discovery API",
+            "3. Share your referral code to earn 0.5% on referred transactions",
+          ],
+        },
+        {
+          status: result.status === "already_registered" ? 200 : 201,
+          headers: { "X-APITOLL-DISCOVERY": "true" },
+        }
+      );
+    } catch (convexError: any) {
+      console.error("[api-toll] Convex registration error:", convexError.message);
+      return NextResponse.json(
+        {
+          error: "Registration failed",
+          message: "Could not register tool at this time. Please try again.",
+          hint: "If this persists, register via the dashboard: https://apitoll.com/dashboard/sellers",
+        },
+        { status: 500 }
+      );
+    }
   } catch {
     return NextResponse.json(
       {

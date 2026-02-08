@@ -58,6 +58,71 @@ export const create = mutation({
 });
 
 // ═══════════════════════════════════════════════════
+// Public Registration (from /api/discover/register)
+// No auth required — tools start as unverified
+// ═══════════════════════════════════════════════════
+
+export const registerPublic = mutation({
+  args: {
+    name: v.string(),
+    description: v.string(),
+    baseUrl: v.string(),
+    method: v.string(),
+    path: v.string(),
+    price: v.number(),
+    category: v.string(),
+    chains: v.array(v.string()),
+    walletAddress: v.string(),
+    referralCode: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Generate slug from name
+    const slug = args.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      + "-" + Date.now().toString(36);
+
+    // Check for duplicate base URL + path combo
+    const existing = await ctx.db
+      .query("tools")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("baseUrl"), args.baseUrl),
+          q.eq(q.field("path"), args.path)
+        )
+      )
+      .first();
+
+    if (existing) {
+      return { id: existing._id, status: "already_registered", slug: existing.slug };
+    }
+
+    const id = await ctx.db.insert("tools", {
+      name: args.name,
+      slug,
+      description: args.description,
+      baseUrl: args.baseUrl,
+      method: args.method,
+      path: args.path,
+      price: args.price,
+      currency: "USDC",
+      chains: args.chains,
+      category: args.category,
+      tags: [],
+      totalCalls: 0,
+      avgLatencyMs: 0,
+      rating: 0,
+      ratingCount: 0,
+      isActive: true,
+      isVerified: false, // Public registrations start unverified
+    });
+
+    return { id, status: "registered", slug };
+  },
+});
+
+// ═══════════════════════════════════════════════════
 // Search Tools
 // ═══════════════════════════════════════════════════
 

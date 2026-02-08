@@ -12,6 +12,8 @@ import {
   BarChart3,
   ArrowRight,
   Loader2,
+  Mail,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -81,23 +83,41 @@ export default function BillingPage() {
 
   const currentPlan = billing?.plan ?? 'free'
 
+  const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null)
+
   const handlePlanChange = async (planId: string) => {
     if (planId === currentPlan) return
 
     setUpgrading(planId)
-    // In production, this would create a Stripe Checkout session
-    // and redirect the user. For now, we show a message.
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 500))
     setUpgrading(null)
-    alert(
+    setUpgradeMessage(
       planId === 'enterprise'
-        ? 'Enterprise plans require a sales call. Contact sales@apitoll.com'  // email stays as-is for now
-        : 'Stripe Checkout integration coming soon. Contact support to upgrade.'
+        ? 'Enterprise plans require a sales call. Contact sales@apitoll.com to get started.'
+        : 'Stripe billing is coming soon. Contact support@apitoll.com to upgrade your plan.'
     )
   }
 
   return (
     <div className="p-8">
+      {/* Upgrade Message Banner */}
+      {upgradeMessage && (
+        <div className="mb-6 flex items-start justify-between rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
+          <div className="flex items-start gap-3">
+            <Mail className="mt-0.5 h-5 w-5 text-blue-400 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Plan Upgrade</p>
+              <p className="mt-1 text-sm text-muted-foreground">{upgradeMessage}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setUpgradeMessage(null)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Billing & Plans</h1>
         <p className="text-muted-foreground">
