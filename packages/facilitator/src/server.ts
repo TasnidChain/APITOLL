@@ -204,6 +204,75 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
+// ─── Status / Monitoring (auth required) ────────────────────────
+
+/**
+ * Detailed facilitator status including wallet balance.
+ * Use this endpoint to monitor your facilitator in production.
+ */
+app.get('/status', rateLimit, requireAuth, async (_req: Request, res: Response) => {
+  try {
+    const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
+    const wallet = new ethers.Wallet(FACILITATOR_PRIVATE_KEY, provider);
+    const usdc = new ethers.Contract(
+      USDC_ADDRESS_BASE,
+      ['function balanceOf(address) view returns (uint256)'],
+      provider
+    );
+
+    const [ethBalance, usdcBalance, blockNumber] = await Promise.all([
+      provider.getBalance(wallet.address),
+      usdc.balanceOf(wallet.address),
+      provider.getBlockNumber(),
+    ]);
+
+    const ethFormatted = parseFloat(ethers.formatEther(ethBalance));
+    const usdcFormatted = parseFloat(ethers.formatUnits(usdcBalance, 6));
+
+    // Count payments by status
+    let completed = 0, failed = 0, processing = 0, totalVolume = 0;
+    for (const payment of pendingPayments.values()) {
+      if (payment.status === 'completed') {
+        completed++;
+        totalVolume += parseFloat(payment.paymentRequired.amount);
+      }
+      else if (payment.status === 'failed') failed++;
+      else if (payment.status === 'processing') processing++;
+    }
+
+    // Estimate gas runway
+    const avgGasPerTx = 0.00005; // ~50k gas at typical Base fees
+    const estimatedTxRunway = ethFormatted > 0 ? Math.floor(ethFormatted / avgGasPerTx) : 0;
+
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      network: BASE_RPC_URL.includes('sepolia') ? 'base-sepolia' : 'base-mainnet',
+      wallet: {
+        address: wallet.address,
+        eth_balance: ethFormatted.toFixed(6),
+        usdc_balance: usdcFormatted.toFixed(2),
+        estimated_tx_runway: estimatedTxRunway,
+      },
+      payments: {
+        completed,
+        failed,
+        processing,
+        total: pendingPayments.size,
+        total_volume_usdc: totalVolume.toFixed(4),
+      },
+      block_number: blockNumber,
+      uptime_seconds: Math.floor(process.uptime()),
+    });
+  } catch (error: any) {
+    logger.error({ error: error.message }, 'Status check failed');
+    res.status(500).json({
+      status: 'error',
+      error: 'Failed to retrieve status — check RPC connection',
+    });
+  }
+});
+
 // ─── POST /pay — Initiate Payment ──────────────────────────────
 
 /**

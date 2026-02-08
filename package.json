@@ -13,7 +13,15 @@
     "dev:indexer": "npm run dev --workspace=apps/indexer",
     "dev:discovery": "npm run dev --workspace=apps/discovery",
     "lint": "eslint . --ext .ts,.tsx",
-    "test": "vitest"
+    "test": "vitest",
+    "setup": "./scripts/setup.sh",
+    "setup:testnet": "NETWORK=testnet ./scripts/setup.sh",
+    "create-wallet": "npx tsx scripts/create-wallet.ts",
+    "check-balance": "npx tsx scripts/check-balance.ts",
+    "test-flow": "npx tsx scripts/test-flow.ts",
+    "facilitator": "cd packages/facilitator && npx tsx src/server.ts",
+    "seller": "cd apps/seller-api && npx tsx server.ts",
+    "agent": "cd apps/agent-client && npx tsx agent.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.3",
