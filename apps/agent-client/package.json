@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "build": "tsc --noEmit",
     "start": "tsx agent.ts"
   },
   "dependencies": {

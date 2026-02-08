@@ -8,8 +8,8 @@ import { api } from "../../../../../../../convex/_generated/api";
  * Lets agents persist their evolution/mutation state server-side
  * so it survives across sessions and deploys.
  *
- * POST: Save evolution state + mutation events
- * GET:  Retrieve saved state for an agent
+ * POST: Save evolution state + mutation events (via Convex)
+ * GET:  Retrieve saved state for an agent (via Convex)
  *
  * No auth required — agents call this autonomously.
  */
@@ -21,13 +21,38 @@ const CONVEX_URL =
 const convex = new ConvexHttpClient(CONVEX_URL);
 
 // ---------------------------------------------------------------------------
-// In-memory evolution store (will be replaced by Convex table later)
+// Rate limiting — simple in-memory counter, max 50 requests/minute per IP
 // ---------------------------------------------------------------------------
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 50;
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
 
-const evolutionStore = new Map<
-  string,
-  { state: any; mutations: any[]; updatedAt: number }
->();
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || now >= entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+
+  entry.count++;
+  if (entry.count > RATE_LIMIT_MAX) {
+    return true;
+  }
+
+  return false;
+}
+
+// Periodically prune stale rate-limit entries to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of Array.from(rateLimitMap.entries())) {
+    if (now >= entry.resetAt) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}, RATE_LIMIT_WINDOW_MS);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -41,38 +66,24 @@ const DEFAULT_STATE = {
   lastMutationAt: null,
 };
 
-function getLeaderboard(topN: number = 10) {
-  const entries: {
-    agent_id: string;
-    mutation_count: number;
-    mutation_depth: number;
-    last_active: number;
-  }[] = [];
-
-  for (const [agentId, data] of Array.from(evolutionStore.entries())) {
-    entries.push({
-      agent_id: agentId,
-      mutation_count: data.mutations.length,
-      mutation_depth: data.state?.mutationDepth ?? data.mutations.length,
-      last_active: data.updatedAt,
-    });
-  }
-
-  entries.sort((a, b) => b.mutation_count - a.mutation_count);
-  return entries.slice(0, topN);
-}
-
-function getAgentRank(agentId: string): number {
-  const leaderboard = getLeaderboard(1000); // get all to find rank
-  const idx = leaderboard.findIndex((e) => e.agent_id === agentId);
-  return idx === -1 ? leaderboard.length + 1 : idx + 1;
-}
-
 // ---------------------------------------------------------------------------
 // GET /api/agents/evolve — Retrieve saved evolution state
 // ---------------------------------------------------------------------------
 
 export async function GET(req: NextRequest) {
+  // Rate limit check
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+
+  if (isRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Max 50 requests per minute." },
+      { status: 429 }
+    );
+  }
+
   try {
     const agentId = req.nextUrl.searchParams.get("agent");
 
@@ -86,8 +97,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const saved = evolutionStore.get(agentId);
-    const leaderboard = getLeaderboard(10);
+    // Fetch state and leaderboard from Convex in parallel
+    const [saved, leaderboard] = await Promise.all([
+      convex.query(api.evolution.getState, { agentId }),
+      convex.query(api.evolution.getLeaderboard, { limit: 10 }),
+    ]);
 
     if (saved) {
       return NextResponse.json({
@@ -119,6 +133,19 @@ export async function GET(req: NextRequest) {
 // ---------------------------------------------------------------------------
 
 export async function POST(req: NextRequest) {
+  // Rate limit check
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+
+  if (isRateLimited(ip)) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Max 50 requests per minute." },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await req.json();
 
@@ -149,22 +176,14 @@ export async function POST(req: NextRequest) {
     }
 
     // ------------------------------------------------------------------
-    // Update in-memory store
+    // Save evolution state to Convex
     // ------------------------------------------------------------------
-    const existing = evolutionStore.get(agent_id);
-    const now = Date.now();
-
     const newMutations = Array.isArray(mutations) ? mutations : [];
-    const mergedMutations = existing
-      ? [...existing.mutations, ...newMutations]
-      : newMutations;
 
-    const mergedState = state ?? existing?.state ?? DEFAULT_STATE;
-
-    evolutionStore.set(agent_id, {
-      state: mergedState,
-      mutations: mergedMutations,
-      updatedAt: now,
+    const saveResult = await convex.mutation(api.evolution.saveState, {
+      agentId: agent_id,
+      state: state ?? undefined,
+      mutations: newMutations.length > 0 ? newMutations : undefined,
     });
 
     // ------------------------------------------------------------------
@@ -190,17 +209,18 @@ export async function POST(req: NextRequest) {
     }
 
     // ------------------------------------------------------------------
-    // Build response
+    // Fetch leaderboard from Convex for rank + leaderboard response
     // ------------------------------------------------------------------
-    const mutationDepth = mergedState.mutationDepth ?? mergedMutations.length;
-    const rank = getAgentRank(agent_id);
-    const leaderboard = getLeaderboard(10);
+    const leaderboard = await convex.query(api.evolution.getLeaderboard, { limit: 10 });
+
+    const rank = leaderboard.findIndex((e) => e.agent_id === agent_id);
+    const agentRank = rank === -1 ? leaderboard.length + 1 : rank + 1;
 
     return NextResponse.json({
       saved: true,
       agent_id,
-      mutation_depth: mutationDepth,
-      rank,
+      mutation_depth: saveResult.mutationDepth,
+      rank: agentRank,
       leaderboard,
       network_mutations: networkMutations,
     });

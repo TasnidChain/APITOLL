@@ -35,7 +35,30 @@ export async function POST(req: NextRequest) {
     }
 
     const hostname = parsedUrl.hostname;
-    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("10.") || hostname.startsWith("192.168.") || hostname.startsWith("172.") || hostname === "0.0.0.0") {
+    // SSRF protection — block internal/private addresses
+    const blockedPatterns = [
+      "localhost",
+      "127.0.0.1",
+      "::1",
+      "[::1]",
+      "0.0.0.0",
+      "[::]",
+    ];
+    const blockedPrefixes = [
+      "10.",
+      "192.168.",
+      "172.16.", "172.17.", "172.18.", "172.19.",
+      "172.20.", "172.21.", "172.22.", "172.23.",
+      "172.24.", "172.25.", "172.26.", "172.27.",
+      "172.28.", "172.29.", "172.30.", "172.31.",
+      "169.254.",
+      "fc00:", "fd00:", "fe80:",
+    ];
+    if (
+      blockedPatterns.includes(hostname) ||
+      blockedPrefixes.some((p) => hostname.startsWith(p)) ||
+      /^\d+$/.test(hostname) // block integer IP notation
+    ) {
       return NextResponse.json({ error: "Cannot proxy to internal/local addresses" }, { status: 400 });
     }
 

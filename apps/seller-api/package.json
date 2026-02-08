@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "build": "tsc --noEmit",
     "dev": "tsx watch server.ts",
     "start": "tsx server.ts"
   },

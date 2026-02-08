@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
           chains: [chain === "solana" ? "solana" : "base"],
           walletAddress:
             wallet_address ||
-            "0x0000000000000000000000000000000000000001",
+            `0x${Buffer.from(agent_id).slice(0, 20).toString("hex").padEnd(40, "0")}`,
           ...(referral_code ? { referralCode: referral_code } : {}),
         });
         auto_indexed = true;

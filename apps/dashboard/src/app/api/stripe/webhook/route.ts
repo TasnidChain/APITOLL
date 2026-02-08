@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import Stripe from "stripe";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../../../../convex/_generated/api";
+import { Id } from "../../../../../../../convex/_generated/dataModel";
+
+const CONVEX_URL =
+  process.env.NEXT_PUBLIC_CONVEX_URL ??
+  "https://cheery-parrot-104.convex.cloud";
+const convex = new ConvexHttpClient(CONVEX_URL);
+
+/**
+ * Derive the plan tier from a Stripe price ID.
+ * Mirrors the logic in convex/billing.ts priceIdToPlan.
+ */
+function priceIdToPlan(priceId: string): "free" | "pro" | "enterprise" {
+  if (priceId.includes("pro")) return "pro";
+  if (priceId.includes("ent")) return "enterprise";
+  return "free";
+}
 
 /**
  * POST /api/stripe/webhook
@@ -51,41 +69,120 @@ export async function POST(req: NextRequest) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.userId;
-        const plan = session.metadata?.plan;
+        const plan = (session.metadata?.plan ?? "pro") as
+          | "pro"
+          | "enterprise";
+
+        const stripeCustomerId = session.customer as string;
+        const stripeSubscriptionId = session.subscription as string;
 
         console.log(
-          `[Stripe] Checkout completed: user=${userId} plan=${plan} subscription=${session.subscription}`
+          `[Stripe] Checkout completed: user=${userId} plan=${plan} subscription=${stripeSubscriptionId} customer=${stripeCustomerId}`
         );
 
-        // TODO: Update user's plan in Convex
-        // await convex.mutation(api.billing.updatePlan, { userId, plan, stripeSubscriptionId: session.subscription })
+        // Retrieve the full subscription to get the price ID and billing period
+        const subscription =
+          await stripe.subscriptions.retrieve(stripeSubscriptionId);
+        const priceId = subscription.items.data[0]?.price.id ?? "";
+        const resolvedPlan = priceIdToPlan(priceId);
+        const billingPeriodEnd = (subscription as any).current_period_end as number;
+
+        // Look up the organization by Stripe customer ID
+        let org = await convex.query(api.billing.getByStripeCustomer, {
+          stripeCustomerId,
+        });
+
+        if (org) {
+          // Org already has this Stripe customer linked — activate subscription
+          await convex.mutation(api.billing.activateSubscription, {
+            orgId: org._id as Id<"organizations">,
+            stripeSubscriptionId,
+            stripePriceId: priceId,
+            plan: resolvedPlan,
+            billingPeriodEnd,
+          });
+
+          console.log(
+            `[Stripe] Activated subscription for org=${org._id} plan=${resolvedPlan}`
+          );
+        } else {
+          // No org found for this customer yet — this means the customer was
+          // just created during checkout. We need to associate the Stripe
+          // customer with an org. The checkout metadata contains userId; look
+          // up the org by owner.
+          console.warn(
+            `[Stripe] No org found for stripeCustomerId=${stripeCustomerId}. ` +
+              `Checkout metadata userId=${userId}. ` +
+              `Manual linking may be required if org lookup by userId is not available.`
+          );
+          // If there is an org lookup by userId available in the future,
+          // call setStripeCustomer + activateSubscription here.
+        }
         break;
       }
 
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
-        const userId = subscription.metadata?.userId;
+        const stripeCustomerId = subscription.customer as string;
         const status = subscription.status;
 
+        const priceId = subscription.items.data[0]?.price.id ?? "";
+        const resolvedPlan = priceIdToPlan(priceId);
+        const billingPeriodEnd = (subscription as any).current_period_end as number;
+
         console.log(
-          `[Stripe] Subscription updated: user=${userId} status=${status}`
+          `[Stripe] Subscription updated: customer=${stripeCustomerId} status=${status} plan=${resolvedPlan}`
         );
 
-        // TODO: Update subscription status in Convex
-        // await convex.mutation(api.billing.updateSubscriptionStatus, { userId, status })
+        const org = await convex.query(api.billing.getByStripeCustomer, {
+          stripeCustomerId,
+        });
+
+        if (org) {
+          await convex.mutation(api.billing.activateSubscription, {
+            orgId: org._id as Id<"organizations">,
+            stripeSubscriptionId: subscription.id,
+            stripePriceId: priceId,
+            plan: resolvedPlan,
+            billingPeriodEnd,
+          });
+
+          console.log(
+            `[Stripe] Updated subscription for org=${org._id} plan=${resolvedPlan}`
+          );
+        } else {
+          console.warn(
+            `[Stripe] subscription.updated — no org found for stripeCustomerId=${stripeCustomerId}`
+          );
+        }
         break;
       }
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
-        const userId = subscription.metadata?.userId;
+        const stripeCustomerId = subscription.customer as string;
 
         console.log(
-          `[Stripe] Subscription canceled: user=${userId}`
+          `[Stripe] Subscription canceled: customer=${stripeCustomerId}`
         );
 
-        // TODO: Downgrade user to free plan in Convex
-        // await convex.mutation(api.billing.downgradeToFree, { userId })
+        const org = await convex.query(api.billing.getByStripeCustomer, {
+          stripeCustomerId,
+        });
+
+        if (org) {
+          await convex.mutation(api.billing.cancelSubscription, {
+            orgId: org._id as Id<"organizations">,
+          });
+
+          console.log(
+            `[Stripe] Canceled subscription for org=${org._id}, downgraded to free`
+          );
+        } else {
+          console.warn(
+            `[Stripe] subscription.deleted — no org found for stripeCustomerId=${stripeCustomerId}`
+          );
+        }
         break;
       }
 
@@ -94,11 +191,11 @@ export async function POST(req: NextRequest) {
         const customerId = invoice.customer as string;
 
         console.log(
-          `[Stripe] Payment failed: customer=${customerId}`
+          `[Stripe] Payment failed: customer=${customerId} invoice=${invoice.id}`
         );
 
-        // TODO: Notify user of failed payment
-        // Could send email or update dashboard notification
+        // Log only for now — no mutation needed yet.
+        // Future: notify user via email or in-app alert.
         break;
       }
 

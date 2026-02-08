@@ -1,9 +1,10 @@
-import { Bot, Cpu, Wrench, Globe, Code2, Blocks, Zap, Layers, Server, Brain, Sparkles, Network } from 'lucide-react'
+import { Bot, Cpu, Wrench, Globe, Code2, Blocks, Zap, Layers, Server, Brain, Sparkles, Network, Cog } from 'lucide-react'
 
 const categories = [
   {
     title: 'Agent Frameworks',
     items: [
+      { name: 'OpenClaw', icon: Cog, description: 'Autonomous agent payments' },
       { name: 'LangChain', icon: Bot, description: 'Native tool integration' },
       { name: 'CrewAI', icon: Cpu, description: 'Multi-agent payments' },
       { name: 'AutoGen', icon: Blocks, description: 'Agent wallet support' },

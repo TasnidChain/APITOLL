@@ -46,6 +46,9 @@ const AGENT_USER_AGENTS = [
   "bot",
   "agent",
   "mcp",
+  "openclaw",
+  "clawdbot",
+  "moltbot",
 ];
 
 function isAgent(req: NextRequest): boolean {

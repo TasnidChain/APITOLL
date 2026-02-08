@@ -19,6 +19,30 @@ const CONVEX_URL =
 
 const convex = new ConvexHttpClient(CONVEX_URL);
 
+// Rate limiting — 50 requests/minute per IP
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 50;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now >= entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+  entry.count++;
+  return entry.count > RATE_LIMIT_MAX;
+}
+
+// Prune stale entries
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of Array.from(rateLimitMap.entries())) {
+    if (now >= entry.resetAt) rateLimitMap.delete(ip);
+  }
+}, RATE_LIMIT_WINDOW_MS);
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -120,6 +144,11 @@ function inferCategoryFromEndpoints(
 
 export async function GET(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("x-real-ip") ?? "unknown";
+    if (isRateLimited(ip)) {
+      return NextResponse.json({ error: "Rate limit exceeded. Max 50 requests per minute." }, { status: 429 });
+    }
+
     const params = req.nextUrl.searchParams;
     const agentId = params.get("agent") || null;
     const chainFilter = params.get("chain") || null;

@@ -465,4 +465,27 @@ export default defineSchema({
   })
     .index("by_webhook", ["webhookId"])
     .index("by_status", ["status"]),
+
+  // ═══════════════════════════════════════════════════
+  // Agent Evolution State (mutation persistence)
+  // ═══════════════════════════════════════════════════
+  agentEvolution: defineTable({
+    agentId: v.string(),
+    state: v.any(),
+    mutations: v.array(v.object({
+      type: v.string(),
+      from: v.optional(v.string()),
+      to: v.optional(v.string()),
+      successRate: v.optional(v.number()),
+      timestamp: v.number(),
+    })),
+    mutationDepth: v.number(),
+    generation: v.number(),
+    fitness: v.number(),
+    lastMutationAt: v.optional(v.number()),
+    updatedAt: v.number(),
+  })
+    .index("by_agent", ["agentId"])
+    .index("by_fitness", ["fitness"])
+    .index("by_updated", ["updatedAt"]),
 });
