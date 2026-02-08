@@ -19,6 +19,12 @@ import {
   Check,
   Key,
   AlertTriangle,
+  Share2,
+  TrendingUp,
+  Users,
+  Gift,
+  Twitter,
+  Link2,
 } from 'lucide-react'
 
 export default function SellersPage() {
@@ -74,6 +80,9 @@ export default function SellersPage() {
           </div>
         </div>
       )}
+
+      {/* Referral Program — Viral Growth Panel */}
+      <ReferralPanel />
 
       {/* Seller Cards */}
       {!sellers ? (
@@ -180,6 +189,155 @@ export default function SellersPage() {
           orgId={orgId}
           onClose={() => setShowModal(false)}
         />
+      )}
+    </div>
+  )
+}
+
+function ReferralPanel() {
+  const [copied, setCopied] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
+  const referralCode = 'apitoll-' + Math.random().toString(36).slice(2, 8) // TODO: pull from Convex per-seller
+
+  const referralLink = `https://apitoll.com/api/discover?ref=${referralCode}`
+  const sdkSnippet = `discovery: {\n  referralCode: "${referralCode}",\n  referralBps: 50, // 0.5% commission\n}`
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const tweetText = encodeURIComponent(
+    `I'm earning USDC by selling API access to AI agents with @apitoll_xyz 🤖💰\n\nAny Express/Hono API → 3 lines of code → agents pay you automatically.\n\nnpm install @apitoll/seller-sdk\n\n#x402 #AI #crypto`
+  )
+
+  return (
+    <div className="mb-8 rounded-xl border border-violet-500/20 bg-gradient-to-r from-violet-500/5 to-fuchsia-500/5 p-6">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/10">
+            <Share2 className="h-5 w-5 text-violet-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold flex items-center gap-2">
+              Referral Program
+              <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-xs text-violet-400">
+                0.5% commission
+              </span>
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Earn USDC when agents you refer make payments
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          className="text-sm text-violet-400 hover:text-violet-300"
+        >
+          {showDetails ? 'Hide' : 'Show details'}
+        </button>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="mt-4 flex flex-wrap gap-3">
+        {/* Copy Referral Link */}
+        <button
+          onClick={() => handleCopy(referralLink)}
+          className="flex items-center gap-2 rounded-lg border border-violet-500/30 bg-violet-500/5 px-4 py-2 text-sm hover:bg-violet-500/10 transition-colors"
+        >
+          {copied ? (
+            <Check className="h-4 w-4 text-emerald-400" />
+          ) : (
+            <Link2 className="h-4 w-4 text-violet-400" />
+          )}
+          {copied ? 'Copied!' : 'Copy Referral Link'}
+        </button>
+
+        {/* Share on Twitter */}
+        <a
+          href={`https://twitter.com/intent/tweet?text=${tweetText}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/5 px-4 py-2 text-sm hover:bg-blue-500/10 transition-colors"
+        >
+          <Twitter className="h-4 w-4 text-blue-400" />
+          Share on X
+        </a>
+
+        {/* Copy SDK Snippet */}
+        <button
+          onClick={() => handleCopy(sdkSnippet)}
+          className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm hover:bg-accent transition-colors"
+        >
+          <Copy className="h-4 w-4 text-muted-foreground" />
+          Copy SDK Config
+        </button>
+      </div>
+
+      {/* Expanded Details */}
+      {showDetails && (
+        <div className="mt-5 space-y-4">
+          {/* Stats Row */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="rounded-lg border bg-card p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Users className="h-3 w-3" />
+                Referred Agents
+              </div>
+              <p className="mt-1 text-lg font-bold">0</p>
+            </div>
+            <div className="rounded-lg border bg-card p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <TrendingUp className="h-3 w-3" />
+                Total Volume
+              </div>
+              <p className="mt-1 text-lg font-bold">$0.00</p>
+            </div>
+            <div className="rounded-lg border bg-card p-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Gift className="h-3 w-3" />
+                Commission Earned
+              </div>
+              <p className="mt-1 text-lg font-bold text-emerald-400">$0.00</p>
+            </div>
+          </div>
+
+          {/* How It Works */}
+          <div className="rounded-lg bg-muted p-4 text-sm space-y-2">
+            <p className="font-medium text-foreground">How referrals work:</p>
+            <div className="space-y-1.5 text-muted-foreground">
+              <p>1. Add <code className="text-violet-400">referralCode</code> to your seller-sdk discovery config</p>
+              <p>2. Every 402 and 200 response from your API carries your referral code in headers</p>
+              <p>3. When an agent discovers your API and later uses ANY API Toll tool, you earn 0.5%</p>
+              <p>4. Commissions auto-accumulate in your seller wallet</p>
+            </div>
+          </div>
+
+          {/* Referral Link */}
+          <div>
+            <label className="text-xs text-muted-foreground">Your Referral Link</label>
+            <div className="mt-1 flex items-center gap-2">
+              <code className="flex-1 rounded-lg border bg-background px-3 py-2 text-xs font-mono text-violet-400 overflow-x-auto">
+                {referralLink}
+              </code>
+              <button
+                onClick={() => handleCopy(referralLink)}
+                className="rounded-lg border p-2 hover:bg-accent"
+              >
+                <Copy className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* SDK Config */}
+          <div>
+            <label className="text-xs text-muted-foreground">Add to your seller-sdk config</label>
+            <pre className="mt-1 rounded-lg border bg-background p-3 text-xs font-mono text-blue-400 overflow-x-auto">
+              {sdkSnippet}
+            </pre>
+          </div>
+        </div>
       )}
     </div>
   )

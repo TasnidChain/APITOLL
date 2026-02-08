@@ -375,6 +375,40 @@ export default defineSchema({
     .index("by_transaction", ["transactionId"]),
 
   // ═══════════════════════════════════════════════════
+  // Gossip / Trending (agent viral network)
+  // ═══════════════════════════════════════════════════
+  gossip: defineTable({
+    endpoint: v.string(),         // "/api/joke" — normalized path
+    host: v.string(),             // "seller-api-production.up.railway.app"
+    discoveries: v.number(),      // total times discovered by agents
+    uniqueAgents: v.number(),     // unique agents that found this
+    totalVolume: v.number(),      // total USDC spent through this
+    avgLatencyMs: v.number(),     // average response latency
+    chains: v.array(v.string()),  // chains used
+    mutations: v.number(),        // agents that evolved after using this
+    trendingScore: v.number(),    // computed trending rank
+    firstSeen: v.number(),        // timestamp
+    lastSeen: v.number(),         // timestamp
+  })
+    .index("by_endpoint", ["endpoint"])
+    .index("by_host", ["host"])
+    .index("by_trending", ["trendingScore"])
+    .index("by_last_seen", ["lastSeen"]),
+
+  gossipEvents: defineTable({
+    agentId: v.string(),          // "ResearchBot-base"
+    endpoint: v.string(),         // full URL
+    chain: v.union(v.literal("base"), v.literal("solana")),
+    amount: v.number(),
+    latencyMs: v.number(),
+    mutationTriggered: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_agent", ["agentId"])
+    .index("by_endpoint", ["endpoint"])
+    .index("by_created", ["createdAt"]),
+
+  // ═══════════════════════════════════════════════════
   // Fiat Deposits (Stripe → USDC on-ramp)
   // ═══════════════════════════════════════════════════
   deposits: defineTable({

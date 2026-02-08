@@ -24,6 +24,7 @@ import {
   Shield,
   Clock,
   Eye,
+  Users,
 } from 'lucide-react'
 import { StatCard } from '@/components/stat-card'
 import { formatUSD, formatCompact } from '@/lib/utils'
@@ -127,6 +128,97 @@ type Tool = {
   listingTier?: 'free' | 'featured' | 'verified' | 'premium'
   boostScore?: number
   isActive: boolean
+}
+
+// ═══════════════════════════════════════════════════
+// Trending Section (Agent Gossip Network)
+// ═══════════════════════════════════════════════════
+function TrendingSection() {
+  const [trendingData, setTrendingData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Fetch trending from gossip hub
+  useState(() => {
+    fetch('/api/gossip?limit=5&window=24h')
+      .then((r) => r.json())
+      .then((data) => {
+        setTrendingData(data)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  })
+
+  // Show even with no data — creates FOMO
+  return (
+    <div className="rounded-xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/5 to-cyan-500/5 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10">
+            <TrendingUp className="h-4 w-4 text-emerald-500" />
+          </div>
+          <h2 className="text-lg font-bold">Trending Now</h2>
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
+          <span className="text-xs text-muted-foreground">Live from agent network</span>
+        </div>
+        {trendingData?.meta && (
+          <span className="text-xs text-muted-foreground">
+            {trendingData.meta.active_agents_1h} active agents
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-8 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin mr-2" />
+          Loading network activity...
+        </div>
+      ) : trendingData?.trending?.length > 0 ? (
+        <div className="space-y-2">
+          {trendingData.trending.slice(0, 5).map((item: any, i: number) => (
+            <div
+              key={item.endpoint}
+              className="flex items-center justify-between rounded-lg border bg-card/50 px-4 py-3 transition-colors hover:bg-card"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 text-xs font-bold text-emerald-500">
+                  {i + 1}
+                </span>
+                <div>
+                  <p className="text-sm font-medium">{item.host}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{item.endpoint}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  {item.unique_agents} agents
+                </span>
+                <span className="flex items-center gap-1">
+                  <Zap className="h-3 w-3" />
+                  {item.discoveries} calls
+                </span>
+                <span className="text-emerald-400 font-semibold">
+                  ${item.total_volume_usdc}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="py-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            No trending data yet. Be the first API to go viral!
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Agents auto-report discoveries to the gossip network.
+          </p>
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ═══════════════════════════════════════════════════
@@ -877,6 +969,9 @@ export default function DiscoveryPage() {
 
       {/* Featured Spotlight */}
       <FeaturedSpotlight tools={featuredTools} />
+
+      {/* Trending — Powered by Agent Gossip Network */}
+      <TrendingSection />
 
       {/* Search + Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

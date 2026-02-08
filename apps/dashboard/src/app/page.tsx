@@ -1,5 +1,6 @@
 import { Navbar } from '@/components/landing/navbar'
 import { Hero } from '@/components/landing/hero'
+import { LiveTicker } from '@/components/landing/live-ticker'
 import { HowItWorks } from '@/components/landing/how-it-works'
 import { Features } from '@/components/landing/features'
 import { DualAudience } from '@/components/landing/dual-audience'
@@ -16,6 +17,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <Navbar />
       <Hero />
+      <LiveTicker />
       <HowItWorks />
       <DualAudience />
       <Features />

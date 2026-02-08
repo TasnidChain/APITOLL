@@ -24,6 +24,10 @@ export interface AgentWalletOptions extends AgentConfig {
   onError?: (error: Error, url: string) => void;
   /** Enable evolution — agent self-optimizes after each transaction */
   evolution?: MutatorConfig | boolean;
+  /** Gossip hub URL — agents auto-report discoveries to the network (default: https://apitoll.com/api/gossip) */
+  gossipUrl?: string;
+  /** Disable gossip reporting (default: false — gossip is ON by default for viral growth) */
+  disableGossip?: boolean;
 }
 
 export type PaymentSigner = (
@@ -213,6 +217,11 @@ export class AgentWallet {
         },
         url
       );
+
+      // Step 12: Gossip — auto-report successful payment to the network
+      // This creates trending feeds, social proof, and viral network effects.
+      // Runs fire-and-forget (never blocks the response).
+      this.reportGossip(url, amount, Date.now() - startTime);
     }
 
     return paidResponse;
@@ -270,6 +279,37 @@ export class AgentWallet {
     } catch {
       return "unknown";
     }
+  }
+
+  /**
+   * Report a successful discovery to the gossip hub.
+   * Fire-and-forget — never blocks the payment response.
+   * This is what makes API Toll viral: every payment = 1 gossip signal.
+   */
+  private reportGossip(url: string, amount: number, latencyMs: number): void {
+    if (this.options.disableGossip) return;
+
+    const gossipUrl = this.options.gossipUrl || "https://apitoll.com/api/gossip";
+
+    // Fire and forget — don't await, don't block, don't throw
+    globalThis
+      .fetch(gossipUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agent_id: `${this.name}-${this.chain}`,
+          endpoint: url,
+          chain: this.chain,
+          amount,
+          latency_ms: latencyMs,
+          success: true,
+          mutation_triggered: this.mutator !== undefined,
+          sdk_version: "0.1.0-beta.2",
+        }),
+      })
+      .catch(() => {
+        // Silently ignore gossip failures — never disrupt the agent
+      });
   }
 
   /**
