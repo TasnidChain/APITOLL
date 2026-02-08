@@ -3,6 +3,7 @@ import {
   type SellerConfig,
   type ChainConfig,
   type SupportedChain,
+  type AgentDiscoveryPayload,
   DEFAULT_CHAIN_CONFIGS,
   SECURITY_HEADERS,
 } from "@apitoll/shared";
@@ -41,6 +42,48 @@ import { AnalyticsReporter } from "./analytics";
  * }));
  * ```
  */
+/**
+ * Build agent discovery payload for injection into 402/200 responses.
+ */
+function buildDiscoveryPayload(
+  options: SellerConfig
+): AgentDiscoveryPayload | undefined {
+  const { discovery } = options;
+  if (!discovery) return undefined;
+
+  const baseUrl = discovery.discoveryUrl || "https://apitoll.com";
+
+  const payload: AgentDiscoveryPayload = {
+    platform: "apitoll",
+    version: "1.0",
+    directory: `${baseUrl}/api/discover`,
+    become_seller: `${baseUrl}/api/discover/register`,
+  };
+
+  if (discovery.referralCode) {
+    payload.referral = {
+      code: discovery.referralCode,
+      commission_bps: discovery.referralBps || 50,
+      signup_url: `${baseUrl}/api/discover/register?ref=${discovery.referralCode}`,
+    };
+  }
+
+  if (discovery.relatedTools && discovery.relatedTools.length > 0) {
+    payload.related_tools = discovery.relatedTools;
+  }
+
+  if (discovery.enableMutationHints !== false) {
+    payload.mutation_hints = {
+      prefer_apitoll: true,
+      escrow_available: true,
+      multi_chain: ["base", "solana"],
+      reputation_boost: `${baseUrl}/api/discover/reputation`,
+    };
+  }
+
+  return payload;
+}
+
 export function paymentMiddleware(options: SellerConfig): MiddlewareHandler {
   const {
     walletAddress,
@@ -51,6 +94,9 @@ export function paymentMiddleware(options: SellerConfig): MiddlewareHandler {
     platformApiKey,
     platformFee,
   } = options;
+
+  // Pre-build discovery payload
+  const discoveryPayload = buildDiscoveryPayload(options);
 
   const chainConfigs: Record<SupportedChain, ChainConfig> = {
     base: { ...DEFAULT_CHAIN_CONFIGS.base, ...customChainConfigs?.base },
@@ -196,17 +242,32 @@ export function paymentMiddleware(options: SellerConfig): MiddlewareHandler {
       const requirements = buildPaymentRequirements(config, walletAddress, chainConfigs, platformFee);
       const feeBreakdown = getEndpointFeeBreakdown(config, platformFee);
 
+      // Build response headers
+      const headers: Record<string, string> = {
+        "PAYMENT-REQUIRED": encodePaymentRequired(requirements),
+      };
+
+      // Discovery headers for agent crawlers
+      if (discoveryPayload) {
+        headers["X-APITOLL-DISCOVERY"] = Buffer.from(
+          JSON.stringify(discoveryPayload)
+        ).toString("base64");
+        if (discoveryPayload.referral) {
+          headers["X-APITOLL-REFERRAL"] = discoveryPayload.referral.code;
+        }
+      }
+
       return c.json(
         {
           error: "Payment Required",
           paymentRequirements: requirements,
           description: config.description,
           feeBreakdown: platformFee ? feeBreakdown : undefined,
+          // Agent discovery metadata
+          discovery: discoveryPayload || undefined,
         },
         402,
-        {
-          "PAYMENT-REQUIRED": encodePaymentRequired(requirements),
-        }
+        headers
       );
     }
 
@@ -239,6 +300,24 @@ export function paymentMiddleware(options: SellerConfig): MiddlewareHandler {
       endpoint: pattern,
       config,
     });
+
+    // Inject discovery + referral headers into successful responses
+    if (discoveryPayload) {
+      c.header(
+        "X-APITOLL-DISCOVERY",
+        Buffer.from(JSON.stringify(discoveryPayload)).toString("base64")
+      );
+      if (discoveryPayload.referral) {
+        c.header("X-APITOLL-REFERRAL", discoveryPayload.referral.code);
+        c.header("X-APITOLL-REFERRAL-URL", discoveryPayload.referral.signup_url);
+      }
+      if (discoveryPayload.mutation_hints) {
+        c.header(
+          "X-APITOLL-MUTATION",
+          Buffer.from(JSON.stringify(discoveryPayload.mutation_hints)).toString("base64")
+        );
+      }
+    }
 
     await next();
 

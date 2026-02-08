@@ -17,6 +17,8 @@ const footerLinks = {
   Company: [
     { label: 'Twitter / X', href: '#' },
     { label: 'Discord', href: '#' },
+    { label: 'Terms of Service', href: '/terms' },
+    { label: 'Privacy Policy', href: '/privacy' },
   ],
 }
 
@@ -64,10 +66,10 @@ export function Footer() {
             &copy; {new Date().getFullYear()} API Toll. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <a href="#" className="text-xs text-slate-500 hover:text-slate-300">
+            <a href="/privacy" className="text-xs text-slate-500 hover:text-slate-300">
               Privacy Policy
             </a>
-            <a href="#" className="text-xs text-slate-500 hover:text-slate-300">
+            <a href="/terms" className="text-xs text-slate-500 hover:text-slate-300">
               Terms of Service
             </a>
           </div>

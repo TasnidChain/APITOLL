@@ -345,6 +345,36 @@ export default defineSchema({
     .index("by_collected", ["collectedAt"]),
 
   // ═══════════════════════════════════════════════════
+  // Referrals (agent-to-agent viral loop)
+  // ═══════════════════════════════════════════════════
+  referrals: defineTable({
+    referrerSellerId: v.optional(v.id("sellers")),
+    referrerWallet: v.string(),
+    referralCode: v.string(),
+    referredTransactions: v.number(),
+    totalVolume: v.number(),
+    totalCommission: v.number(),
+    commissionBps: v.number(), // default 50 = 0.5%
+    isActive: v.boolean(),
+    expiresAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_code", ["referralCode"])
+    .index("by_wallet", ["referrerWallet"])
+    .index("by_seller", ["referrerSellerId"]),
+
+  referralEvents: defineTable({
+    referralId: v.id("referrals"),
+    transactionId: v.id("transactions"),
+    volume: v.number(),
+    commission: v.number(),
+    chain: v.union(v.literal("base"), v.literal("solana")),
+    createdAt: v.number(),
+  })
+    .index("by_referral", ["referralId"])
+    .index("by_transaction", ["transactionId"]),
+
+  // ═══════════════════════════════════════════════════
   // Fiat Deposits (Stripe → USDC on-ramp)
   // ═══════════════════════════════════════════════════
   deposits: defineTable({

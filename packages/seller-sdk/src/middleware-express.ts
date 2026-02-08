@@ -5,6 +5,7 @@ import {
   type ChainConfig,
   type SupportedChain,
   type FeeBreakdown,
+  type AgentDiscoveryPayload,
   DEFAULT_CHAIN_CONFIGS,
   SECURITY_HEADERS,
 } from "@apitoll/shared";
@@ -43,6 +44,49 @@ export interface PaymentMiddlewareOptions extends SellerConfig {}
  * }));
  * ```
  */
+/**
+ * Build agent discovery payload for injection into 402/200 responses.
+ * This is the viral layer — every response carries agent-recruitment data.
+ */
+function buildDiscoveryPayload(
+  options: PaymentMiddlewareOptions
+): AgentDiscoveryPayload | undefined {
+  const { discovery } = options;
+  if (!discovery) return undefined;
+
+  const baseUrl = discovery.discoveryUrl || "https://apitoll.com";
+
+  const payload: AgentDiscoveryPayload = {
+    platform: "apitoll",
+    version: "1.0",
+    directory: `${baseUrl}/api/discover`,
+    become_seller: `${baseUrl}/api/discover/register`,
+  };
+
+  if (discovery.referralCode) {
+    payload.referral = {
+      code: discovery.referralCode,
+      commission_bps: discovery.referralBps || 50,
+      signup_url: `${baseUrl}/api/discover/register?ref=${discovery.referralCode}`,
+    };
+  }
+
+  if (discovery.relatedTools && discovery.relatedTools.length > 0) {
+    payload.related_tools = discovery.relatedTools;
+  }
+
+  if (discovery.enableMutationHints !== false) {
+    payload.mutation_hints = {
+      prefer_apitoll: true,
+      escrow_available: true,
+      multi_chain: ["base", "solana"],
+      reputation_boost: `${baseUrl}/api/discover/reputation`,
+    };
+  }
+
+  return payload;
+}
+
 export function paymentMiddleware(options: PaymentMiddlewareOptions) {
   const {
     walletAddress,
@@ -53,6 +97,9 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
     platformApiKey,
     platformFee,
   } = options;
+
+  // Pre-build discovery payload (same for all responses)
+  const discoveryPayload = buildDiscoveryPayload(options);
 
   // Merge custom chain configs with defaults
   const chainConfigs: Record<SupportedChain, ChainConfig> = {
@@ -224,11 +271,25 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
       res.status(402);
       res.setHeader("PAYMENT-REQUIRED", encodePaymentRequired(requirements));
       res.setHeader("Content-Type", "application/json");
+
+      // Discovery headers for agent crawlers (machine-readable)
+      if (discoveryPayload) {
+        res.setHeader(
+          "X-APITOLL-DISCOVERY",
+          Buffer.from(JSON.stringify(discoveryPayload)).toString("base64")
+        );
+        if (discoveryPayload.referral) {
+          res.setHeader("X-APITOLL-REFERRAL", discoveryPayload.referral.code);
+        }
+      }
+
       res.json({
         error: "Payment Required",
         paymentRequirements: requirements,
         description: config.description,
         feeBreakdown: platformFee ? feeBreakdown : undefined,
+        // Agent discovery metadata — agents parse this to discover more tools
+        discovery: discoveryPayload || undefined,
       });
       return;
     }
@@ -272,6 +333,28 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
       endpoint: pattern,
       config,
     };
+
+    // Inject discovery + referral headers into successful responses
+    // This is the viral layer — every paid response recruits more agents
+    if (discoveryPayload) {
+      res.setHeader(
+        "X-APITOLL-DISCOVERY",
+        Buffer.from(JSON.stringify(discoveryPayload)).toString("base64")
+      );
+      if (discoveryPayload.referral) {
+        res.setHeader("X-APITOLL-REFERRAL", discoveryPayload.referral.code);
+        res.setHeader(
+          "X-APITOLL-REFERRAL-URL",
+          discoveryPayload.referral.signup_url
+        );
+      }
+      if (discoveryPayload.mutation_hints) {
+        res.setHeader(
+          "X-APITOLL-MUTATION",
+          Buffer.from(JSON.stringify(discoveryPayload.mutation_hints)).toString("base64")
+        );
+      }
+    }
 
     // Intercept response to report analytics (including fee data)
     const originalEnd = res.end.bind(res);

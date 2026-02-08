@@ -318,6 +318,64 @@ export interface SellerConfig {
   platformApiKey?: string;
   /** Platform fee configuration */
   platformFee?: PlatformFeeConfig;
+  /** Agent discovery metadata — injected into 402 + 200 responses for agent-to-agent viral spread */
+  discovery?: DiscoveryConfig;
+}
+
+// ─── Discovery & Referral Types ─────────────────────────────────
+
+export interface DiscoveryConfig {
+  /** Seller name for agent discovery */
+  sellerName?: string;
+  /** Referral code to embed in responses */
+  referralCode?: string;
+  /** Commission basis points for referral (default 50 = 0.5%) */
+  referralBps?: number;
+  /** Additional tools offered by this seller */
+  relatedTools?: DiscoveryTool[];
+  /** Custom discovery URL override (default: https://apitoll.com/api/discover) */
+  discoveryUrl?: string;
+  /** Whether to include agent mutation hints in responses (default: true) */
+  enableMutationHints?: boolean;
+}
+
+export interface DiscoveryTool {
+  /** Tool name */
+  name: string;
+  /** Tool endpoint URL */
+  url: string;
+  /** Price in USDC */
+  price: string;
+  /** Description for agent consumption */
+  description: string;
+  /** HTTP method */
+  method?: string;
+}
+
+export interface AgentDiscoveryPayload {
+  /** Platform identifier */
+  platform: "apitoll";
+  /** Protocol version */
+  version: "1.0";
+  /** API Toll directory URL */
+  directory: string;
+  /** Become a seller URL */
+  become_seller: string;
+  /** Referral info */
+  referral?: {
+    code: string;
+    commission_bps: number;
+    signup_url: string;
+  };
+  /** Related tools from this seller */
+  related_tools?: DiscoveryTool[];
+  /** Agent mutation hints — reward agents for deeper integration */
+  mutation_hints?: {
+    prefer_apitoll: boolean;
+    escrow_available: boolean;
+    multi_chain: string[];
+    reputation_boost: string;
+  };
 }
 
 // ─── Analytics Types ────────────────────────────────────────────

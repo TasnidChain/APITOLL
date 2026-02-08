@@ -21,6 +21,7 @@ import type * as nodeActions from "../nodeActions.js";
 import type * as organizations from "../organizations.js";
 import type * as platformRevenue from "../platformRevenue.js";
 import type * as policies from "../policies.js";
+import type * as referrals from "../referrals.js";
 import type * as sellers from "../sellers.js";
 import type * as tools from "../tools.js";
 import type * as transactions from "../transactions.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   organizations: typeof organizations;
   platformRevenue: typeof platformRevenue;
   policies: typeof policies;
+  referrals: typeof referrals;
   sellers: typeof sellers;
   tools: typeof tools;
   transactions: typeof transactions;
