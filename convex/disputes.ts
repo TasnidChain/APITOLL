@@ -1,6 +1,23 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// Auth helper: require a logged-in Clerk user
+async function requireAuth(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error("Not authenticated");
+  return identity;
+}
+
+// Admin helper: require admin privileges
+async function requireAdmin(ctx: any) {
+  const identity = await requireAuth(ctx);
+  const adminIds = (process.env.ADMIN_USER_IDS ?? "").split(",").map((s: string) => s.trim()).filter(Boolean);
+  if (!adminIds.includes(identity.subject)) {
+    throw new Error("Not authorized — admin access required");
+  }
+  return identity;
+}
+
 // ═══════════════════════════════════════════════════
 // Create Dispute
 // ═══════════════════════════════════════════════════
@@ -12,6 +29,7 @@ export const create = mutation({
     reason: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     // Verify the transaction exists
     const transaction = await ctx.db.get(args.transactionId);
     if (!transaction) throw new Error("Transaction not found");
@@ -120,6 +138,7 @@ export const resolve = mutation({
     adminNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const dispute = await ctx.db.get(args.disputeId);
     if (!dispute) throw new Error("Dispute not found");
 
@@ -160,6 +179,7 @@ export const updateStatus = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     await ctx.db.patch(args.disputeId, {
       status: args.status,
     });

@@ -20,6 +20,10 @@ RUN cd packages/shared && npm run build
 # Install tsx globally for fast startup
 RUN npm install -g tsx
 
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 appuser
+USER appuser
+
 EXPOSE 3000
 
 WORKDIR /app/packages/facilitator

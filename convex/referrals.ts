@@ -1,6 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// Auth helper: require a logged-in Clerk user
+async function requireAuth(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error("Not authenticated");
+  return identity;
+}
+
 // ═══════════════════════════════════════════════════
 // Create Referral Code
 // ═══════════════════════════════════════════════════
@@ -14,6 +21,7 @@ export const createReferral = mutation({
     expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     // Check for duplicate referral code
     const existing = await ctx.db
       .query("referrals")
@@ -155,6 +163,7 @@ export const getEvents = query({
 export const deactivate = mutation({
   args: { referralId: v.id("referrals") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     await ctx.db.patch(args.referralId, { isActive: false });
   },
 });

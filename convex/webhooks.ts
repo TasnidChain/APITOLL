@@ -1,6 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// Auth helper: require a logged-in Clerk user
+async function requireAuth(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error("Not authenticated");
+  return identity;
+}
+
 // ═══════════════════════════════════════════════════
 // Valid Webhook Events
 // ═══════════════════════════════════════════════════
@@ -54,6 +61,7 @@ export const create = mutation({
     events: v.array(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const org = await ctx.db.get(args.orgId);
     if (!org) throw new Error("Organization not found");
 
@@ -64,8 +72,22 @@ export const create = mutation({
 
     validateEvents(args.events);
 
+    // Validate webhook URL — HTTPS required, block internal IPs (SSRF prevention)
     if (!args.url.startsWith("https://")) {
       throw new Error("Webhook URL must use HTTPS");
+    }
+    try {
+      const urlObj = new URL(args.url);
+      const blockedHostnames = ["localhost", "127.0.0.1", "0.0.0.0", "[::1]"];
+      if (blockedHostnames.includes(urlObj.hostname)) {
+        throw new Error("Webhook URL cannot point to localhost");
+      }
+      if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(urlObj.hostname)) {
+        throw new Error("Webhook URL cannot point to private IP addresses");
+      }
+    } catch (e: any) {
+      if (e.message.includes("Webhook URL")) throw e;
+      throw new Error("Invalid webhook URL");
     }
 
     const secret = generateSecret();
@@ -128,6 +150,7 @@ export const update = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const webhook = await ctx.db.get(args.id);
     if (!webhook) throw new Error("Webhook not found");
 
@@ -136,6 +159,19 @@ export const update = mutation({
     if (args.url !== undefined) {
       if (!args.url.startsWith("https://")) {
         throw new Error("Webhook URL must use HTTPS");
+      }
+      try {
+        const urlObj = new URL(args.url);
+        const blockedHostnames = ["localhost", "127.0.0.1", "0.0.0.0", "[::1]"];
+        if (blockedHostnames.includes(urlObj.hostname)) {
+          throw new Error("Webhook URL cannot point to localhost");
+        }
+        if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(urlObj.hostname)) {
+          throw new Error("Webhook URL cannot point to private IP addresses");
+        }
+      } catch (e: any) {
+        if (e.message.includes("Webhook URL")) throw e;
+        throw new Error("Invalid webhook URL");
       }
       update.url = args.url;
     }
@@ -166,6 +202,7 @@ export const rotateSecret = mutation({
     id: v.id("webhooks"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const webhook = await ctx.db.get(args.id);
     if (!webhook) throw new Error("Webhook not found");
 
@@ -185,6 +222,7 @@ export const remove = mutation({
     id: v.id("webhooks"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const webhook = await ctx.db.get(args.id);
     if (!webhook) throw new Error("Webhook not found");
 
@@ -211,6 +249,7 @@ export const createTestDelivery = mutation({
     webhookId: v.id("webhooks"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const webhook = await ctx.db.get(args.webhookId);
     if (!webhook) throw new Error("Webhook not found");
 

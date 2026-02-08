@@ -1,6 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// Auth helper: require a logged-in Clerk user
+async function requireAuth(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error("Not authenticated");
+  return identity;
+}
+
 // ═══════════════════════════════════════════════════
 // Alert threshold validator (must match schema.ts)
 // ═══════════════════════════════════════════════════
@@ -31,6 +38,7 @@ export const create = mutation({
     webhookUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const org = await ctx.db.get(args.orgId);
     if (!org) throw new Error("Organization not found");
 
@@ -75,6 +83,7 @@ export const update = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const rule = await ctx.db.get(args.id);
     if (!rule) throw new Error("Alert rule not found");
 
@@ -96,6 +105,7 @@ export const toggleActive = mutation({
     id: v.id("alertRules"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const rule = await ctx.db.get(args.id);
     if (!rule) throw new Error("Alert rule not found");
     await ctx.db.patch(args.id, { isActive: !rule.isActive });
@@ -111,6 +121,7 @@ export const remove = mutation({
     id: v.id("alertRules"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const rule = await ctx.db.get(args.id);
     if (!rule) throw new Error("Alert rule not found");
     await ctx.db.delete(args.id);

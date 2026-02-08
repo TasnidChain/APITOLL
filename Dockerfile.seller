@@ -29,6 +29,10 @@ RUN cd packages/seller-sdk && npm run build
 # Install tsx globally
 RUN npm install -g tsx
 
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 appuser
+USER appuser
+
 EXPOSE 4402
 
 WORKDIR /app/apps/seller-api

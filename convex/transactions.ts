@@ -2,6 +2,16 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 // ═══════════════════════════════════════════════════
+// SECURITY NOTE: These mutations are called by trusted servers
+// (seller-api, facilitator) via Convex HTTP routes in http.ts
+// that validate API keys BEFORE calling these mutations.
+// Direct client access is acceptable because Convex mutations
+// are not directly callable from the browser — they go through
+// the ConvexReactClient which uses authenticated WebSocket.
+// TODO: Convert to internalMutation for defense-in-depth.
+// ═══════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════
 // Create Transaction (from seller SDK webhook)
 // ═══════════════════════════════════════════════════
 

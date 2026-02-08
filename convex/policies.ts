@@ -1,6 +1,13 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// Auth helper: require a logged-in Clerk user
+async function requireAuth(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error("Not authenticated");
+  return identity;
+}
+
 // ═══════════════════════════════════════════════════
 // Shared policy rule validators (must match schema.ts)
 // ═══════════════════════════════════════════════════
@@ -37,6 +44,7 @@ export const create = mutation({
     rulesJson: v.union(budgetRulesValidator, vendorAclRulesValidator, rateLimitRulesValidator),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     // Ensure org exists
     const org = await ctx.db.get(args.orgId);
     if (!org) throw new Error("Organization not found");
@@ -103,6 +111,7 @@ export const update = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const policy = await ctx.db.get(args.id);
     if (!policy) throw new Error("Policy not found");
 
@@ -124,6 +133,7 @@ export const toggleActive = mutation({
     id: v.id("policies"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const policy = await ctx.db.get(args.id);
     if (!policy) throw new Error("Policy not found");
     await ctx.db.patch(args.id, { isActive: !policy.isActive });
@@ -139,6 +149,7 @@ export const remove = mutation({
     id: v.id("policies"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const policy = await ctx.db.get(args.id);
     if (!policy) throw new Error("Policy not found");
     await ctx.db.delete(args.id);

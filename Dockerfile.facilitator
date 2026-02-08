@@ -17,6 +17,10 @@ RUN npm install --workspace=packages/shared --workspace=packages/facilitator
 # Build shared package
 RUN cd packages/shared && npm run build
 
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 appuser
+USER appuser
+
 EXPOSE 3000
 
 WORKDIR /app/packages/facilitator
