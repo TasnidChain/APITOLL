@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useOrgId, useBillingSummary } from '@/lib/hooks'
 import { PageLoading } from '@/components/loading'
 import { formatUSD } from '@/lib/utils'
@@ -84,29 +85,119 @@ export default function BillingPage() {
   const currentPlan = billing?.plan ?? 'free'
 
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null)
+  const [upgradeError, setUpgradeError] = useState(false)
+  const searchParams = useSearchParams()
+  const checkoutSuccess = searchParams.get('success') === 'true'
+  const checkoutCanceled = searchParams.get('canceled') === 'true'
 
   const handlePlanChange = async (planId: string) => {
     if (planId === currentPlan) return
 
     setUpgrading(planId)
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    setUpgrading(null)
-    setUpgradeMessage(
-      planId === 'enterprise'
-        ? 'Enterprise plans require a sales call. Contact sales@apitoll.com to get started.'
-        : 'Stripe billing is coming soon. Contact support@apitoll.com to upgrade your plan.'
-    )
+    setUpgradeMessage(null)
+    setUpgradeError(false)
+
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: planId }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok && data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url
+        return
+      }
+
+      // Stripe not configured yet or enterprise needs sales call
+      setUpgrading(null)
+      setUpgradeError(!res.ok)
+      setUpgradeMessage(
+        data.message ||
+          (planId === 'enterprise'
+            ? 'Enterprise plans require a sales call. Contact sales@apitoll.com to get started.'
+            : 'Billing setup in progress. Contact support@apitoll.com to upgrade your plan.')
+      )
+    } catch {
+      setUpgrading(null)
+      setUpgradeError(true)
+      setUpgradeMessage(
+        'Unable to connect to billing service. Please try again later or contact support@apitoll.com.'
+      )
+    }
+  }
+
+  const handleManageBilling = async () => {
+    try {
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const data = await res.json()
+      if (res.ok && data.url) {
+        window.location.href = data.url
+      } else {
+        setUpgradeMessage(
+          data.message || 'No active subscription found. Upgrade to a paid plan first.'
+        )
+      }
+    } catch {
+      setUpgradeMessage('Unable to open billing portal. Please try again.')
+    }
   }
 
   return (
     <div className="p-8">
+      {/* Checkout Success Banner */}
+      {checkoutSuccess && (
+        <div className="mb-6 flex items-start justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4">
+          <div className="flex items-start gap-3">
+            <Check className="mt-0.5 h-5 w-5 text-emerald-400 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Subscription Active</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Your plan has been upgraded successfully. It may take a moment to reflect.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Checkout Canceled Banner */}
+      {checkoutCanceled && (
+        <div className="mb-6 flex items-start justify-between rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+          <div className="flex items-start gap-3">
+            <Mail className="mt-0.5 h-5 w-5 text-amber-400 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Checkout Canceled</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                No changes were made to your subscription.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Upgrade Message Banner */}
       {upgradeMessage && (
-        <div className="mb-6 flex items-start justify-between rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
+        <div className={cn(
+          "mb-6 flex items-start justify-between rounded-lg border p-4",
+          upgradeError
+            ? "border-red-500/30 bg-red-500/5"
+            : "border-blue-500/30 bg-blue-500/5"
+        )}>
           <div className="flex items-start gap-3">
-            <Mail className="mt-0.5 h-5 w-5 text-blue-400 flex-shrink-0" />
+            <Mail className={cn(
+              "mt-0.5 h-5 w-5 flex-shrink-0",
+              upgradeError ? "text-red-400" : "text-blue-400"
+            )} />
             <div>
-              <p className="text-sm font-medium text-foreground">Plan Upgrade</p>
+              <p className="text-sm font-medium text-foreground">
+                {upgradeError ? 'Upgrade Error' : 'Plan Upgrade'}
+              </p>
               <p className="mt-1 text-sm text-muted-foreground">{upgradeMessage}</p>
             </div>
           </div>
@@ -142,14 +233,24 @@ export default function BillingPage() {
                 plan
               </p>
             </div>
-            {billing.billingPeriodEnd && (
-              <div className="text-right text-sm text-muted-foreground">
-                <p>Next billing date</p>
-                <p className="font-medium text-foreground">
-                  {new Date(billing.billingPeriodEnd).toLocaleDateString()}
-                </p>
-              </div>
-            )}
+            <div className="flex items-center gap-4">
+              {billing.billingPeriodEnd && (
+                <div className="text-right text-sm text-muted-foreground">
+                  <p>Next billing date</p>
+                  <p className="font-medium text-foreground">
+                    {new Date(billing.billingPeriodEnd).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
+              {currentPlan !== 'free' && (
+                <button
+                  onClick={handleManageBilling}
+                  className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+                >
+                  Manage Billing
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Usage Bars */}
