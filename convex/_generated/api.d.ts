@@ -18,6 +18,7 @@ import type * as dashboard from "../dashboard.js";
 import type * as deposits from "../deposits.js";
 import type * as disputes from "../disputes.js";
 import type * as evolution from "../evolution.js";
+import type * as facilitator from "../facilitator.js";
 import type * as gossip from "../gossip.js";
 import type * as http from "../http.js";
 import type * as nodeActions from "../nodeActions.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   deposits: typeof deposits;
   disputes: typeof disputes;
   evolution: typeof evolution;
+  facilitator: typeof facilitator;
   gossip: typeof gossip;
   http: typeof http;
   nodeActions: typeof nodeActions;

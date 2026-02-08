@@ -1,9 +1,35 @@
 import { v } from "convex/values";
-import { query, mutation } from "./_generated/server";
+import { query, mutation, QueryCtx, MutationCtx } from "./_generated/server";
+
+// ═══════════════════════════════════════════════════
+// Admin Authorization
+// ═══════════════════════════════════════════════════
+
+/**
+ * Require the caller to be an admin.
+ * Checks the Clerk user ID (from JWT identity.subject) against
+ * the ADMIN_USER_IDS environment variable (comma-separated list).
+ */
+async function requireAdmin(ctx: QueryCtx | MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new Error("Not authenticated — sign in required");
+  }
+
+  const adminIds = (process.env.ADMIN_USER_IDS || "").split(",").map((s) => s.trim()).filter(Boolean);
+
+  // Clerk stores user ID in the "subject" field of the identity token
+  if (!adminIds.includes(identity.subject)) {
+    throw new Error("Not authorized — admin access required");
+  }
+
+  return identity;
+}
 
 // ═══════════════════════════════════════════════════
 // Platform-wide Admin Queries & Mutations
 // These operate across ALL orgs (no orgId parameter)
+// All require admin authentication.
 // ═══════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════
@@ -13,6 +39,8 @@ import { query, mutation } from "./_generated/server";
 export const getPlatformStats = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     // --- Organizations ---
     const allOrgs = await ctx.db.query("organizations").collect();
     const planDistribution = { free: 0, pro: 0, enterprise: 0 };
@@ -128,6 +156,8 @@ export const getPlatformStats = query({
 export const listAllOrgs = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     const orgs = await ctx.db.query("organizations").collect();
 
     const enriched = await Promise.all(
@@ -164,6 +194,7 @@ export const adminUpdatePlan = mutation({
     plan: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     await ctx.db.patch(args.orgId, { plan: args.plan });
   },
 });
@@ -181,6 +212,7 @@ export const adminUpdateTool = mutation({
     boostScore: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const patch: Record<string, boolean | number> = {};
     if (args.isActive !== undefined) patch.isActive = args.isActive;
     if (args.isVerified !== undefined) patch.isVerified = args.isVerified;
@@ -198,6 +230,8 @@ export const adminUpdateTool = mutation({
 export const listAllTools = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     const tools = await ctx.db.query("tools").collect();
 
     const enriched = await Promise.all(
@@ -224,6 +258,8 @@ export const listAllTools = query({
 export const listAllDisputes = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     const disputes = await ctx.db.query("disputes").collect();
 
     const enriched = await Promise.all(
@@ -262,6 +298,7 @@ export const resolveDispute = mutation({
     adminNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const patch: Record<string, string | number | undefined> = {
       status: args.status,
       resolvedAt: Date.now(),
@@ -281,6 +318,8 @@ export const resolveDispute = mutation({
 export const getActivityLog = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
+
     const transactions = await ctx.db
       .query("transactions")
       .order("desc")

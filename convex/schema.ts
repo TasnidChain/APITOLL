@@ -469,6 +469,37 @@ export default defineSchema({
   // ═══════════════════════════════════════════════════
   // Agent Evolution State (mutation persistence)
   // ═══════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════
+  // Facilitator Payments (persistent payment records)
+  // Replaces in-memory Map for crash/redeploy resilience
+  // ═══════════════════════════════════════════════════
+  facilitatorPayments: defineTable({
+    paymentId: v.string(),
+    originalUrl: v.string(),
+    originalMethod: v.string(),
+    originalHeaders: v.optional(v.any()),
+    originalBody: v.optional(v.any()),
+    amount: v.string(),
+    currency: v.string(),
+    recipient: v.string(),
+    chain: v.string(),
+    agentWallet: v.string(),
+    sellerAddress: v.string(),
+    apiKey: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("processing"),
+      v.literal("completed"),
+      v.literal("failed")
+    ),
+    txHash: v.optional(v.string()),
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_payment_id", ["paymentId"])
+    .index("by_status", ["status"]),
+
   agentEvolution: defineTable({
     agentId: v.string(),
     state: v.any(),

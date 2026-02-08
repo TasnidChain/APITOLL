@@ -22,8 +22,10 @@ import {
   Banknote,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { UserButton } from '@clerk/nextjs'
+import { UserButton, useUser } from '@clerk/nextjs'
 import { ApiTollLogo } from '@/components/logo'
+
+const ADMIN_USER_ID = process.env.NEXT_PUBLIC_ADMIN_USER_ID || ''
 
 const navigation = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
@@ -41,12 +43,14 @@ const navigation = [
   { name: 'Deposits', href: '/dashboard/deposits', icon: Wallet },
   { name: 'Disputes', href: '/dashboard/disputes', icon: AlertTriangle },
   { name: 'Revenue', href: '/dashboard/revenue', icon: BarChart3 },
-  { name: 'Admin', href: '/dashboard/admin', icon: Shield },
+  { name: 'Admin', href: '/dashboard/admin', icon: Shield, adminOnly: true },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { user } = useUser()
+  const isAdmin = user?.id === ADMIN_USER_ID
 
   return (
     <div className="flex h-full w-64 flex-col border-r bg-card">
@@ -56,7 +60,9 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {navigation.map((item) => {
+        {navigation
+          .filter((item) => !('adminOnly' in item && item.adminOnly) || isAdmin)
+          .map((item) => {
           const isActive =
             item.href === '/dashboard'
               ? pathname === '/dashboard'

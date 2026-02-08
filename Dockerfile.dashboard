@@ -43,8 +43,9 @@ RUN cd packages/shared && npx tsc
 # NEXT_PUBLIC_ vars are baked into the client JS bundle at build time.
 # These are public (non-secret) values — safe to hardcode in the Dockerfile.
 ENV NEXT_PUBLIC_CONVEX_URL=https://cheery-parrot-104.convex.cloud
-ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_c3BsZW5kaWQtbWFybW90LTE3LmNsZXJrLmFjY291bnRzLmRldiQ
+ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_Y2xlcmsuYXBpdG9sbC5jb20k
 ENV NEXT_PUBLIC_APP_URL=https://apitoll.com
+ENV NEXT_PUBLIC_ADMIN_USER_ID=user_39LlbdCLKph7IRcRt0daImQWcHC
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN cd apps/dashboard && npx next build

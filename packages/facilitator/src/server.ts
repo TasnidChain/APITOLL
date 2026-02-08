@@ -10,8 +10,26 @@ import {
   isOriginAllowed,
   secureCompare,
 } from '@apitoll/shared';
+import { ConvexHttpClient } from 'convex/browser';
+import { makeFunctionReference } from 'convex/server';
 
 const logger = pino();
+
+// ─── Convex Persistence (optional — falls back to in-memory only) ──
+const CONVEX_URL = process.env.CONVEX_URL;
+let convexClient: ConvexHttpClient | null = null;
+
+if (CONVEX_URL) {
+  convexClient = new ConvexHttpClient(CONVEX_URL);
+  logger.info({ convexUrl: CONVEX_URL }, 'Convex persistence enabled');
+} else {
+  logger.warn('CONVEX_URL not set — payments will NOT persist across restarts');
+}
+
+// Convex function references (avoids importing generated API)
+const upsertPaymentRef = makeFunctionReference<"mutation">("facilitator:upsertPayment");
+const updatePaymentStatusRef = makeFunctionReference<"mutation">("facilitator:updatePaymentStatus");
+const getActivePaymentsRef = makeFunctionReference<"query">("facilitator:getActivePayments");
 
 // ─── Environment Validation ─────────────────────────────────────
 
@@ -83,8 +101,7 @@ interface PaymentRecord {
   error?: string;
 }
 
-// ─── In-Memory Stores ───────────────────────────────────────────
-// TODO: Replace with Redis for production persistence
+// ─── In-Memory Stores (backed by Convex for persistence) ────────
 
 const pendingPayments = new Map<string, PaymentRecord>();
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -98,6 +115,97 @@ setInterval(() => {
     }
   }
 }, 10 * 60 * 1000);
+
+/**
+ * Persist a payment record to Convex (fire-and-forget).
+ * Errors are logged but don't block the payment flow.
+ */
+async function persistPayment(payment: PaymentRecord) {
+  if (!convexClient) return;
+  try {
+    await convexClient.mutation(upsertPaymentRef, {
+      paymentId: payment.id,
+      originalUrl: payment.originalUrl,
+      originalMethod: payment.originalMethod,
+      originalHeaders: payment.originalHeaders,
+      originalBody: payment.originalBody as any,
+      amount: payment.paymentRequired.amount,
+      currency: payment.paymentRequired.currency,
+      recipient: payment.paymentRequired.recipient,
+      chain: payment.paymentRequired.chain,
+      agentWallet: payment.agentWallet,
+      sellerAddress: payment.sellerAddress,
+      apiKey: payment.apiKey,
+      status: payment.status,
+      txHash: payment.txHash,
+      error: payment.error,
+      createdAt: payment.createdAt,
+      completedAt: payment.completedAt,
+    });
+  } catch (err: any) {
+    logger.error({ paymentId: payment.id, error: err.message }, 'Failed to persist payment to Convex');
+  }
+}
+
+/**
+ * Update payment status in Convex (fire-and-forget).
+ */
+async function persistPaymentStatus(paymentId: string, status: PaymentRecord['status'], txHash?: string, error?: string) {
+  if (!convexClient) return;
+  try {
+    await convexClient.mutation(updatePaymentStatusRef, {
+      paymentId,
+      status,
+      txHash,
+      error,
+      completedAt: (status === 'completed' || status === 'failed') ? Date.now() : undefined,
+    });
+  } catch (err: any) {
+    logger.error({ paymentId, error: err.message }, 'Failed to update payment status in Convex');
+  }
+}
+
+/**
+ * Recover active payments from Convex on startup.
+ */
+async function recoverPaymentsFromConvex() {
+  if (!convexClient) return;
+  try {
+    const activePayments = await convexClient.query(getActivePaymentsRef, {});
+    let recovered = 0;
+    for (const p of activePayments) {
+      if (!pendingPayments.has(p.paymentId)) {
+        pendingPayments.set(p.paymentId, {
+          id: p.paymentId,
+          originalUrl: p.originalUrl,
+          originalMethod: p.originalMethod,
+          originalHeaders: p.originalHeaders as Record<string, string> | undefined,
+          originalBody: p.originalBody,
+          paymentRequired: {
+            amount: p.amount,
+            currency: p.currency,
+            recipient: p.recipient,
+            chain: p.chain as 'base' | 'solana',
+          },
+          agentWallet: p.agentWallet,
+          sellerAddress: p.sellerAddress,
+          apiKey: p.apiKey,
+          status: p.status as PaymentRecord['status'],
+          createdAt: p.createdAt,
+          completedAt: p.completedAt,
+          txHash: p.txHash,
+          error: p.error,
+        });
+        recovered++;
+      }
+    }
+    if (recovered > 0) {
+      logger.info({ recovered }, 'Recovered active payments from Convex');
+    }
+  } catch (err: any) {
+    logger.error({ error: err.message }, 'Failed to recover payments from Convex');
+  }
+}
 
 // ─── Express App ────────────────────────────────────────────────
 
@@ -330,12 +438,16 @@ app.post('/pay', rateLimit, requireAuth, async (req: Request, res: Response) => 
 
     pendingPayments.set(paymentId, payment);
 
+    // Persist to Convex (fire-and-forget)
+    persistPayment(payment);
+
     // Process payment asynchronously
     processPayment(paymentId, data.signed_tx).catch((err) => {
       logger.error({ paymentId, error: err.message }, 'Payment processing failed');
       payment.status = 'failed';
       payment.error = 'Payment processing failed. Please try again.';
       payment.completedAt = Date.now();
+      persistPaymentStatus(paymentId, 'failed', undefined, payment.error);
     });
 
     res.status(202).json({
@@ -395,6 +507,7 @@ async function processPayment(paymentId: string, signedTx?: string) {
       payment.txHash = receipt.hash;
       payment.completedAt = Date.now();
       logger.info({ paymentId, txHash: receipt.hash }, 'Pre-signed payment confirmed');
+      persistPaymentStatus(paymentId, 'completed', receipt.hash);
     } else {
       // Facilitator custodial wallet pays on behalf of the agent
       const signer = new ethers.Wallet(FACILITATOR_PRIVATE_KEY, provider);
@@ -416,12 +529,14 @@ async function processPayment(paymentId: string, signedTx?: string) {
       payment.txHash = receipt.hash;
       payment.completedAt = Date.now();
       logger.info({ paymentId, txHash: receipt.hash }, 'Payment confirmed');
+      persistPaymentStatus(paymentId, 'completed', receipt.hash);
     }
   } catch (error: any) {
     logger.error({ paymentId, error: error.message }, 'Payment processing error');
     payment.status = 'failed';
     payment.error = 'Payment processing failed. Please try again.';
     payment.completedAt = Date.now();
+    persistPaymentStatus(paymentId, 'failed', undefined, payment.error);
     throw error;
   }
 }
@@ -646,7 +761,7 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 
 // ─── Start Server ───────────────────────────────────────────────
 
-server = app.listen(PORT, () => {
+server = app.listen(PORT, async () => {
   logger.info({ port: PORT }, 'API Toll Facilitator listening');
   if (API_KEYS.length === 0) {
     logger.warn('No FACILITATOR_API_KEYS set — running in open mode (development only)');
@@ -654,6 +769,9 @@ server = app.listen(PORT, () => {
   if (ALLOWED_ORIGINS.length === 0) {
     logger.warn('No ALLOWED_ORIGINS set — CORS allows all origins (development only)');
   }
+
+  // Recover any in-flight payments from Convex
+  await recoverPaymentsFromConvex();
 });
 
 export { app };

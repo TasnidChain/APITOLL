@@ -2,10 +2,13 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation } from 'convex/react'
+import { useUser } from '@clerk/nextjs'
 import { api } from '../../../../../../convex/_generated/api'
 import { useRevenueOverview } from '@/lib/hooks'
 import { PageLoading } from '@/components/loading'
 import { formatUSD, cn } from '@/lib/utils'
+
+const ADMIN_USER_ID = process.env.NEXT_PUBLIC_ADMIN_USER_ID || ''
 import {
   LayoutDashboard,
   Building2,
@@ -874,6 +877,21 @@ function HealthTab() {
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabId>('overview')
+  const { user, isLoaded } = useUser()
+
+  // Admin gate: only allow the admin user to access this page
+  if (!isLoaded) return <PageLoading />
+  if (!user || user.id !== ADMIN_USER_ID) {
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+        <Shield className="h-16 w-16 text-muted-foreground/30" />
+        <h1 className="text-2xl font-bold">Access Denied</h1>
+        <p className="text-muted-foreground">
+          You don&apos;t have admin privileges to access this page.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
