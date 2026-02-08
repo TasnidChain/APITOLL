@@ -23,6 +23,19 @@ export const metadata: Metadata = {
     shortcut: '/icons/icon-96x96.svg',
     apple: '/icons/icon-192x192.svg',
   },
+  openGraph: {
+    title: 'API Toll - Payment Infrastructure for AI Agents',
+    description: 'Enable AI agents to autonomously pay for API calls with USDC micropayments on Base. 3-line SDK integration.',
+    url: 'https://apitoll.com',
+    siteName: 'API Toll',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@apitoll',
+    title: 'API Toll - Payment Infrastructure for AI Agents',
+    description: 'Enable AI agents to autonomously pay for API calls with USDC micropayments on Base. 3-line SDK integration.',
+  },
 }
 
 export const viewport: Viewport = {
