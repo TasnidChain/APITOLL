@@ -110,12 +110,12 @@ export async function POST(req: NextRequest) {
 
     // Cleanup old entries (older than 7 days)
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    for (const [k, v] of gossipStore) {
+    gossipStore.forEach((v, k) => {
       if (v.lastSeen < cutoff) gossipStore.delete(k);
-    }
-    for (const [k, v] of agentActivity) {
+    });
+    agentActivity.forEach((v, k) => {
       if (v.lastSeen < cutoff) agentActivity.delete(k);
-    }
+    });
 
     return NextResponse.json({
       received: true,
