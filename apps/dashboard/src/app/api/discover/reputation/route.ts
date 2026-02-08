@@ -35,8 +35,7 @@ export async function GET(req: NextRequest) {
             "0-100": "New — standard fees, limited tool access",
             "100-300": "Active — standard fees, full tool access",
             "300-600": "Trusted — 10% fee discount, priority routing",
-            "600-900": "Elite — 25% fee discount, escrow access, priority everything",
-            "900-1000": "God — 50% fee discount, beta features, cosmic status",
+            "600-1000": "Elite — 25% fee discount, escrow access, priority routing",
           },
           factors: [
             "Total transaction volume (40%)",
