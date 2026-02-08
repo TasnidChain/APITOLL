@@ -189,3 +189,190 @@ export const getRecentEvents = query({
       .take(args.limit ?? 50);
   },
 });
+
+// ═══════════════════════════════════════════════════
+// Check Milestones & Fire Webhooks
+// ═══════════════════════════════════════════════════
+
+export const checkMilestones = mutation({
+  args: {
+    endpoint: v.string(),
+    host: v.string(),
+    discoveries: v.number(),
+    trendingScore: v.number(),
+    uniqueAgents: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Define milestones
+    const milestones = [
+      { type: "discovery_10", threshold: 10, field: "discoveries" },
+      { type: "discovery_50", threshold: 50, field: "discoveries" },
+      { type: "discovery_100", threshold: 100, field: "discoveries" },
+      { type: "discovery_500", threshold: 500, field: "discoveries" },
+      { type: "discovery_1000", threshold: 1000, field: "discoveries" },
+      { type: "trending_top", threshold: 500, field: "trendingScore" },
+      { type: "agents_10", threshold: 10, field: "uniqueAgents" },
+      { type: "agents_50", threshold: 50, field: "uniqueAgents" },
+      { type: "agents_100", threshold: 100, field: "uniqueAgents" },
+    ];
+
+    const triggered: string[] = [];
+
+    for (const m of milestones) {
+      const value = args[m.field as keyof typeof args] as number;
+      // Check if this milestone was JUST crossed (value >= threshold AND value - 1 < threshold won't work for all cases,
+      // so instead check if value equals threshold or is within a small range above it)
+      // Simple: just check if value >= threshold. To avoid re-firing, we'll track fired milestones.
+      if (value >= m.threshold) {
+        // Check if we already fired this milestone for this endpoint
+        // We don't have a milestones table, so for now just fire on exact threshold hits
+        // Use a simple heuristic: fire when value is between threshold and threshold + 5
+        if (value <= m.threshold + 5) {
+          triggered.push(m.type);
+        }
+      }
+    }
+
+    if (triggered.length === 0) return { triggered: [] };
+
+    // Find webhooks subscribed to gossip events
+    // Look for webhooks with event "tool.trending" or events containing any gossip-related event
+    const allWebhooks = await ctx.db.query("webhooks").collect();
+    const relevantWebhooks = allWebhooks.filter(
+      (wh) => wh.isActive && (
+        wh.events.includes("tool.trending") ||
+        wh.events.includes("tool.registered") ||
+        wh.events.includes("tool.updated")
+      )
+    );
+
+    // Create webhook deliveries for each relevant webhook
+    for (const wh of relevantWebhooks) {
+      for (const milestone of triggered) {
+        await ctx.db.insert("webhookDeliveries", {
+          webhookId: wh._id,
+          event: `gossip.milestone.${milestone}`,
+          payload: JSON.stringify({
+            type: milestone,
+            endpoint: args.endpoint,
+            host: args.host,
+            discoveries: args.discoveries,
+            trending_score: args.trendingScore,
+            unique_agents: args.uniqueAgents,
+            timestamp: Date.now(),
+          }),
+          status: "pending",
+          httpStatus: undefined,
+          attempts: 0,
+          lastAttemptAt: Date.now(),
+          responseBody: undefined,
+        });
+      }
+    }
+
+    return { triggered };
+  },
+});
+
+// ═══════════════════════════════════════════════════
+// Get Agent Profile from Gossip History
+// ═══════════════════════════════════════════════════
+
+export const getAgentProfile = query({
+  args: { agentId: v.string() },
+  handler: async (ctx, args) => {
+    const events = await ctx.db
+      .query("gossipEvents")
+      .withIndex("by_agent", (q) => q.eq("agentId", args.agentId))
+      .collect();
+
+    if (events.length === 0) {
+      return null;
+    }
+
+    const totalSpent = events.reduce((sum, e) => sum + e.amount, 0);
+    const avgSpend = totalSpent / events.length;
+    const endpoints = new Set(events.map((e) => e.endpoint));
+    const chains = new Set(events.map((e) => e.chain));
+    const mutations = events.filter((e) => e.mutationTriggered).length;
+
+    // Find most active time window
+    const sortedByTime = [...events].sort((a, b) => b.createdAt - a.createdAt);
+    const lastActive = sortedByTime[0]?.createdAt ?? 0;
+    const firstActive = sortedByTime[sortedByTime.length - 1]?.createdAt ?? 0;
+
+    return {
+      agentId: args.agentId,
+      totalTransactions: events.length,
+      totalSpent: Math.round(totalSpent * 10000) / 10000,
+      avgSpendPerTx: Math.round(avgSpend * 10000) / 10000,
+      uniqueEndpoints: endpoints.size,
+      frequentEndpoints: Array.from(
+        events.reduce((map, e) => {
+          map.set(e.endpoint, (map.get(e.endpoint) ?? 0) + 1);
+          return map;
+        }, new Map<string, number>())
+      )
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 10)
+        .map(([endpoint, count]) => ({ endpoint, count })),
+      chains: Array.from(chains),
+      preferredChain: events.reduce((acc, e) => {
+        acc[e.chain] = (acc[e.chain] ?? 0) + 1;
+        return acc;
+      }, {} as Record<string, number>),
+      mutations,
+      mutationRate: events.length > 0 ? Math.round((mutations / events.length) * 100) / 100 : 0,
+      firstActive,
+      lastActive,
+      activeDays: Math.max(1, Math.round((lastActive - firstActive) / 86400000)),
+    };
+  },
+});
+
+// ═══════════════════════════════════════════════════
+// Agent Evolution Leaderboard
+// ═══════════════════════════════════════════════════
+
+export const getLeaderboard = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 20;
+    const allEvents = await ctx.db.query("gossipEvents").collect();
+
+    // Aggregate per agent
+    const agentMap = new Map<string, { txCount: number; totalSpent: number; mutations: number; endpoints: Set<string>; lastActive: number }>();
+
+    for (const e of allEvents) {
+      const entry = agentMap.get(e.agentId) ?? {
+        txCount: 0,
+        totalSpent: 0,
+        mutations: 0,
+        endpoints: new Set<string>(),
+        lastActive: 0,
+      };
+      entry.txCount++;
+      entry.totalSpent += e.amount;
+      if (e.mutationTriggered) entry.mutations++;
+      entry.endpoints.add(e.endpoint);
+      entry.lastActive = Math.max(entry.lastActive, e.createdAt);
+      agentMap.set(e.agentId, entry);
+    }
+
+    // Score and rank
+    const leaderboard = Array.from(agentMap.entries())
+      .map(([agentId, data]) => ({
+        agentId,
+        score: data.txCount * 10 + data.mutations * 50 + data.endpoints.size * 20 + data.totalSpent * 5,
+        transactions: data.txCount,
+        mutations: data.mutations,
+        unique_endpoints: data.endpoints.size,
+        total_spent: Math.round(data.totalSpent * 10000) / 10000,
+        last_active: data.lastActive,
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+
+    return leaderboard;
+  },
+});

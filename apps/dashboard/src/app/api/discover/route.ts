@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../../../convex/_generated/api";
 
 /**
  * Agent Discovery Endpoint — GET /api/discover
@@ -8,10 +10,21 @@ import { NextRequest, NextResponse } from "next/server";
  * Humans get redirected to the dashboard.
  *
  * Content negotiation:
- *   Accept: application/json → Agent payload
- *   Accept: text/html → Redirect to dashboard
- *   User-Agent contains bot/agent/python/curl → Agent payload
+ *   Accept: application/json -> Agent payload
+ *   Accept: text/html -> Redirect to dashboard
+ *   User-Agent contains bot/agent/python/curl -> Agent payload
+ *
+ * Query params:
+ *   ?category=ai       Filter tools by category
+ *   ?chain=base        Filter tools by chain
+ *   ?limit=50          Control how many tools returned (default 20)
+ *   ?ref=CODE          Referral code
  */
+
+const CONVEX_URL =
+  process.env.NEXT_PUBLIC_CONVEX_URL ??
+  "https://cheery-parrot-104.convex.cloud";
+const convex = new ConvexHttpClient(CONVEX_URL);
 
 const AGENT_USER_AGENTS = [
   "python",
@@ -47,20 +60,38 @@ function isAgent(req: NextRequest): boolean {
   return AGENT_USER_AGENTS.some((sig) => ua.includes(sig));
 }
 
-// Featured tools — hardcoded for launch, eventually pulled from Convex
-const FEATURED_TOOLS = [
-  {
-    name: "Programming Jokes",
-    slug: "programming-jokes",
-    url: "https://seller-api-production.up.railway.app/api/joke",
-    method: "GET",
-    price: "0.001",
-    currency: "USDC",
-    chain: "base",
-    description: "Random programming jokes. Pay $0.001 per call via x402.",
-    category: "entertainment",
-  },
-];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapToolToDiscovery(tool: any) {
+  return {
+    name: tool.name,
+    slug: tool.slug,
+    url: `${tool.baseUrl}${tool.path}`,
+    method: tool.method,
+    price: String(tool.price),
+    currency: tool.currency || "USDC",
+    chain: tool.chains[0] || "base",
+    chains: tool.chains,
+    description: tool.description,
+    category: tool.category,
+    rating: tool.rating,
+    total_calls: tool.totalCalls,
+    is_verified: tool.isVerified,
+    is_featured: tool.isFeatured || false,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapTrendingEntry(entry: any) {
+  return {
+    endpoint: entry.endpoint,
+    host: entry.host,
+    discoveries: entry.discoveries,
+    unique_agents: entry.uniqueAgents,
+    total_volume_usdc: entry.totalVolume,
+    trending_score: entry.trendingScore,
+    chains: entry.chains,
+  };
+}
 
 export async function GET(req: NextRequest) {
   // Content negotiation — agents get JSON, humans get redirected
@@ -68,7 +99,63 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
+  // Parse query params
   const ref = req.nextUrl.searchParams.get("ref");
+  const categoryFilter = req.nextUrl.searchParams.get("category");
+  const chainFilter = req.nextUrl.searchParams.get("chain");
+  const limitParam = req.nextUrl.searchParams.get("limit");
+  const limit = limitParam ? Math.min(Math.max(parseInt(limitParam, 10) || 20, 1), 100) : 20;
+
+  // ── Fetch live data from Convex (all calls wrapped in try/catch) ──
+
+  let tools: ReturnType<typeof mapToolToDiscovery>[] = [];
+  let trending: ReturnType<typeof mapTrendingEntry>[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let network: any = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let categories: any[] = [];
+
+  try {
+    // Fetch featured tools, trending gossip, network stats, and categories in parallel
+    const [featuredRaw, trendingRaw, networkStats, categoriesRaw] =
+      await Promise.all([
+        // If there's a category or chain filter, use search; otherwise use getFeatured
+        categoryFilter
+          ? convex.query(api.tools.search, {
+              category: categoryFilter,
+              chains: chainFilter ? [chainFilter] : undefined,
+              limit,
+            })
+          : convex.query(api.tools.getFeatured, { limit }),
+        convex.query(api.gossip.getTrending, { limit: 10 }),
+        convex.query(api.gossip.getNetworkStats, {}),
+        convex.query(api.categories.list, {}),
+      ]);
+
+    // Map featured tools to discovery shape
+    let mappedTools = (featuredRaw ?? []).map(mapToolToDiscovery);
+
+    // Apply chain filter if we used getFeatured (search already handles it)
+    if (!categoryFilter && chainFilter) {
+      mappedTools = mappedTools.filter((t) =>
+        t.chains.includes(chainFilter)
+      );
+    }
+
+    tools = mappedTools;
+    trending = (trendingRaw ?? []).map(mapTrendingEntry);
+    network = networkStats ?? null;
+    categories = (categoriesRaw ?? []).map((c) => ({
+      slug: c.slug,
+      name: c.name,
+      description: c.description,
+      tool_count: c.toolCount,
+    }));
+  } catch (err) {
+    // Convex unavailable — continue with empty arrays.
+    // An agent should ALWAYS get a useful response even if the DB is down.
+    console.error("[discover] Convex fetch failed, serving static payload:", err);
+  }
 
   const payload = {
     // Protocol identification
@@ -97,10 +184,20 @@ export async function GET(req: NextRequest) {
       },
     },
 
-    // Tool directory
-    tools: FEATURED_TOOLS,
-    tools_count: FEATURED_TOOLS.length,
+    // Tool directory — live from Convex
+    tools,
+    tools_count: tools.length,
     directory_url: "https://apitoll.com/dashboard/tools",
+
+    // Trending APIs from gossip network
+    trending,
+    trending_count: trending.length,
+
+    // Live network stats
+    network,
+
+    // Available categories
+    categories,
 
     // Become a seller
     become_seller: {
@@ -142,7 +239,8 @@ export async function GET(req: NextRequest) {
     links: {
       github: "https://github.com/TasnidChain/APITOLL",
       dashboard: "https://apitoll.com/dashboard",
-      facilitator: "https://facilitator-production-fbd7.up.railway.app",
+      facilitator:
+        "https://facilitator-production-fbd7.up.railway.app",
       x402_spec: "https://www.x402.org/",
       npm_org: "https://www.npmjs.com/org/apitoll",
     },
