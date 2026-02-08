@@ -1,7 +1,7 @@
 {
   "name": "@apitoll/shared",
   "version": "0.1.0-beta.1",
-  "description": "Shared types and utilities for Apitoll packages",
+  "description": "Shared types and utilities for API Toll packages",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TasnidChain/Apitoll"
+    "url": "https://github.com/TasnidChain/APITOLL"
   },
   "publishConfig": {
     "access": "public"
