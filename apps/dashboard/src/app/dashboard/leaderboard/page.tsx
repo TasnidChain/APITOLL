@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../../../../../convex/_generated/api'
+import type { Tool } from '@/lib/types'
 import {
-  Trophy,
   Medal,
   TrendingUp,
   Crown,
@@ -37,7 +37,8 @@ export default function LeaderboardPage() {
   // Sort by performance
   const rankedSellers = [...(sellers ?? [])].sort((a, b) => b.totalRevenue - a.totalRevenue)
   const rankedAgents = [...(agents ?? [])].sort((a, b) => b.totalTransactions - a.totalTransactions)
-  const rankedTools = [...(tools ?? [])].sort((a: any, b: any) => b.totalCalls - a.totalCalls)
+  const rankedTools = [...(tools ?? [])] as Tool[]
+  rankedTools.sort((a, b) => b.totalCalls - a.totalCalls)
 
   const totalRevenue = rankedSellers.reduce((s, x) => s + x.totalRevenue, 0)
   const totalCalls = rankedSellers.reduce((s, x) => s + x.totalCalls, 0)
@@ -201,7 +202,7 @@ export default function LeaderboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rankedTools.map((tool: any, i: number) => (
+                  {rankedTools.map((tool, i) => (
                     <tr key={tool._id} className="border-b last:border-0 hover:bg-muted/30">
                       <td className="px-4 py-3"><RankBadge rank={i + 1} /></td>
                       <td className="px-4 py-3 font-medium text-foreground">{tool.name}</td>

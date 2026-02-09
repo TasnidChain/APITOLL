@@ -93,7 +93,7 @@ router.get("/api/crypto/price", async (req: Request, res: Response) => {
   const includeMarketCap = req.query.include_market_cap === "true";
 
   const cacheKey = `crypto:price:${ids}:${vsCurrencies}:${include24h}:${includeMarketCap}`;
-  const cached = cryptoCache.get<any>(cacheKey);
+  const cached = cryptoCache.get<Record<string, unknown>>(cacheKey);
   if (cached) {
     return res.json({ ...cached, cached: true, payment: formatPayment(getX402Context(req)) });
   }
@@ -114,7 +114,7 @@ router.get("/api/crypto/trending", async (req: Request, res: Response) => {
   const includeDefi = req.query.include_defi === "true";
   const cacheKey = `crypto:trending:${includeDefi}`;
 
-  const cached = cryptoCache.get<any>(cacheKey);
+  const cached = cryptoCache.get<Record<string, unknown>>(cacheKey);
   if (cached) {
     return res.json({ ...cached, cached: true, payment: formatPayment(getX402Context(req)) });
   }

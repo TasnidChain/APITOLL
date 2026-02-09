@@ -1,17 +1,43 @@
 import 'dotenv/config';
+import * as Sentry from '@sentry/node';
 import express, { Request, Response, NextFunction } from 'express';
 import { ethers } from 'ethers';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 import pino from 'pino';
 import {
-  PaymentRequirement,
   SECURITY_HEADERS,
   isOriginAllowed,
   secureCompare,
+  BASE_USDC_ADDRESS,
 } from '@apitoll/shared';
 import { ConvexHttpClient } from 'convex/browser';
 import { makeFunctionReference } from 'convex/server';
+
+// ─── Sentry Error Monitoring ──────────────────────────────────────
+// Must be initialized before any other middleware/handlers
+if (process.env.SENTRY_DSN && process.env.NODE_ENV !== 'test') {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'production',
+    tracesSampleRate: 0.3, // 30% of transactions for perf monitoring
+    integrations: [
+      Sentry.expressIntegration(),
+    ],
+    ignoreErrors: [
+      // Rate limit responses are expected, not errors
+      'Too many requests',
+      // Validation errors are expected user input issues
+      'Validation failed',
+    ],
+    initialScope: {
+      tags: {
+        app: 'facilitator',
+        platform: 'apitoll',
+      },
+    },
+  });
+}
 
 const logger = pino();
 
@@ -51,7 +77,7 @@ const API_KEYS = (process.env.FACILITATOR_API_KEYS || '').split(',').filter(Bool
 
 // ─── Constants ──────────────────────────────────────────────────
 
-const USDC_ADDRESS_BASE = process.env.USDC_ADDRESS || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const USDC_ADDRESS_BASE = process.env.USDC_ADDRESS || BASE_USDC_ADDRESS;
 const USDC_ABI = ['function transfer(address to, uint256 amount) returns (bool)'];
 const MAX_PAYMENT_AMOUNT = 100; // $100 USDC max per single payment (safety cap)
 const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
@@ -83,6 +109,14 @@ const PayRequestSchema = z.object({
 });
 
 // ─── Types ──────────────────────────────────────────────────────
+
+/** Express Request with an attached API key (set by requireAuth middleware). */
+interface AuthenticatedRequest extends Request {
+  apiKey: string;
+}
+
+/** JSON-serializable value (used for Convex `v.any()` fields). */
+type JsonValue = string | number | boolean | null | undefined | JsonValue[] | { [key: string]: JsonValue };
 
 interface PaymentRecord {
   id: string;
@@ -128,7 +162,7 @@ async function persistPayment(payment: PaymentRecord) {
       originalUrl: payment.originalUrl,
       originalMethod: payment.originalMethod,
       originalHeaders: payment.originalHeaders,
-      originalBody: payment.originalBody as any,
+      originalBody: payment.originalBody as JsonValue,
       amount: payment.paymentRequired.amount,
       currency: payment.paymentRequired.currency,
       recipient: payment.paymentRequired.recipient,
@@ -142,8 +176,8 @@ async function persistPayment(payment: PaymentRecord) {
       createdAt: payment.createdAt,
       completedAt: payment.completedAt,
     });
-  } catch (err: any) {
-    logger.error({ paymentId: payment.id, error: err.message }, 'Failed to persist payment to Convex');
+  } catch (err: unknown) {
+    logger.error({ paymentId: payment.id, error: err instanceof Error ? err.message : String(err) }, 'Failed to persist payment to Convex');
   }
 }
 
@@ -160,8 +194,8 @@ async function persistPaymentStatus(paymentId: string, status: PaymentRecord['st
       error,
       completedAt: (status === 'completed' || status === 'failed') ? Date.now() : undefined,
     });
-  } catch (err: any) {
-    logger.error({ paymentId, error: err.message }, 'Failed to update payment status in Convex');
+  } catch (err: unknown) {
+    logger.error({ paymentId, error: err instanceof Error ? err.message : String(err) }, 'Failed to update payment status in Convex');
   }
 }
 
@@ -202,8 +236,8 @@ async function recoverPaymentsFromConvex() {
     if (recovered > 0) {
       logger.info({ recovered }, 'Recovered active payments from Convex');
     }
-  } catch (err: any) {
-    logger.error({ error: err.message }, 'Failed to recover payments from Convex');
+  } catch (err: unknown) {
+    logger.error({ error: err instanceof Error ? err.message : String(err) }, 'Failed to recover payments from Convex');
   }
 }
 
@@ -289,7 +323,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   // If no API keys configured, allow all (development mode)
   if (API_KEYS.length === 0) {
     logger.warn('No FACILITATOR_API_KEYS configured — running in open mode (development only)');
-    (req as any).apiKey = 'dev';
+    (req as AuthenticatedRequest).apiKey = 'dev';
     return next();
   }
 
@@ -298,7 +332,7 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
     return res.status(403).json({ error: 'Invalid API key' });
   }
 
-  (req as any).apiKey = providedKey.slice(0, 8) + '...'; // truncated for logging
+  (req as AuthenticatedRequest).apiKey = providedKey.slice(0, 8) + '...'; // truncated for logging
   next();
 }
 
@@ -372,8 +406,8 @@ app.get('/status', rateLimit, requireAuth, async (_req: Request, res: Response) 
       block_number: blockNumber,
       uptime_seconds: Math.floor(process.uptime()),
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, 'Status check failed');
+  } catch (error: unknown) {
+    logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Status check failed');
     res.status(500).json({
       status: 'error',
       error: 'Failed to retrieve status — check RPC connection',
@@ -431,7 +465,7 @@ app.post('/pay', rateLimit, requireAuth, async (req: Request, res: Response) => 
       paymentRequired: data.payment_required,
       agentWallet: data.agent_wallet,
       sellerAddress: data.payment_required.recipient,
-      apiKey: (req as any).apiKey || 'unknown',
+      apiKey: (req as AuthenticatedRequest).apiKey || 'unknown',
       status: 'processing',
       createdAt: Date.now(),
     };
@@ -442,8 +476,8 @@ app.post('/pay', rateLimit, requireAuth, async (req: Request, res: Response) => 
     persistPayment(payment);
 
     // Process payment asynchronously
-    processPayment(paymentId, data.signed_tx).catch((err) => {
-      logger.error({ paymentId, error: err.message }, 'Payment processing failed');
+    processPayment(paymentId, data.signed_tx).catch((err: unknown) => {
+      logger.error({ paymentId, error: err instanceof Error ? err.message : String(err) }, 'Payment processing failed');
       payment.status = 'failed';
       payment.error = 'Payment processing failed. Please try again.';
       payment.completedAt = Date.now();
@@ -455,8 +489,8 @@ app.post('/pay', rateLimit, requireAuth, async (req: Request, res: Response) => 
       status: 'processing',
       check_url: `/pay/${paymentId}`,
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, 'Payment request failed');
+  } catch (error: unknown) {
+    logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Payment request failed');
     res.status(500).json({ error: 'Payment initiation failed' });
   }
 });
@@ -531,8 +565,8 @@ async function processPayment(paymentId: string, signedTx?: string) {
       logger.info({ paymentId, txHash: receipt.hash }, 'Payment confirmed');
       persistPaymentStatus(paymentId, 'completed', receipt.hash);
     }
-  } catch (error: any) {
-    logger.error({ paymentId, error: error.message }, 'Payment processing error');
+  } catch (error: unknown) {
+    logger.error({ paymentId, error: error instanceof Error ? error.message : String(error) }, 'Payment processing error');
     payment.status = 'failed';
     payment.error = 'Payment processing failed. Please try again.';
     payment.completedAt = Date.now();
@@ -621,8 +655,8 @@ app.post('/forward/:paymentId', rateLimit, requireAuth, async (req: Request, res
       seller_status: sellerResponse.status,
       seller_response: sellerData,
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, 'Forward request failed');
+  } catch (error: unknown) {
+    logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Forward request failed');
     res.status(502).json({ error: 'Failed to forward request to seller' });
   }
 });
@@ -716,8 +750,8 @@ app.post('/verify', rateLimit, async (req: Request, res: Response) => {
       valid: false,
       error: 'No txHash or paymentId provided for verification',
     });
-  } catch (error: any) {
-    logger.error({ error: error.message }, 'Verification failed');
+  } catch (error: unknown) {
+    logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Verification failed');
     res.status(500).json({
       valid: false,
       error: 'Verification failed',
@@ -730,6 +764,9 @@ app.post('/verify', rateLimit, async (req: Request, res: Response) => {
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found' });
 });
+
+// ─── Sentry Error Handler (must be before custom error handler) ──
+Sentry.setupExpressErrorHandler(app);
 
 // ─── Error Handler ──────────────────────────────────────────────
 
@@ -744,8 +781,10 @@ let server: ReturnType<typeof app.listen>;
 
 function shutdown(signal: string) {
   logger.info({ signal }, 'Shutdown signal received, closing server...');
-  server.close(() => {
-    logger.info('Server closed. Pending payments will be lost (use Redis for persistence).');
+  server.close(async () => {
+    // Flush Sentry events before exiting
+    await Sentry.close(2000);
+    logger.info('Server closed.');
     process.exit(0);
   });
 
@@ -761,17 +800,20 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 
 // ─── Start Server ───────────────────────────────────────────────
 
-server = app.listen(PORT, async () => {
-  logger.info({ port: PORT }, 'API Toll Facilitator listening');
-  if (API_KEYS.length === 0) {
-    logger.warn('No FACILITATOR_API_KEYS set — running in open mode (development only)');
-  }
-  if (ALLOWED_ORIGINS.length === 0) {
-    logger.warn('No ALLOWED_ORIGINS set — CORS allows all origins (development only)');
-  }
+// Only start listening when run directly (not when imported by tests)
+if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
+  server = app.listen(PORT, async () => {
+    logger.info({ port: PORT }, 'API Toll Facilitator listening');
+    if (API_KEYS.length === 0) {
+      logger.warn('No FACILITATOR_API_KEYS set — running in open mode (development only)');
+    }
+    if (ALLOWED_ORIGINS.length === 0) {
+      logger.warn('No ALLOWED_ORIGINS set — CORS allows all origins (development only)');
+    }
 
-  // Recover any in-flight payments from Convex
-  await recoverPaymentsFromConvex();
-});
+    // Recover any in-flight payments from Convex
+    await recoverPaymentsFromConvex();
+  });
+}
 
 export { app };

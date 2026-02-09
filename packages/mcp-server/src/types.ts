@@ -20,7 +20,7 @@ export interface PaidToolConfig {
 export interface ToolDefinition {
   name: string
   description: string
-  inputSchema: z.ZodType<any>
+  inputSchema: z.ZodType<unknown>
   /** Payment config - if not provided, tool is free */
   payment?: PaidToolConfig
 }

@@ -1,12 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-
-// Auth helper: require a logged-in Clerk user
-async function requireAuth(ctx: any) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new Error("Not authenticated");
-  return identity;
-}
+import { requireAuth } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Valid Webhook Events
@@ -28,7 +22,7 @@ function validateEvents(events: string[]) {
     throw new Error("At least one event is required");
   }
   for (const event of events) {
-    if (!VALID_EVENTS.includes(event as any)) {
+    if (!(VALID_EVENTS as readonly string[]).includes(event)) {
       throw new Error(
         `Invalid event: "${event}". Valid events: ${VALID_EVENTS.join(", ")}`
       );
@@ -85,8 +79,8 @@ export const create = mutation({
       if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(urlObj.hostname)) {
         throw new Error("Webhook URL cannot point to private IP addresses");
       }
-    } catch (e: any) {
-      if (e.message.includes("Webhook URL")) throw e;
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message.includes("Webhook URL")) throw e;
       throw new Error("Invalid webhook URL");
     }
 
@@ -154,7 +148,7 @@ export const update = mutation({
     const webhook = await ctx.db.get(args.id);
     if (!webhook) throw new Error("Webhook not found");
 
-    const update: Record<string, any> = {};
+    const update: { url?: string; events?: string[]; isActive?: boolean; failureCount?: number } = {};
 
     if (args.url !== undefined) {
       if (!args.url.startsWith("https://")) {
@@ -169,8 +163,8 @@ export const update = mutation({
         if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(urlObj.hostname)) {
           throw new Error("Webhook URL cannot point to private IP addresses");
         }
-      } catch (e: any) {
-        if (e.message.includes("Webhook URL")) throw e;
+      } catch (e: unknown) {
+        if (e instanceof Error && e.message.includes("Webhook URL")) throw e;
         throw new Error("Invalid webhook URL");
       }
       update.url = args.url;

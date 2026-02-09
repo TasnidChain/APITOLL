@@ -1,12 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-
-// Auth helper: require a logged-in Clerk user
-async function requireAuth(ctx: any) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new Error("Not authenticated");
-  return identity;
-}
+import { requireAuth } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Create Tool (for Discovery)
@@ -405,7 +399,12 @@ export const setFeatured = mutation({
   },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
-    const updates: any = {
+    const updates: {
+      isFeatured: boolean;
+      listingTier: string;
+      boostScore: number;
+      featuredUntil?: number;
+    } = {
       isFeatured: args.isFeatured,
       listingTier: args.listingTier ?? (args.isFeatured ? "featured" : "free"),
       boostScore: Math.max(0, Math.min(100, args.boostScore ?? (args.isFeatured ? 50 : 0))),

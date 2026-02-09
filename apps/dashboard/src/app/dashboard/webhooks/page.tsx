@@ -6,6 +6,8 @@ import { api } from '../../../../../../convex/_generated/api'
 import { useOrgId } from '@/lib/hooks'
 import { PageLoading } from '@/components/loading'
 import { cn } from '@/lib/utils'
+import type { Webhook as WebhookType, WebhookDelivery } from '@/lib/types'
+import type { Id } from '../../../../../../convex/_generated/dataModel'
 import {
   Webhook,
   Plus,
@@ -21,7 +23,6 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
-  Circle,
   Copy,
   Check,
   FileCode2,
@@ -127,7 +128,7 @@ function CreateWebhookModal({
   onCreate,
 }: {
   onClose: () => void
-  onCreate: (url: string, events: string[]) => Promise<any>
+  onCreate: (url: string, events: string[]) => Promise<{ signingSecret?: string } | undefined>
 }) {
   const [url, setUrl] = useState('')
   const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set())
@@ -184,8 +185,8 @@ function CreateWebhookModal({
       } else {
         onClose()
       }
-    } catch (err: any) {
-      setError(err?.message || 'Failed to create webhook')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create webhook')
     } finally {
       setIsCreating(false)
     }
@@ -367,12 +368,12 @@ function WebhookCard({
   onTestPing,
   deliveries,
 }: {
-  webhook: any
-  onUpdate: (id: any, data: any) => Promise<any>
-  onRemove: (id: any) => Promise<any>
-  onRotateSecret: (id: any) => Promise<any>
-  onTestPing: (id: any) => Promise<any>
-  deliveries: any[] | undefined
+  webhook: WebhookType
+  onUpdate: (id: Id<'webhooks'>, data: { status?: string }) => Promise<void>
+  onRemove: (id: Id<'webhooks'>) => Promise<void>
+  onRotateSecret: (id: Id<'webhooks'>) => Promise<{ signingSecret?: string } | void>
+  onTestPing: (id: Id<'webhooks'>) => Promise<void>
+  deliveries: WebhookDelivery[] | undefined
 }) {
   const [expanded, setExpanded] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
@@ -576,7 +577,7 @@ function WebhookCard({
                 Recent Deliveries
               </p>
               <div className="space-y-1.5">
-                {deliveries.map((delivery: any) => (
+                {deliveries.map((delivery) => (
                   <div
                     key={delivery._id}
                     className="flex items-center gap-3 text-xs bg-muted/30 rounded-lg px-3 py-2"
@@ -769,25 +770,25 @@ export default function WebhooksPage() {
   const rotateSecret = useMutation(api.webhooks.rotateSecret)
   const createTestDelivery = useMutation(api.webhooks.createTestDelivery)
 
-  const handleCreate = async (url: string, events: string[]): Promise<any> => {
+  const handleCreate = async (url: string, events: string[]) => {
     if (!orgId) return
     return await createWebhook({ orgId, url, events })
   }
 
-  const handleUpdate = async (id: any, data: any): Promise<any> => {
-    return await updateWebhook({ id, ...data })
+  const handleUpdate = async (id: Id<'webhooks'>, data: { status?: string }) => {
+    await updateWebhook({ id, ...data })
   }
 
-  const handleRemove = async (id: any): Promise<any> => {
-    return await removeWebhook({ id })
+  const handleRemove = async (id: Id<'webhooks'>) => {
+    await removeWebhook({ id })
   }
 
-  const handleRotateSecret = async (id: any): Promise<any> => {
+  const handleRotateSecret = async (id: Id<'webhooks'>) => {
     return await rotateSecret({ id })
   }
 
-  const handleTestPing = async (id: any): Promise<any> => {
-    return await createTestDelivery({ webhookId: id })
+  const handleTestPing = async (id: Id<'webhooks'>) => {
+    await createTestDelivery({ webhookId: id })
   }
 
   const getDeliveriesForWebhook = (_webhookId: string) => {
@@ -859,7 +860,7 @@ export default function WebhooksPage() {
 
           {webhooks && webhooks.length > 0 ? (
             <div className="space-y-3">
-              {webhooks.map((webhook: any) => (
+              {webhooks.map((webhook) => (
                 <WebhookCard
                   key={webhook._id}
                   webhook={webhook}

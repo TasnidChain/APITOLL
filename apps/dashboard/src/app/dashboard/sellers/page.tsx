@@ -3,8 +3,9 @@
 import { useState, useMemo } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../../../../convex/_generated/api'
+import type { Id } from '../../../../../../convex/_generated/dataModel'
 import { useOrgId, useSellers, useSellerLimit } from '@/lib/hooks'
-import { PageLoading, StatCardSkeleton } from '@/components/loading'
+import { StatCardSkeleton } from '@/components/loading'
 import { formatUSD, formatCompact } from '@/lib/utils'
 import {
   Store,
@@ -409,14 +410,14 @@ function CreateSellerModal({
     setError('')
     try {
       const result = await createSeller({
-        orgId: orgId as any,
+        orgId: orgId as Id<"organizations">,
         name: name.trim(),
         walletAddress: walletAddress.trim(),
       })
       // Show the API key (only shown once!)
       setCreatedApiKey(result.apiKey)
-    } catch (err: any) {
-      setError(err.message || 'Failed to create seller')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create seller')
     } finally {
       setLoading(false)
     }

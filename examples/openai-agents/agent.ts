@@ -100,7 +100,7 @@ async function executeTool(name: string, args: Record<string, string>): Promise<
   const tool = tools.find((t) => t.function.name === name);
   if (!tool) return JSON.stringify({ error: `Unknown tool: ${name}` });
 
-  const meta = (tool as any)._apitoll;
+  const meta = (tool as unknown as { _apitoll: { url: string; price: number; chain: string } })._apitoll;
   let url = meta.url;
 
   // Build URL based on tool
@@ -180,7 +180,11 @@ async function chat(userMessage: string): Promise<string> {
     }),
   });
 
-  const data = await response.json() as any;
+  interface OpenAIChoice {
+    finish_reason: string;
+    message: { content?: string; tool_calls?: { function: { name: string; arguments: string } }[] };
+  }
+  const data = await response.json() as { choices?: OpenAIChoice[] };
   const choice = data.choices?.[0];
 
   if (!choice) return "No response from OpenAI";
@@ -212,7 +216,7 @@ async function chat(userMessage: string): Promise<string> {
       body: JSON.stringify({ model: "gpt-4", messages }),
     });
 
-    const finalData = await finalResponse.json() as any;
+    const finalData = await finalResponse.json() as { choices?: { message?: { content?: string } }[] };
     return finalData.choices?.[0]?.message?.content || "No response";
   }
 

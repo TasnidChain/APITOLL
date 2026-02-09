@@ -2,9 +2,15 @@
 
 import { useEffect, useState } from 'react'
 
+/** BeforeInstallPromptEvent — not yet in the standard TS DOM lib */
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
 // PWA Install Button Component
 export function PWAInstallButton() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isInstallable, setIsInstallable] = useState(false)
   const [isInstalled, setIsInstalled] = useState(false)
 
@@ -17,7 +23,7 @@ export function PWAInstallButton() {
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
-      setDeferredPrompt(e)
+      setDeferredPrompt(e as BeforeInstallPromptEvent)
       setIsInstallable(true)
     }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../convex/_generated/api";
+import { convex } from "@/lib/convex-client";
 
 /**
  * Agent Gossip Hub — POST & GET /api/gossip
@@ -16,12 +16,6 @@ import { api } from "../../../../../../convex/_generated/api";
  *
  * No auth required — we want maximum participation.
  */
-
-const CONVEX_URL =
-  process.env.NEXT_PUBLIC_CONVEX_URL ??
-  "https://cheery-parrot-104.convex.cloud";
-
-const convex = new ConvexHttpClient(CONVEX_URL);
 
 // ---------------------------------------------------------------------------
 // Rate limiting — simple in-memory counter, max 100 requests/minute per IP
@@ -83,10 +77,10 @@ export async function POST(req: NextRequest) {
       chain,
       amount,
       latency_ms,
-      success,
+      success: _success,
       mutation_triggered,
       referral_code,
-      discovery_source,
+      discovery_source: _discovery_source,
       wallet_address,
     } = body;
 

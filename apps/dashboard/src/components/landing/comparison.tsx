@@ -1,4 +1,4 @@
-import { Check, X, Minus } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 
 const rows = [
   {

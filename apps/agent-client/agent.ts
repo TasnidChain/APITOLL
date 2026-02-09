@@ -42,16 +42,16 @@ async function main() {
         console.log(`  [evolution] ${m.type}: ${m.from} → ${m.to} (${Math.round(m.successRate * 100)}% success rate)`);
       },
     },
-    onPayment: (receipt, url) => {
+    onPayment: (receipt, _url) => {
       console.log(`Payment confirmed: ${receipt.txHash}`);
       console.log(`  Amount: $${receipt.amount} USDC`);
       console.log(`  Chain:  ${receipt.chain}`);
       console.log(`  To:     ${receipt.to}\n`);
     },
-    onPolicyRejection: (result, url) => {
+    onPolicyRejection: (result, _url) => {
       console.error(`Policy rejected: ${result.reason}`);
     },
-    onError: (error, url) => {
+    onError: (error, _url) => {
       console.error(`Error: ${error.message}`);
     },
   });

@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import { paymentMiddleware } from "@apitoll/seller-sdk";
+import { BASE_USDC_ADDRESS } from "@apitoll/shared";
 
 // Route modules
 import jokeRouter from "./routes/joke";
@@ -17,7 +18,7 @@ app.use(express.json());
 // ═══════════════════════════════════════════════════
 // Configuration
 // ═══════════════════════════════════════════════════
-const USDC_ADDRESS = process.env.USDC_ADDRESS || "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const USDC_ADDRESS = process.env.USDC_ADDRESS || BASE_USDC_ADDRESS;
 const BASE_RPC_URL = process.env.BASE_RPC_URL || "https://mainnet.base.org";
 const NETWORK_ID = process.env.NETWORK_ID || "eip155:8453";
 const PORT = parseInt(process.env.PORT || "4402", 10);

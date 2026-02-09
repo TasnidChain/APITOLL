@@ -1,6 +1,6 @@
 'use client'
 
-import { cn, formatUSD, shortenAddress, timeAgo } from '@/lib/utils'
+import { cn, formatUSD, timeAgo } from '@/lib/utils'
 import { ExternalLink } from 'lucide-react'
 
 export interface TransactionRow {

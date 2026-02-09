@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../../../../../convex/_generated/api'
+import type { Tool } from '@/lib/types'
 import { useOrgId } from '@/lib/hooks'
 import { PageLoading } from '@/components/loading'
 import { cn } from '@/lib/utils'
@@ -493,7 +494,7 @@ export default function PlaygroundPage() {
   const orgId = useOrgId()
 
   // Try to load active tools for quick-select. Falls back to empty array.
-  let tools: any[] = []
+  let tools: Tool[] = []
   try {
     const result = useQuery(api.tools.search, { limit: 20 })
     if (Array.isArray(result)) tools = result
@@ -526,7 +527,7 @@ export default function PlaygroundPage() {
     setHeaders((prev) => prev.filter((h) => h.id !== id))
 
   // ---- Tool quick-select ----
-  const selectTool = (tool: any) => {
+  const selectTool = (tool: Tool) => {
     setMethod(tool.method?.toUpperCase() ?? 'GET')
     setUrl(`${tool.baseUrl ?? ''}${tool.path ?? ''}`)
     setHeaders([
@@ -583,10 +584,10 @@ export default function PlaygroundPage() {
           message: data.error ?? 'Unknown error from proxy',
         })
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setReqState({
         kind: 'error',
-        message: err.message || 'Network error',
+        message: err instanceof Error ? err.message : 'Network error',
       })
     }
   }
@@ -619,7 +620,7 @@ export default function PlaygroundPage() {
             Quick Select from Discovered Tools
           </h3>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {tools.slice(0, 6).map((tool: any) => (
+            {tools.slice(0, 6).map((tool) => (
               <ToolQuickCard
                 key={tool._id}
                 tool={tool}

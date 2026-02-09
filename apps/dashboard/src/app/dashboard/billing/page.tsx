@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useOrgId, useBillingSummary } from '@/lib/hooks'
 import { PageLoading } from '@/components/loading'
-import { formatUSD } from '@/lib/utils'
 import {
   CreditCard,
   Check,

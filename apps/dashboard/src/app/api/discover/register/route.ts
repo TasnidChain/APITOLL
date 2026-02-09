@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../../convex/_generated/api";
+import { convex } from "@/lib/convex-client";
 
 /**
  * Agent/Seller Registration Endpoint — POST /api/discover/register
@@ -12,10 +12,6 @@ import { api } from "../../../../../../../convex/_generated/api";
  * GET — Returns registration instructions (for agent discovery)
  * POST — Registers tool in Convex (starts unverified, auto-listed)
  */
-
-const CONVEX_URL =
-  process.env.NEXT_PUBLIC_CONVEX_URL ??
-  "https://cheery-parrot-104.convex.cloud";
 
 export async function GET(req: NextRequest) {
   const ref = req.nextUrl.searchParams.get("ref");
@@ -137,7 +133,6 @@ export async function POST(req: NextRequest) {
 
     // Register tool in Convex via public mutation
     try {
-      const convex = new ConvexHttpClient(CONVEX_URL);
       const result = await convex.mutation(api.tools.registerPublic, {
         name: body.name,
         description: body.description,
@@ -175,8 +170,8 @@ export async function POST(req: NextRequest) {
           headers: { "X-APITOLL-DISCOVERY": "true" },
         }
       );
-    } catch (convexError: any) {
-      console.error("[api-toll] Convex registration error:", convexError.message);
+    } catch (convexError: unknown) {
+      console.error("[api-toll] Convex registration error:", convexError instanceof Error ? convexError.message : convexError);
       return NextResponse.json(
         {
           error: "Registration failed",

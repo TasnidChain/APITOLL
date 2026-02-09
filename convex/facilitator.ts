@@ -3,8 +3,12 @@ import { mutation, query } from "./_generated/server";
 
 // ═══════════════════════════════════════════════════
 // Facilitator Payment Persistence
-// These functions are called by the facilitator server
-// via ConvexHttpClient to persist payment records.
+//
+// These mutations remain public because they are called by the external
+// facilitator server (pay.apitoll.com) via ConvexHttpClient, which cannot
+// invoke internalMutation. The facilitator authenticates via API key
+// before calling these. Future: add a shared secret check here for
+// defense-in-depth.
 // ═══════════════════════════════════════════════════
 
 /**

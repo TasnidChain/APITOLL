@@ -204,7 +204,7 @@ if (mode === 'stdio') {
   app.use('/mcp', toExpressRouter(server))
 
   // Health check
-  app.get('/health', (req: any, res: any) => {
+  app.get('/health', (_req: import('express').Request, res: import('express').Response) => {
     res.json({ status: 'ok', tools: server.getToolDefinitions().length })
   })
 

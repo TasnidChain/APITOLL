@@ -3,7 +3,6 @@ import { z } from 'zod'
 import {
   searchTools,
   getToolBySlug,
-  getToolById,
   getFeaturedTools,
   getToolsByCategory,
   getCategories,

@@ -1,22 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-
-// Auth helper: require a logged-in Clerk user
-async function requireAuth(ctx: any) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new Error("Not authenticated");
-  return identity;
-}
-
-// Admin helper: require admin privileges
-async function requireAdmin(ctx: any) {
-  const identity = await requireAuth(ctx);
-  const adminIds = (process.env.ADMIN_USER_IDS ?? "").split(",").map((s: string) => s.trim()).filter(Boolean);
-  if (!adminIds.includes(identity.subject)) {
-    throw new Error("Not authorized — admin access required");
-  }
-  return identity;
-}
+import { requireAuth, requireAdmin } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Create Dispute
@@ -76,7 +60,7 @@ export const listByOrg = query({
     if (args.status) {
       disputes = await ctx.db
         .query("disputes")
-        .withIndex("by_status", (q) => q.eq("status", args.status as any))
+        .withIndex("by_status", (q) => q.eq("status", args.status as string))
         .collect();
 
       // Filter by org in memory

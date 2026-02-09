@@ -1,4 +1,4 @@
-import { CheckCircle, ExternalLink, Zap, Shield, Globe } from 'lucide-react'
+import { CheckCircle, ExternalLink, Zap, Shield } from 'lucide-react'
 
 const facts = [
   {

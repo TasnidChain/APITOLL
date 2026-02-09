@@ -124,10 +124,11 @@ async function main() {
     }
 
     console.log("");
-  } catch (error: any) {
-    console.error(`  ❌ Error: ${error.message}`);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`  ❌ Error: ${msg}`);
     console.error("");
-    if (error.message.includes("network")) {
+    if (msg.includes("network")) {
       console.error(`  Check your internet connection and RPC URL.`);
     }
     process.exit(1);

@@ -30,6 +30,10 @@ const STEP_FAIL = "\x1b[31m❌\x1b[0m";
 const STEP_INFO = "\x1b[34mℹ️\x1b[0m";
 const STEP_WAIT = "\x1b[33m⏳\x1b[0m";
 
+function errMsg(e: unknown): string {
+  return e instanceof Error ? errMsg(e) : String(e);
+}
+
 async function main() {
   console.log(`
 ╔══════════════════════════════════════════════════════════════╗
@@ -51,7 +55,7 @@ async function main() {
   console.log(`${STEP_WAIT} Test 1: Checking facilitator health...`);
   try {
     const healthRes = await fetch(`${FACILITATOR_URL}/health`);
-    const health = await healthRes.json() as any;
+    const health = await healthRes.json() as Record<string, unknown>;
 
     if (healthRes.ok && health.status === "ok") {
       console.log(`${STEP_PASS} Facilitator healthy (${health.pending_payments} pending payments)`);
@@ -59,8 +63,8 @@ async function main() {
     } else {
       console.log(`${STEP_FAIL} Facilitator returned: ${JSON.stringify(health)}`);
     }
-  } catch (e: any) {
-    console.log(`${STEP_FAIL} Can't reach facilitator: ${e.message}`);
+  } catch (e: unknown) {
+    console.log(`${STEP_FAIL} Can't reach facilitator: ${errMsg(e)}`);
     console.log(`   Make sure the facilitator is running: cd packages/facilitator && npx tsx src/server.ts`);
     process.exit(1);
   }
@@ -70,7 +74,7 @@ async function main() {
   console.log(`\n${STEP_WAIT} Test 2: Checking seller API health...`);
   try {
     const healthRes = await fetch(`${SELLER_URL}/health`);
-    const health = await healthRes.json() as any;
+    const health = await healthRes.json() as Record<string, unknown>;
 
     if (healthRes.ok) {
       console.log(`${STEP_PASS} Seller API healthy (wallet: ${health.seller || 'N/A'})`);
@@ -78,8 +82,8 @@ async function main() {
     } else {
       console.log(`${STEP_FAIL} Seller returned: ${JSON.stringify(health)}`);
     }
-  } catch (e: any) {
-    console.log(`${STEP_FAIL} Can't reach seller: ${e.message}`);
+  } catch (e: unknown) {
+    console.log(`${STEP_FAIL} Can't reach seller: ${errMsg(e)}`);
     console.log(`   Make sure the seller is running: cd apps/seller-api && SELLER_WALLET=0x... npx tsx server.ts`);
     process.exit(1);
   }
@@ -95,7 +99,7 @@ async function main() {
       passedTests++;
 
       // Parse payment requirements
-      const body = await jokeRes.json() as any;
+      const body = await jokeRes.json() as Record<string, unknown>;
       if (body.paymentRequirements) {
         console.log(`${STEP_INFO}  Price: $${body.paymentRequirements[0]?.maxAmountRequired || 'N/A'}`);
         console.log(`${STEP_INFO}  Pay to: ${body.paymentRequirements[0]?.payTo || 'N/A'}`);
@@ -105,13 +109,13 @@ async function main() {
       }
     } else if (jokeRes.status === 200) {
       console.log(`${STEP_FAIL} Got 200 — endpoint isn't charging! Middleware may not be active.`);
-      const joke = await jokeRes.json() as any;
+      const joke = await jokeRes.json() as Record<string, unknown>;
       console.log(`${STEP_INFO}  Response: ${joke.joke || JSON.stringify(joke).slice(0, 100)}`);
     } else {
       console.log(`${STEP_FAIL} Got unexpected status: ${jokeRes.status}`);
     }
-  } catch (e: any) {
-    console.log(`${STEP_FAIL} Request failed: ${e.message}`);
+  } catch (e: unknown) {
+    console.log(`${STEP_FAIL} Request failed: ${errMsg(e)}`);
   }
 
   // ─── Test 4: Facilitator Status (with auth) ────────────────
@@ -123,7 +127,7 @@ async function main() {
     });
 
     if (statusRes.ok) {
-      const status = await statusRes.json() as any;
+      const status = await statusRes.json() as Record<string, unknown>;
       console.log(`${STEP_PASS} Facilitator status OK`);
       console.log(`${STEP_INFO}  Network: ${status.network}`);
       console.log(`${STEP_INFO}  Wallet: ${status.wallet?.address}`);
@@ -147,8 +151,8 @@ async function main() {
     } else {
       console.log(`${STEP_FAIL} Status returned ${statusRes.status}`);
     }
-  } catch (e: any) {
-    console.log(`${STEP_FAIL} Status check failed: ${e.message}`);
+  } catch (e: unknown) {
+    console.log(`${STEP_FAIL} Status check failed: ${errMsg(e)}`);
   }
 
   // ─── Test 5: Verify Endpoint ───────────────────────────────
@@ -165,7 +169,7 @@ async function main() {
     });
 
     if (verifyRes.ok) {
-      const result = await verifyRes.json() as any;
+      const result = await verifyRes.json() as Record<string, unknown>;
       if (result.valid === false) {
         console.log(`${STEP_PASS} /verify endpoint works (correctly returned invalid for fake tx)`);
         passedTests++;
@@ -175,8 +179,8 @@ async function main() {
     } else {
       console.log(`${STEP_FAIL} /verify returned status ${verifyRes.status}`);
     }
-  } catch (e: any) {
-    console.log(`${STEP_FAIL} /verify failed: ${e.message}`);
+  } catch (e: unknown) {
+    console.log(`${STEP_FAIL} /verify failed: ${errMsg(e)}`);
   }
 
   // ─── Summary ───────────────────────────────────────────────

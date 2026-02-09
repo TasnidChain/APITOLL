@@ -9,7 +9,7 @@ import { v } from "convex/values";
  * Validates Ethereum address format (EVM chains like Base)
  * Must be 42 chars starting with 0x, valid hex
  */
-function isValidEthereumAddress(addr: string): boolean {
+function _isValidEthereumAddress(addr: string): boolean {
   if (!addr || typeof addr !== "string") return false;
   if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) return false;
   // Reject zero address
@@ -21,7 +21,7 @@ function isValidEthereumAddress(addr: string): boolean {
  * Validates Solana address format
  * Must be 32-44 chars of base58 characters
  */
-function isValidSolanaAddress(addr: string): boolean {
+function _isValidSolanaAddress(addr: string): boolean {
   if (!addr || typeof addr !== "string") return false;
   if (!/^[1-9A-HJ-NP-Z]{32,44}$/.test(addr)) return false;
   return true;

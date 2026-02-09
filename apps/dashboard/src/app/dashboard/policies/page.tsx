@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useMutation } from 'convex/react'
 import { api } from '../../../../../../convex/_generated/api'
+import { Id } from '../../../../../../convex/_generated/dataModel'
 import { useOrgId, usePolicies, useAgents, useAlertRules } from '@/lib/hooks'
 import { formatUSD } from '@/lib/utils'
 import {
@@ -13,16 +14,13 @@ import {
   Plus,
   X,
   Loader2,
-  Check,
   Trash2,
   ToggleLeft,
   ToggleRight,
-  AlertTriangle,
   Bell,
   Bot,
 } from 'lucide-react'
-
-type PolicyType = 'budget' | 'vendor_acl' | 'rate_limit'
+import type { Policy, PolicyType, BudgetRules, VendorAclRules, RateLimitRules, Agent } from '@/lib/types'
 
 const policyTypeConfig = {
   budget: {
@@ -51,15 +49,15 @@ export default function PoliciesPage() {
   const agents = useAgents(orgId)
   const alertRules = useAlertRules(orgId)
   const [showCreate, setShowCreate] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [_editingId, _setEditingId] = useState<string | null>(null)
 
-  const createPolicy = useMutation(api.policies.create)
-  const updatePolicy = useMutation(api.policies.update)
+  const _createPolicy = useMutation(api.policies.create)
+  const _updatePolicy = useMutation(api.policies.update)
   const togglePolicy = useMutation(api.policies.toggleActive)
-  const removePolicy = useMutation(api.policies.remove)
+  const _removePolicy = useMutation(api.policies.remove)
 
-  const activePolicies = policies?.filter((p: any) => p.isActive) ?? []
-  const inactivePolicies = policies?.filter((p: any) => !p.isActive) ?? []
+  const activePolicies = policies?.filter((p: Policy) => p.isActive) ?? []
+  const inactivePolicies = policies?.filter((p: Policy) => !p.isActive) ?? []
 
   return (
     <div className="space-y-6 p-6">
@@ -115,8 +113,8 @@ export default function PoliciesPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         {(Object.entries(policyTypeConfig) as [PolicyType, typeof policyTypeConfig.budget][]).map(
           ([type, config]) => {
-            const count = policies?.filter((p: any) => p.policyType === type).length ?? 0
-            const active = policies?.filter((p: any) => p.policyType === type && p.isActive).length ?? 0
+            const count = policies?.filter((p: Policy) => p.policyType === type).length ?? 0
+            const active = policies?.filter((p: Policy) => p.policyType === type && p.isActive).length ?? 0
             const Icon = config.icon
             return (
               <div key={type} className="rounded-xl border bg-card p-5">
@@ -157,7 +155,7 @@ export default function PoliciesPage() {
           </div>
         ) : (
           <div className="divide-y">
-            {activePolicies.map((policy: any) => (
+            {activePolicies.map((policy: Policy) => (
               <PolicyRow
                 key={policy._id}
                 policy={policy}
@@ -177,7 +175,7 @@ export default function PoliciesPage() {
             <h3 className="font-semibold text-muted-foreground">Inactive Policies</h3>
           </div>
           <div className="divide-y">
-            {inactivePolicies.map((policy: any) => (
+            {inactivePolicies.map((policy: Policy) => (
               <PolicyRow
                 key={policy._id}
                 policy={policy}
@@ -208,15 +206,15 @@ function PolicyRow({
   onToggle,
   onDelete,
 }: {
-  policy: any
-  agents: any
+  policy: Policy
+  agents: Agent[] | undefined
   onToggle: () => void
   onDelete: () => void
 }) {
-  const config = policyTypeConfig[policy.policyType as PolicyType]
+  const config = policyTypeConfig[policy.policyType]
   const Icon = config.icon
   const agent = policy.agentId
-    ? agents?.find((a: any) => a._id === policy.agentId)
+    ? agents?.find((a: Agent) => a._id === policy.agentId)
     : null
 
   const renderRules = () => {
@@ -305,8 +303,8 @@ function CreatePolicyModal({
   agents,
   onClose,
 }: {
-  orgId: any
-  agents: any
+  orgId: Id<'organizations'>
+  agents: Agent[] | undefined
   onClose: () => void
 }) {
   const createPolicy = useMutation(api.policies.create)
@@ -334,7 +332,7 @@ function CreatePolicyModal({
     setError('')
 
     try {
-      let rulesJson: any
+      let rulesJson: BudgetRules | VendorAclRules | RateLimitRules
 
       switch (policyType) {
         case 'budget':
@@ -342,8 +340,8 @@ function CreatePolicyModal({
             dailyLimit: parseFloat(dailyLimit) || undefined,
             perTransactionLimit: parseFloat(perTxLimit) || undefined,
             monthlyLimit: parseFloat(monthlyLimit) || undefined,
-          }
-          if (!rulesJson.dailyLimit && !rulesJson.perTransactionLimit && !rulesJson.monthlyLimit) {
+          } as BudgetRules
+          if (!(rulesJson as BudgetRules).dailyLimit && !(rulesJson as BudgetRules).perTransactionLimit && !(rulesJson as BudgetRules).monthlyLimit) {
             throw new Error('Set at least one budget limit')
           }
           break
@@ -351,8 +349,8 @@ function CreatePolicyModal({
           rulesJson = {
             allowedVendors: allowedVendors ? allowedVendors.split(',').map(v => v.trim()).filter(Boolean) : undefined,
             blockedVendors: blockedVendors ? blockedVendors.split(',').map(v => v.trim()).filter(Boolean) : undefined,
-          }
-          if (!rulesJson.allowedVendors?.length && !rulesJson.blockedVendors?.length) {
+          } as VendorAclRules
+          if (!(rulesJson as VendorAclRules).allowedVendors?.length && !(rulesJson as VendorAclRules).blockedVendors?.length) {
             throw new Error('Add at least one vendor to allow or block')
           }
           break
@@ -360,8 +358,8 @@ function CreatePolicyModal({
           rulesJson = {
             maxRequestsPerMinute: parseInt(maxPerMinute) || undefined,
             maxRequestsPerHour: parseInt(maxPerHour) || undefined,
-          }
-          if (!rulesJson.maxRequestsPerMinute && !rulesJson.maxRequestsPerHour) {
+          } as RateLimitRules
+          if (!(rulesJson as RateLimitRules).maxRequestsPerMinute && !(rulesJson as RateLimitRules).maxRequestsPerHour) {
             throw new Error('Set at least one rate limit')
           }
           break
@@ -369,13 +367,13 @@ function CreatePolicyModal({
 
       await createPolicy({
         orgId,
-        agentId: agentId ? (agentId as any) : undefined,
+        agentId: agentId ? (agentId as Id<'agents'>) : undefined,
         policyType,
         rulesJson,
       })
       onClose()
-    } catch (err: any) {
-      setError(err.message || 'Failed to create policy')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create policy')
     } finally {
       setLoading(false)
     }
@@ -428,7 +426,7 @@ function CreatePolicyModal({
               className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="">All Agents (org-wide)</option>
-              {agents?.map((agent: any) => (
+              {agents?.map((agent: Agent) => (
                 <option key={agent._id} value={agent._id}>
                   {agent.name} ({agent.chain})
                 </option>

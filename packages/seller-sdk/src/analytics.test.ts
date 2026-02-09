@@ -243,11 +243,11 @@ describe("AnalyticsReporter (webhooks)", () => {
 
   it("includes HMAC signature when webhookSecret is set", async () => {
     // Capture the webhook call via a deferred promise
-    let capturedArgs: any[] | null = null;
+    let capturedArgs: unknown[] | null = null;
     let resolveCapture: () => void;
     const captured = new Promise<void>((resolve) => { resolveCapture = resolve; });
 
-    mockFetch.mockImplementation((...args: any[]) => {
+    mockFetch.mockImplementation((...args: unknown[]) => {
       capturedArgs = args;
       resolveCapture();
       return Promise.resolve({ ok: true });

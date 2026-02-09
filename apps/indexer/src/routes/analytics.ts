@@ -6,7 +6,7 @@ const app = new Hono()
 
 // Overview stats for dashboard
 app.get('/overview', requireOrgAuth, async (c) => {
-  const org = (c.get as any)('org') as { id: string } | undefined
+  const org = c.get('org') as { id: string } | undefined
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
@@ -16,7 +16,7 @@ app.get('/overview', requireOrgAuth, async (c) => {
 
 // Daily spend chart data
 app.get('/daily', requireOrgAuth, async (c) => {
-  const org = (c.get as any)('org') as { id: string } | undefined
+  const org = c.get('org') as { id: string } | undefined
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }

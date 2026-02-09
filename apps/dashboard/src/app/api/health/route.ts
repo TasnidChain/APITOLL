@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../convex/_generated/api";
+import { convex } from "@/lib/convex-client";
 
 /**
  * Platform Health Check — GET /api/health
@@ -13,12 +13,6 @@ import { api } from "../../../../../../convex/_generated/api";
  *
  * No auth required. Agents should cache for 30s.
  */
-
-const CONVEX_URL =
-  process.env.NEXT_PUBLIC_CONVEX_URL ??
-  "https://cheery-parrot-104.convex.cloud";
-
-const convex = new ConvexHttpClient(CONVEX_URL);
 
 const FACILITATOR_HEALTH_URL =
   "https://facilitator-production-fbd7.up.railway.app/health";

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useMutation } from 'convex/react'
 import { api } from '../../../../../../convex/_generated/api'
+import type { Id } from '../../../../../../convex/_generated/dataModel'
 import { AgentCard } from '@/components/agent-card'
 import { StatCardSkeleton, PageLoading } from '@/components/loading'
 import { useOrgId, useAgents, useAgentLimit } from '@/lib/hooks'
@@ -121,14 +122,14 @@ function CreateAgentModal({
     setError('')
     try {
       await createAgent({
-        orgId: orgId as any,
+        orgId: orgId as Id<"organizations">,
         name: name.trim(),
         walletAddress: walletAddress.trim(),
         chain,
       })
       onClose()
-    } catch (err: any) {
-      setError(err.message || 'Failed to create agent')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create agent')
     } finally {
       setLoading(false)
     }

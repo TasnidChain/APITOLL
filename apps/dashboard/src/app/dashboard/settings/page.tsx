@@ -15,9 +15,6 @@ import {
   Loader2,
   RefreshCw,
   AlertTriangle,
-  Plus,
-  X,
-  Trash2,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -31,14 +28,14 @@ export default function SettingsPage() {
   const [showRegenConfirm, setShowRegenConfirm] = useState(false)
 
   // Notification toggle states (persisted via alert rules)
-  const budgetAlerts = alertRules?.some((r: any) => r.ruleType === 'budget_threshold' && r.isActive) ?? true
-  const lowBalanceWarnings = alertRules?.some((r: any) => r.ruleType === 'low_balance' && r.isActive) ?? true
-  const txFailures = alertRules?.some((r: any) => r.ruleType === 'high_failure_rate' && r.isActive) ?? false
+  const budgetAlerts = alertRules?.some((r) => r.ruleType === 'budget_threshold' && r.isActive) ?? true
+  const lowBalanceWarnings = alertRules?.some((r) => r.ruleType === 'low_balance' && r.isActive) ?? true
+  const txFailures = alertRules?.some((r) => r.ruleType === 'high_failure_rate' && r.isActive) ?? false
 
   // Policy mutations
   const createPolicy = useMutation(api.policies.create)
   const updatePolicy = useMutation(api.policies.update)
-  const removePolicy = useMutation(api.policies.remove)
+  const _removePolicy = useMutation(api.policies.remove)
   const createAlertRule = useMutation(api.alertRules.create)
   const toggleAlertRule = useMutation(api.alertRules.toggleActive)
   const regenerateApiKey = useMutation(api.organizations.regenerateApiKey)
@@ -96,19 +93,19 @@ export default function SettingsPage() {
 
   const handleToggleAlert = async (ruleType: string) => {
     if (!orgId) return
-    const existing = alertRules?.find((r: any) => r.ruleType === ruleType)
+    const existing = alertRules?.find((r) => r.ruleType === ruleType)
     if (existing) {
       await toggleAlertRule({ id: existing._id })
     } else {
       // Create the alert rule
-      const thresholds: Record<string, any> = {
+      const thresholds: Record<string, Record<string, number>> = {
         budget_threshold: { percentage: 80 },
         low_balance: { amount: 1.0 },
         high_failure_rate: { rate: 10, windowMinutes: 60 },
       }
       await createAlertRule({
         orgId,
-        ruleType: ruleType as any,
+        ruleType: ruleType as "budget_threshold" | "budget_exceeded" | "low_balance" | "high_failure_rate" | "anomalous_spend",
         thresholdJson: thresholds[ruleType] ?? { percentage: 80 },
       })
     }
@@ -119,7 +116,7 @@ export default function SettingsPage() {
     setSaving(true)
     try {
       // Find or create budget policy for org
-      const budgetPolicy = policies?.find((p: any) => p.policyType === 'budget' && !p.agentId)
+      const budgetPolicy = policies?.find((p) => p.policyType === 'budget' && !p.agentId)
       const rules = {
         dailyLimit: parseFloat(dailyLimit) || undefined,
         perTransactionLimit: parseFloat(maxPerRequest) || undefined,
@@ -343,7 +340,7 @@ export default function SettingsPage() {
           {policies && policies.length > 0 && (
             <div className="mb-4 rounded-lg bg-muted/50 p-3">
               <p className="text-xs text-muted-foreground">
-                {policies.filter((p: any) => p.isActive).length} active {policies.filter((p: any) => p.isActive).length === 1 ? 'policy' : 'policies'} configured
+                {policies.filter((p) => p.isActive).length} active {policies.filter((p) => p.isActive).length === 1 ? 'policy' : 'policies'} configured
               </p>
             </div>
           )}

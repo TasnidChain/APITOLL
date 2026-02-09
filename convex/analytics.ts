@@ -9,7 +9,7 @@ export const getOverview = query({
   args: {
     orgId: v.optional(v.id("organizations")),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     // Get all transactions (in production, filter by org)
     const transactions = await ctx.db.query("transactions").collect();
 

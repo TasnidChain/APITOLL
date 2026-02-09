@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 
@@ -56,7 +56,7 @@ const VALID_WALLET = '0x' + '1'.repeat(40);
 const VALID_RECIPIENT = '0x' + '2'.repeat(40);
 const TEST_API_KEY = 'test-key-123';
 
-function makePayRequest(overrides: Record<string, any> = {}) {
+function makePayRequest(overrides: Record<string, unknown> = {}) {
   return {
     original_url: 'https://api.example.com/weather?city=nyc',
     original_method: 'GET',

@@ -96,7 +96,7 @@ const paidTools: ToolDef[] = [
 
 // ─── Vercel AI SDK integration pattern ─────────────────────────
 
-async function callPaidTool(toolName: string, args: Record<string, string>): Promise<any> {
+async function callPaidTool(toolName: string, args: Record<string, string>): Promise<unknown> {
   const tool = paidTools.find((t) => t.name === toolName);
   if (!tool) throw new Error(`Unknown tool: ${toolName}`);
 
@@ -155,14 +155,14 @@ async function main() {
   try {
     const weather = await callPaidTool("get_weather_forecast", { city: "Tokyo" });
     console.log(`  Result: Weather for ${weather.city}, ${weather.forecast?.length || 0} day forecast`);
-  } catch (e) {
+  } catch {
     console.log(`  Note: Start weather seller first (examples/seller-express/server.ts)`);
   }
 
   try {
     const price = await callPaidTool("get_crypto_price", { symbol: "ETH" });
     console.log(`  Result: ETH = $${price.price?.toFixed(2) || "N/A"}`);
-  } catch (e) {
+  } catch {
     console.log(`  Note: Start stock seller first (examples/seller-stock-api/server.ts)`);
   }
 

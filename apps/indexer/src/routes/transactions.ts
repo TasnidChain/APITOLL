@@ -35,7 +35,7 @@ const batchReportSchema = z.object({
 // ═══════════════════════════════════════════════════
 
 app.post('/report', requireSellerAuth, async (c) => {
-  const seller = (c.get as any)('seller') as { id: string } | undefined
+  const seller = c.get('seller') as { id: string } | undefined
   if (!seller) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
@@ -58,9 +58,9 @@ app.post('/report', requireSellerAuth, async (c) => {
         settledAt: tx.settledAt ? new Date(tx.settledAt) : undefined,
       })
       created.push(record)
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Ignore duplicates (idempotent)
-      if (error.code !== '23505') {
+      if ((error as { code?: string }).code !== '23505') {
         console.error('Failed to create transaction:', error)
       }
     }
@@ -77,7 +77,7 @@ app.post('/report', requireSellerAuth, async (c) => {
 // ═══════════════════════════════════════════════════
 
 app.get('/', requireOrgAuth, async (c) => {
-  const org = (c.get as any)('org') as { id: string } | undefined
+  const org = c.get('org') as { id: string } | undefined
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }

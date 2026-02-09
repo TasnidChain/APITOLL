@@ -25,7 +25,7 @@ const upsertEndpointSchema = z.object({
 
 // List sellers
 app.get('/', requireOrgAuth, async (c) => {
-  const org = (c.get as any)('org') as { id: string } | undefined
+  const org = c.get('org') as { id: string } | undefined
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
@@ -35,7 +35,7 @@ app.get('/', requireOrgAuth, async (c) => {
 
 // Create seller
 app.post('/', requireOrgAuth, async (c) => {
-  const org = (c.get as any)('org') as { id: string } | undefined
+  const org = c.get('org') as { id: string } | undefined
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }

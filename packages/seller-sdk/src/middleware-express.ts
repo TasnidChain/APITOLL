@@ -17,6 +17,25 @@ import {
   getEndpointFeeBreakdown,
 } from "./payment";
 import { AnalyticsReporter } from "./analytics";
+import type { PaymentReceipt } from "@apitoll/shared";
+
+/** Extended Express Request with x402 payment data attached by middleware */
+interface X402Request extends Request {
+  paymentReceipt?: PaymentReceipt;
+  x402?: {
+    receipt: PaymentReceipt;
+    feeBreakdown?: FeeBreakdown;
+    endpoint: string;
+    config: EndpointConfig;
+  };
+}
+
+/** Minimal Redis client interface for rate limiting */
+interface RedisClient {
+  incr(key: string): Promise<number>;
+  expire(key: string, seconds: number): Promise<void>;
+  on(event: string, listener: (err: Error) => void): void;
+}
 
 export interface PaymentMiddlewareOptions extends SellerConfig {}
 
@@ -126,7 +145,7 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
   const CIRCUIT_RESET_MS = 30_000;       // Try again after 30 seconds
 
   // Redis is optional — if not available, falls through to in-memory rate limiting
-  let redis: any = null;
+  let redis: RedisClient | null = null;
   try {
     const Redis = require('redis');
     redis = Redis.createClient({
@@ -326,9 +345,9 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
     }
 
     // Payment verified — attach receipt + fee info to request and continue
-    (req as any).paymentReceipt = verification.receipt;
-    (req as any).x402 = {
-      receipt: verification.receipt,
+    (req as X402Request).paymentReceipt = verification.receipt;
+    (req as X402Request).x402 = {
+      receipt: verification.receipt!,
       feeBreakdown: verification.feeBreakdown,
       endpoint: pattern,
       config,
@@ -358,7 +377,7 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
 
     // Intercept response to report analytics (including fee data)
     const originalEnd = res.end.bind(res);
-    (res as any).end = function (chunk?: any, encoding?: any, cb?: any) {
+    res.end = function (chunk?: unknown, encoding?: BufferEncoding | (() => void), cb?: () => void) {
       const latencyMs = Date.now() - startTime;
 
       if (verification.receipt) {
@@ -377,7 +396,7 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
       } else {
         return originalEnd(chunk, encoding, cb);
       }
-    } as any;
+    } as Response["end"];
 
     next();
   };
@@ -387,7 +406,7 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
  * Helper to access the payment receipt from a request.
  */
 export function getPaymentReceipt(req: Request) {
-  return (req as any).paymentReceipt || null;
+  return (req as X402Request).paymentReceipt || null;
 }
 
 /**
@@ -399,5 +418,5 @@ export function getX402Context(req: Request): {
   endpoint: string;
   config: EndpointConfig;
 } | null {
-  return (req as any).x402 || null;
+  return (req as X402Request).x402 || null;
 }

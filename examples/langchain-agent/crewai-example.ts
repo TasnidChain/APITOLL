@@ -9,7 +9,6 @@ import {
   createPaidTool,
   toCrewAITools,
   createCrewAIAgent,
-  PaidTool,
 } from '@apitoll/langchain'
 
 // ═══════════════════════════════════════════════════
@@ -29,7 +28,7 @@ const walletConfig = {
       signature: 'mock_signature_' + Date.now(),
     })).toString('base64')
   },
-  onPayment: (toolName: string, amount: number, txHash: string) => {
+  onPayment: (toolName: string, amount: number, _txHash: string) => {
     console.log(`💰 Paid $${amount} for ${toolName}`)
   },
 }
@@ -182,7 +181,7 @@ result = crew.kickoff()
   try {
     const result = await weatherTool.run({ city: 'New York', days: 3 })
     console.log('Result:', result)
-  } catch (error) {
+  } catch {
     console.log('(Tool endpoint not available - this is expected in demo)')
   }
 

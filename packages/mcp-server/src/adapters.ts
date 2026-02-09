@@ -10,7 +10,7 @@ import { PaidMCPServer } from './server'
  */
 export function toExpressRouter(server: PaidMCPServer) {
   // Return a middleware function that handles MCP requests
-  return async (req: any, res: any, next: any) => {
+  return async (req: { path: string; method: string; headers: Record<string, string | undefined>; body?: { name?: string; arguments?: Record<string, unknown> } }, res: { json: (data: unknown) => void; status: (code: number) => { json: (data: unknown) => void } }, next: () => void) => {
     const path = req.path
 
     // Handle tools/list
@@ -130,7 +130,7 @@ export function toHonoApp(server: PaidMCPServer) {
     // POST /rpc - JSON-RPC endpoint
     handleRpc: async (
       method: string,
-      params: any,
+      params: { name?: string; arguments?: Record<string, unknown> },
       paymentHeader?: string
     ) => {
       if (method === 'tools/list') {
@@ -171,7 +171,7 @@ export function runStdio(server: PaidMCPServer) {
       const request = JSON.parse(line)
       const { id, method, params } = request
 
-      let result: any
+      let result: unknown
 
       if (method === 'initialize') {
         result = {

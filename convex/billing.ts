@@ -1,9 +1,14 @@
 import { v } from "convex/values";
-import { mutation, query, action } from "./_generated/server";
-import { api } from "./_generated/api";
+import { mutation, query } from "./_generated/server";
 
 // ═══════════════════════════════════════════════════
 // Stripe Subscription Management
+//
+// NOTE: These mutations remain public because they are called by the
+// Next.js dashboard Stripe webhook (ConvexHttpClient) which cannot
+// invoke internalMutation. The Stripe webhook verifies the request
+// signature before calling these, so the trust boundary is enforced
+// at the webhook handler level, not here.
 // ═══════════════════════════════════════════════════
 
 /**

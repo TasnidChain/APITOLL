@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../../convex/_generated/api";
+import { convex } from "@/lib/convex-client";
 
 /**
  * Agent Recommendations — GET /api/agents/recommend
@@ -12,12 +12,6 @@ import { api } from "../../../../../../../convex/_generated/api";
  *
  * No auth required — agents call this autonomously.
  */
-
-const CONVEX_URL =
-  process.env.NEXT_PUBLIC_CONVEX_URL ??
-  "https://cheery-parrot-104.convex.cloud";
-
-const convex = new ConvexHttpClient(CONVEX_URL);
 
 // Rate limiting — 50 requests/minute per IP
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -47,6 +41,33 @@ setInterval(() => {
 // Helpers
 // ---------------------------------------------------------------------------
 
+interface GossipEvent {
+  agentId: string;
+  endpoint: string;
+  chain: string;
+  amount: number;
+  latencyMs: number;
+  mutationTriggered: boolean;
+  createdAt: number;
+}
+
+interface ToolData {
+  _id: string;
+  name: string;
+  slug: string;
+  description: string;
+  baseUrl: string;
+  method: string;
+  path: string;
+  price: number;
+  currency?: string;
+  chains: string[];
+  category: string;
+  rating?: number;
+  totalCalls?: number;
+  isVerified?: boolean;
+}
+
 interface AgentProfile {
   topCategory: string | null;
   preferredChain: string | null;
@@ -55,8 +76,8 @@ interface AgentProfile {
   totalEvents: number;
 }
 
-function buildAgentProfile(events: any[], agentId: string): AgentProfile {
-  const agentEvents = events.filter((e: any) => e.agentId === agentId);
+function buildAgentProfile(events: GossipEvent[], agentId: string): AgentProfile {
+  const agentEvents = events.filter((e) => e.agentId === agentId);
 
   if (agentEvents.length === 0) {
     return {
@@ -96,7 +117,7 @@ function buildAgentProfile(events: any[], agentId: string): AgentProfile {
 
   // Average spend
   const totalSpend = agentEvents.reduce(
-    (sum: number, e: any) => sum + (e.amount || 0),
+    (sum: number, e) => sum + (e.amount || 0),
     0
   );
   const avgSpend = totalSpend / agentEvents.length;
@@ -115,7 +136,7 @@ function buildAgentProfile(events: any[], agentId: string): AgentProfile {
 
 function inferCategoryFromEndpoints(
   frequentEndpoints: Set<string>,
-  tools: any[]
+  tools: ToolData[]
 ): string | null {
   const categoryCounts = new Map<string, number>();
   for (const tool of tools) {
@@ -191,7 +212,7 @@ export async function GET(req: NextRequest) {
     else if (agentProfile?.preferredChain)
       effectiveChains.push(agentProfile.preferredChain);
 
-    let tools: any[] = [];
+    let tools: ToolData[] = [];
     try {
       tools = await convex.query(api.tools.search, {
         category: effectiveCategory ?? undefined,
@@ -212,7 +233,7 @@ export async function GET(req: NextRequest) {
           limit: 100,
         });
         // Merge without duplicates
-        const seenIds = new Set(tools.map((t: any) => t._id));
+        const seenIds = new Set(tools.map((t) => t._id));
         for (const t of moreTools) {
           if (!seenIds.has(t._id)) {
             tools.push(t);
@@ -227,7 +248,7 @@ export async function GET(req: NextRequest) {
     // ------------------------------------------------------------------
     // 3. Fetch trending tools
     // ------------------------------------------------------------------
-    let trendingMap = new Map<string, number>();
+    const trendingMap = new Map<string, number>();
     try {
       const trending = await convex.query(api.gossip.getTrending, {
         limit: 20,
@@ -253,7 +274,7 @@ export async function GET(req: NextRequest) {
     // ------------------------------------------------------------------
     // 4. Score each tool
     // ------------------------------------------------------------------
-    const scored = tools.map((tool: any) => {
+    const scored = tools.map((tool) => {
       let score = 0;
 
       // +100 if tool category matches agent's most-used category
@@ -310,7 +331,7 @@ export async function GET(req: NextRequest) {
     // ------------------------------------------------------------------
     // 5. Sort by score descending, take limit
     // ------------------------------------------------------------------
-    scored.sort((a: any, b: any) => b.score - a.score);
+    scored.sort((a, b) => b.score - a.score);
     const recommendations = scored.slice(0, limit);
 
     // ------------------------------------------------------------------

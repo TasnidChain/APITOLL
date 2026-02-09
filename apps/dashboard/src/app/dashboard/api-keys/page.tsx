@@ -5,7 +5,6 @@ import { useQuery } from 'convex/react'
 import { api } from '../../../../../../convex/_generated/api'
 import { useOrgId, useOrg } from '@/lib/hooks'
 import { PageLoading } from '@/components/loading'
-import { cn } from '@/lib/utils'
 import {
   Key,
   Copy,

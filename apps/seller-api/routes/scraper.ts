@@ -56,7 +56,7 @@ router.post("/api/scrape", async (req: Request, res: Response) => {
 
   // Check cache
   const cacheKey = `scrape:${url}`;
-  const cached = scraperCache.get<any>(cacheKey);
+  const cached = scraperCache.get<Record<string, unknown>>(cacheKey);
   if (cached) {
     return res.json({ ...cached, cached: true, payment: formatPayment(getX402Context(req)) });
   }
@@ -88,7 +88,9 @@ router.post("/api/scrape", async (req: Request, res: Response) => {
 
     // Parse HTML → DOM → Readability → Markdown
     const { document } = parseHTML(html);
-    const reader = new Readability(document as any);
+    // linkedom Document is compatible with Readability but types differ
+     
+    const reader = new Readability(document as unknown as Document);
     const article = reader.parse();
 
     if (!article || !article.content) {

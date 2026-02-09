@@ -1,12 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-
-// Auth helper: require a logged-in Clerk user
-async function requireAuth(ctx: any) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new Error("Not authenticated");
-  return identity;
-}
+import { requireAuth } from "./helpers";
 
 // ─── Secure API Key Generation ───────────────────────────────────
 

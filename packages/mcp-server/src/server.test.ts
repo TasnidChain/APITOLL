@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { z } from "zod";
-import { PaidMCPServer, createPaidMCPServer } from "./server";
+import { createPaidMCPServer } from "./server";
 
 const TEST_WALLET = "0x1234567890abcdef1234567890abcdef12345678";
 

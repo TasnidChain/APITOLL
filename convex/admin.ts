@@ -1,30 +1,6 @@
 import { v } from "convex/values";
-import { query, mutation, QueryCtx, MutationCtx } from "./_generated/server";
-
-// ═══════════════════════════════════════════════════
-// Admin Authorization
-// ═══════════════════════════════════════════════════
-
-/**
- * Require the caller to be an admin.
- * Checks the Clerk user ID (from JWT identity.subject) against
- * the ADMIN_USER_IDS environment variable (comma-separated list).
- */
-async function requireAdmin(ctx: QueryCtx | MutationCtx) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) {
-    throw new Error("Not authenticated — sign in required");
-  }
-
-  const adminIds = (process.env.ADMIN_USER_IDS || "").split(",").map((s) => s.trim()).filter(Boolean);
-
-  // Clerk stores user ID in the "subject" field of the identity token
-  if (!adminIds.includes(identity.subject)) {
-    throw new Error("Not authorized — admin access required");
-  }
-
-  return identity;
-}
+import { query, mutation } from "./_generated/server";
+import { requireAdmin } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Platform-wide Admin Queries & Mutations

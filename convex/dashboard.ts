@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
 
 // ═══════════════════════════════════════════════════
 // Dashboard-specific queries
@@ -24,7 +25,7 @@ export const getOverviewStats = query({
     const agentIds = agents.map((a) => a._id);
 
     // Get transactions for agents in this org (via agent_id index)
-    let transactions: any[] = [];
+    const transactions: Doc<"transactions">[] = [];
     for (const agentId of agentIds) {
       const agentTxs = await ctx.db
         .query("transactions")
@@ -99,7 +100,7 @@ export const getDailyStats = query({
       .collect();
 
     // Collect all transactions
-    let transactions: any[] = [];
+    const transactions: Doc<"transactions">[] = [];
     for (const agent of agents) {
       const agentTxs = await ctx.db
         .query("transactions")
@@ -161,7 +162,7 @@ export const listTransactions = query({
 
     const agentMap = new Map(agents.map((a) => [a._id, a]));
 
-    let transactions: any[] = [];
+    let transactions: Doc<"transactions">[] = [];
     for (const agent of agents) {
       const agentTxs = await ctx.db
         .query("transactions")

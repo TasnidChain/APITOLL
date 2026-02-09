@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../../convex/_generated/api";
+import { convex } from "@/lib/convex-client";
 
 /**
  * Agent Evolution State — POST & GET /api/agents/evolve
@@ -13,12 +13,6 @@ import { api } from "../../../../../../../convex/_generated/api";
  *
  * No auth required — agents call this autonomously.
  */
-
-const CONVEX_URL =
-  process.env.NEXT_PUBLIC_CONVEX_URL ??
-  "https://cheery-parrot-104.convex.cloud";
-
-const convex = new ConvexHttpClient(CONVEX_URL);
 
 // ---------------------------------------------------------------------------
 // Rate limiting — simple in-memory counter, max 50 requests/minute per IP

@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '../../../../../../convex/_generated/api'
+import type { Id } from '../../../../../../convex/_generated/dataModel'
 import {
   Search,
   Star,
@@ -18,7 +19,6 @@ import {
   Crown,
   Sparkles,
   ArrowRight,
-  Copy,
   Check,
   Rocket,
   Shield,
@@ -79,32 +79,7 @@ const featuredTiers = [
   },
 ]
 
-// Fallback so page is never empty
-const seedTools = [
-  {
-    _id: 'seed-1',
-    name: 'Joke API',
-    slug: 'joke-api',
-    description: 'Get a random programming joke. First live x402-paid API on API Toll. $0.001 per call on Base.',
-    baseUrl: 'https://seller-api-production.up.railway.app',
-    method: 'GET',
-    path: '/api/joke',
-    price: 0.001,
-    currency: 'USDC',
-    chains: ['base'],
-    category: 'Data',
-    tags: ['joke', 'demo', 'x402', 'live'],
-    totalCalls: 1,
-    avgLatencyMs: 320,
-    rating: 5.0,
-    ratingCount: 1,
-    isVerified: true,
-    isFeatured: true,
-    listingTier: 'verified' as const,
-    boostScore: 50,
-    isActive: true,
-  },
-]
+// No seed data in production — empty state is handled in the UI
 
 type Tool = {
   _id: string
@@ -133,12 +108,29 @@ type Tool = {
 // ═══════════════════════════════════════════════════
 // Trending Section (Agent Gossip Network)
 // ═══════════════════════════════════════════════════
+interface TrendingItem {
+  endpoint: string
+  host: string
+  discoveries: number
+  uniqueAgents: number
+  totalVolume: number
+  trendingScore: number
+}
+
+interface TrendingData {
+  trending: TrendingItem[]
+  meta?: {
+    active_agents_1h: number
+    total_volume_24h: number
+  }
+}
+
 function TrendingSection() {
-  const [trendingData, setTrendingData] = useState<any>(null)
+  const [trendingData, setTrendingData] = useState<TrendingData | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Fetch trending from gossip hub
-  useState(() => {
+  useEffect(() => {
     fetch('/api/gossip?limit=5&window=24h')
       .then((r) => r.json())
       .then((data) => {
@@ -146,7 +138,7 @@ function TrendingSection() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  })
+  }, [])
 
   // Show even with no data — creates FOMO
   return (
@@ -177,7 +169,7 @@ function TrendingSection() {
         </div>
       ) : trendingData?.trending?.length > 0 ? (
         <div className="space-y-2">
-          {trendingData.trending.slice(0, 5).map((item: any, i: number) => (
+          {trendingData.trending.slice(0, 5).map((item, i) => (
             <div
               key={item.endpoint}
               className="flex items-center justify-between rounded-lg border bg-card/50 px-4 py-3 transition-colors hover:bg-card"
@@ -478,7 +470,7 @@ function FeatureModal({
     try {
       const tier = featuredTiers.find((t) => t.tier === selectedTier)!
       await setFeatured({
-        id: tool._id as any,
+        id: tool._id as Id<"tools">,
         isFeatured: true,
         featuredDurationDays: 30,
         listingTier: selectedTier,
@@ -647,7 +639,7 @@ function FeatureModal({
 function AddToolModal({ onClose }: { onClose: () => void }) {
   const createTool = useMutation(api.tools.create)
   const orgId = useOrgId()
-  const sellers = useSellers(orgId)
+  const _sellers = useSellers(orgId)
 
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
@@ -691,8 +683,8 @@ function AddToolModal({ onClose }: { onClose: () => void }) {
       })
       setSuccess(true)
       setTimeout(onClose, 1500)
-    } catch (err: any) {
-      setError(err.message || 'Failed to list tool')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to list tool')
     } finally {
       setLoading(false)
     }
@@ -887,7 +879,7 @@ export default function DiscoveryPage() {
   const [sortBy, setSortBy] = useState<'popular' | 'rating' | 'price_low' | 'price_high'>('popular')
   const [showAddTool, setShowAddTool] = useState(false)
   const [featureTool, setFeatureTool] = useState<Tool | null>(null)
-  const orgId = useOrgId()
+  const _orgId = useOrgId()
 
   // Query Convex for real tools
   const convexTools = useQuery(api.tools.search, {
@@ -899,10 +891,8 @@ export default function DiscoveryPage() {
   // Query featured tools separately
   const convexFeatured = useQuery(api.tools.getFeatured, { limit: 6 })
 
-  // Use Convex tools if available, otherwise seed tools
-  const tools: Tool[] = (convexTools && convexTools.length > 0
-    ? convexTools
-    : seedTools) as Tool[]
+  // Use Convex tools — no fake fallback data in production
+  const tools: Tool[] = (convexTools ?? []) as Tool[]
 
   const featuredTools: Tool[] = (convexFeatured && convexFeatured.length > 0
     ? convexFeatured

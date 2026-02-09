@@ -3,6 +3,7 @@
 import { useQuery } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
 import { Id } from '../../../../convex/_generated/dataModel'
+import type { Policy, AlertRule } from '@/lib/types'
 
 // ═══════════════════════════════════════════════════
 // Shared types for dashboard data
@@ -174,14 +175,14 @@ export function usePolicies(orgId: Id<"organizations"> | null) {
   return useQuery(
     api.policies.listByOrg,
     orgId ? { orgId } : "skip"
-  ) as any[] | undefined
+  ) as Policy[] | undefined
 }
 
 export function useAlertRules(orgId: Id<"organizations"> | null) {
   return useQuery(
     api.alertRules.listByOrg,
     orgId ? { orgId } : "skip"
-  ) as any[] | undefined
+  ) as AlertRule[] | undefined
 }
 
 // ═══════════════════════════════════════════════════

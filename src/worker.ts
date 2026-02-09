@@ -53,7 +53,7 @@ router.get('/api/discovery/tools', async (req, env) => {
     return new Response(JSON.stringify(results), {
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error: any) {
+  } catch {
     return new Response(JSON.stringify({ error: 'Failed to fetch tools' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -141,7 +141,7 @@ router.post('/api/webhook/stripe', async (req, env) => {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error: any) {
+  } catch {
     return new Response(JSON.stringify({ error: 'Webhook processing failed' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
@@ -190,7 +190,7 @@ router.post('/api/pay', async (req, env) => {
         headers: { 'Content-Type': 'application/json' },
       }
     );
-  } catch (error: any) {
+  } catch {
     return new Response(JSON.stringify({ error: 'Payment initiation failed' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -214,7 +214,7 @@ router.get('/api/pay/:paymentId', async (req, env) => {
     return new Response(payment, {
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error: any) {
+  } catch {
     return new Response(JSON.stringify({ error: 'Failed to fetch payment status' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

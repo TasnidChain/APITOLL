@@ -1,12 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-
-// Auth helper: require a logged-in Clerk user
-async function requireAuth(ctx: any) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new Error("Not authenticated");
-  return identity;
-}
+import { mutation, internalMutation, query } from "./_generated/server";
 
 // ═══════════════════════════════════════════════════
 // Create Deposit (Stripe → USDC on-ramp)
@@ -47,10 +40,10 @@ export const create = mutation({
 });
 
 // ═══════════════════════════════════════════════════
-// Update Deposit Status
+// Update Deposit Status (internal only — called from http.ts Stripe webhook)
 // ═══════════════════════════════════════════════════
 
-export const updateStatus = mutation({
+export const updateStatus = internalMutation({
   args: {
     depositId: v.id("deposits"),
     status: v.union(
@@ -61,7 +54,7 @@ export const updateStatus = mutation({
     txHash: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const update: any = { status: args.status };
+    const update: { status: typeof args.status; txHash?: string; completedAt?: number } = { status: args.status };
 
     if (args.txHash) {
       update.txHash = args.txHash;

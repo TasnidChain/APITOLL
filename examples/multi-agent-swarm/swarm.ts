@@ -105,7 +105,7 @@ class SwarmCoordinator {
           } else {
             // Scout — tries multiple endpoints
             const res1 = await agent.wallet.fetch(weatherUrl);
-            const res2 = await agent.wallet.fetch(stockUrl);
+            const _res2 = await agent.wallet.fetch(stockUrl);
             return { agent: agent.name, status: res1.status, role: agent.role };
           }
         } catch (error) {

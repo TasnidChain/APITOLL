@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useMutation } from 'convex/react'
 import { api } from '../../../../../../convex/_generated/api'
+import type { Id } from '../../../../../../convex/_generated/dataModel'
 import { useOrgId, useDeposits, useDepositStats, useAgents } from '@/lib/hooks'
 import { PageLoading, StatCardSkeleton } from '@/components/loading'
 import { formatUSD, timeAgo, shortenAddress } from '@/lib/utils'
@@ -45,6 +46,7 @@ const statusConfig = {
   },
 }
 
+// Base USDC contract address — canonical source: @apitoll/shared
 const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
 
 export default function DepositsPage() {
@@ -268,7 +270,7 @@ function NewDepositModal({
   orgId: string
   onClose: () => void
 }) {
-  const agents = useAgents(orgId as any)
+  const agents = useAgents(orgId as Id<"organizations">)
   const createDeposit = useMutation(api.deposits.create)
   const [amount, setAmount] = useState('')
   const [selectedAgent, setSelectedAgent] = useState('')
@@ -314,16 +316,16 @@ function NewDepositModal({
       const paymentId = txHash || `manual_${Date.now()}`
 
       await createDeposit({
-        orgId: orgId as any,
+        orgId: orgId as Id<"organizations">,
         fiatAmount,
         chain: 'base',
         walletAddress: agent.walletAddress,
         stripePaymentIntentId: paymentId,
-        agentId: selectedAgent as any,
+        agentId: selectedAgent as Id<"agents">,
       })
       onClose()
-    } catch (err: any) {
-      setError(err.message || 'Failed to record deposit')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to record deposit')
     } finally {
       setLoading(false)
     }

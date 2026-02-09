@@ -10,7 +10,6 @@ import {
   createPaidAgentExecutor,
   discoverToolsForTask,
   createAutoDiscoverAgent,
-  PaidTool,
 } from '@apitoll/langchain'
 
 // ═══════════════════════════════════════════════════
@@ -135,7 +134,7 @@ async function autoDiscoverExample() {
 
     console.log('\nAgent tools:')
     console.log(JSON.stringify(agent.getToolDefinitions(), null, 2))
-  } catch (error) {
+  } catch {
     console.log('Discovery API not available (run apps/discovery first)')
   }
 }

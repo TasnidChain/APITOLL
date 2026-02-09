@@ -31,6 +31,12 @@ export const DEFAULT_CHAIN_CONFIGS: Record<SupportedChain, ChainConfig> = {
   },
 };
 
+/** Base USDC contract address — single source of truth */
+export const BASE_USDC_ADDRESS = DEFAULT_CHAIN_CONFIGS.base.usdcAddress;
+
+/** Solana USDC mint address — single source of truth */
+export const SOLANA_USDC_ADDRESS = DEFAULT_CHAIN_CONFIGS.solana.usdcAddress;
+
 // ─── Payment Types ──────────────────────────────────────────────
 
 export type PaymentScheme = "exact";

@@ -23,7 +23,7 @@ import {
   computeHmacSignature,
   verifyHmacSignature,
 } from "./utils";
-import type { BudgetPolicy, VendorAclPolicy, Transaction } from "./types";
+import type { BudgetPolicy } from "./types";
 
 // ─── USDC Conversion ────────────────────────────────────────────
 

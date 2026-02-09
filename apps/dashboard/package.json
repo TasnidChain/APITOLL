@@ -24,8 +24,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@apitoll/shared": "file:../packages/shared",
+    "@apitoll/shared": "*",
     "@clerk/nextjs": "^6.37.3",
+    "@sentry/nextjs": "^10.38.0",
     "clsx": "^2.1.0",
     "convex": "^1.10.0",
     "lucide-react": "^0.359.0",

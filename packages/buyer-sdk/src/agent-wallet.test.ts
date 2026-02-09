@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { AgentWallet, createAgentWallet, AgentPaymentError, PolicyViolationError } from "./agent-wallet";
+import { createAgentWallet, AgentPaymentError, PolicyViolationError } from "./agent-wallet";
 
 const MOCK_SIGNER = vi.fn(async () => "mock-signed-payment-header");
 
@@ -63,6 +63,7 @@ describe("AgentWallet", () => {
       chain: "base",
       policies: [{ type: "vendor_acl", allowedVendors: ["*"] }],
       signer: MOCK_SIGNER,
+      disableGossip: true,
     });
 
     const response = await wallet.fetch("https://api.example.com/data");
@@ -132,6 +133,7 @@ describe("AgentWallet", () => {
       chain: "base",
       policies: [{ type: "vendor_acl", allowedVendors: ["*"] }],
       signer: MOCK_SIGNER,
+      disableGossip: true,
     });
 
     const response = await wallet.fetch("https://api.example.com/data", { maxPrice: 1.0 });
@@ -148,6 +150,7 @@ describe("AgentWallet", () => {
       chain: "base",
       policies: [{ type: "vendor_acl", allowedVendors: ["*"] }],
       signer: MOCK_SIGNER,
+      disableGossip: true,
     });
 
     await wallet.fetch("https://api.example.com/data");
@@ -169,6 +172,7 @@ describe("AgentWallet", () => {
         { type: "vendor_acl", allowedVendors: ["approved.com"] }, // Would normally block
       ],
       signer: MOCK_SIGNER,
+      disableGossip: true,
     });
 
     // Should NOT throw because skipPolicyCheck is true
@@ -212,6 +216,7 @@ describe("AgentWallet", () => {
       chain: "base", // prefers base
       policies: [{ type: "vendor_acl", allowedVendors: ["*"] }],
       signer: MOCK_SIGNER,
+      disableGossip: true,
     });
 
     await wallet.fetch("https://api.example.com/data");
@@ -235,6 +240,7 @@ describe("AgentWallet", () => {
       policies: [{ type: "vendor_acl", allowedVendors: ["*"] }],
       signer: MOCK_SIGNER,
       onPayment,
+      disableGossip: true,
     });
 
     await wallet.fetch("https://api.example.com/data");
@@ -269,6 +275,7 @@ describe("AgentWallet", () => {
       chain: "base",
       policies: [{ type: "vendor_acl", allowedVendors: ["*"] }],
       signer: MOCK_SIGNER,
+      disableGossip: true,
     });
 
     await wallet.fetch("https://api.example.com/a");

@@ -1,12 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-
-// Auth helper: require a logged-in Clerk user
-async function requireAuth(ctx: any) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) throw new Error("Not authenticated");
-  return identity;
-}
+import { requireAuth } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Alert threshold validator (must match schema.ts)
@@ -87,7 +81,11 @@ export const update = mutation({
     const rule = await ctx.db.get(args.id);
     if (!rule) throw new Error("Alert rule not found");
 
-    const update: any = {};
+    const update: {
+      thresholdJson?: { percentage?: number; amount?: number; rate?: number; windowMinutes?: number };
+      webhookUrl?: string;
+      isActive?: boolean;
+    } = {};
     if (args.thresholdJson) update.thresholdJson = args.thresholdJson;
     if (args.webhookUrl !== undefined) update.webhookUrl = args.webhookUrl;
     if (args.isActive !== undefined) update.isActive = args.isActive;

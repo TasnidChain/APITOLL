@@ -36,7 +36,7 @@ const DEMO_EVENTS: TickerEvent[] = [
 
 export function LiveTicker() {
   const [events, setEvents] = useState<TickerEvent[]>(DEMO_EVENTS)
-  const [liveCount, setLiveCount] = useState(0)
+  const [_liveCount, setLiveCount] = useState(0)
 
   // Try to fetch real gossip data — fall back to demo if anything is off
   useEffect(() => {

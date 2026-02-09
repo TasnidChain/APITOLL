@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../convex/_generated/api";
+import { convex } from "@/lib/convex-client";
 
 /**
  * Agent Discovery Endpoint — GET /api/discover
@@ -20,11 +20,6 @@ import { api } from "../../../../../../convex/_generated/api";
  *   ?limit=50          Control how many tools returned (default 20)
  *   ?ref=CODE          Referral code
  */
-
-const CONVEX_URL =
-  process.env.NEXT_PUBLIC_CONVEX_URL ??
-  "https://cheery-parrot-104.convex.cloud";
-const convex = new ConvexHttpClient(CONVEX_URL);
 
 const AGENT_USER_AGENTS = [
   "python",
@@ -63,8 +58,14 @@ function isAgent(req: NextRequest): boolean {
   return AGENT_USER_AGENTS.some((sig) => ua.includes(sig));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapToolToDiscovery(tool: any) {
+interface DiscoveryTool {
+  name: string; slug: string; baseUrl: string; path: string; method: string;
+  price: number; currency?: string; chains: string[]; description: string;
+  category: string; rating: number; totalCalls: number; isVerified: boolean;
+  isFeatured?: boolean;
+}
+
+function mapToolToDiscovery(tool: DiscoveryTool) {
   return {
     name: tool.name,
     slug: tool.slug,
@@ -83,8 +84,12 @@ function mapToolToDiscovery(tool: any) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapTrendingEntry(entry: any) {
+interface TrendingEntry {
+  endpoint: string; host: string; discoveries: number; uniqueAgents: number;
+  totalVolume: number; trendingScore: number; chains: string[];
+}
+
+function mapTrendingEntry(entry: TrendingEntry) {
   return {
     endpoint: entry.endpoint,
     host: entry.host,
@@ -113,10 +118,8 @@ export async function GET(req: NextRequest) {
 
   let tools: ReturnType<typeof mapToolToDiscovery>[] = [];
   let trending: ReturnType<typeof mapTrendingEntry>[] = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let network: any = null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let categories: any[] = [];
+  let network: { totalTransactions?: number; totalVolume?: number; activeAgents?: number; activeEndpoints?: number } | null = null;
+  let categories: { slug: string; name: string; description: string; tool_count: number }[] = [];
 
   try {
     // Fetch featured tools, trending gossip, network stats, and categories in parallel

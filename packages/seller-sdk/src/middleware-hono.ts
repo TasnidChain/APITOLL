@@ -113,7 +113,7 @@ export function paymentMiddleware(options: SellerConfig): MiddlewareHandler {
   const RATE_LIMIT_WINDOW_MS = 60_000;
   const RATE_LIMIT_MAX = 120;
 
-  let redis: any = null;
+  let redis: { incr(key: string): Promise<number>; expire(key: string, seconds: number): Promise<void>; on(event: string, listener: (err: Error) => void): void } | null = null;
   try {
     const Redis = require('redis');
     redis = Redis.createClient({

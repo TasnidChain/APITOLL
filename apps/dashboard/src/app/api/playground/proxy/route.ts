@@ -87,10 +87,11 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ status: response.status, statusText: response.statusText, headers: responseHeaders, body: responseBody, latencyMs });
-  } catch (error: any) {
-    if (error.name === "TimeoutError" || error.name === "AbortError") {
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error("Failed to proxy request");
+    if (err.name === "TimeoutError" || err.name === "AbortError") {
       return NextResponse.json({ status: 0, statusText: "Timeout", headers: {}, body: { error: "Request timed out after 15 seconds" }, latencyMs: 15000 });
     }
-    return NextResponse.json({ status: 0, statusText: "Error", headers: {}, body: { error: error.message || "Failed to proxy request" }, latencyMs: 0 });
+    return NextResponse.json({ status: 0, statusText: "Error", headers: {}, body: { error: err.message }, latencyMs: 0 });
   }
 }

@@ -79,14 +79,12 @@ export function checkBudgetPolicy(
     return `Adding $${amount} would exceed daily cap of $${policy.dailyCap} (already spent $${todaySpend.toFixed(4)} today)`;
   }
 
-  // Check weekly cap
+  // Check weekly cap (rolling 7-day window)
   if (policy.weeklyCap) {
-    const weekStart = new Date(now);
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-    weekStart.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     const weekSpend = recentTransactions
-      .filter((tx) => new Date(tx.requestedAt) >= weekStart)
+      .filter((tx) => new Date(tx.requestedAt) >= sevenDaysAgo)
       .reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
 
     if (weekSpend + amount > policy.weeklyCap) {

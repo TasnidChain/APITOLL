@@ -238,7 +238,7 @@ export class AgentWallet {
     if (headerValue) {
       try {
         return JSON.parse(Buffer.from(headerValue, "base64").toString("utf-8"));
-      } catch {}
+      } catch { /* malformed header — fall through to body */ }
     }
 
     // Fall back to JSON body
@@ -247,7 +247,7 @@ export class AgentWallet {
       if (body.paymentRequirements) {
         return body.paymentRequirements;
       }
-    } catch {}
+    } catch { /* non-JSON body — return null */ }
 
     return null;
   }
@@ -292,8 +292,8 @@ export class AgentWallet {
     const gossipUrl = this.options.gossipUrl || "https://apitoll.com/api/gossip";
 
     // Fire and forget — don't await, don't block, don't throw
-    globalThis
-      .fetch(gossipUrl, {
+    try {
+      const result = globalThis.fetch(gossipUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -306,10 +306,16 @@ export class AgentWallet {
           mutation_triggered: this.mutator !== undefined,
           sdk_version: "0.1.0-beta.2",
         }),
-      })
-      .catch(() => {
-        // Silently ignore gossip failures — never disrupt the agent
       });
+      // Guard against environments where fetch might not return a Promise
+      if (result && typeof result.catch === "function") {
+        result.catch(() => {
+          // Silently ignore gossip failures — never disrupt the agent
+        });
+      }
+    } catch {
+      // Silently ignore gossip failures — never disrupt the agent
+    }
   }
 
   /**

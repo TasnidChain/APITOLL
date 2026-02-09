@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { getToolBySlug, getToolById, searchTools, Tool } from '../db/queries'
+import { getToolBySlug, searchTools, Tool } from '../db/queries'
 
 const app = new Hono()
 
@@ -12,7 +12,7 @@ interface MCPTool {
   description: string
   inputSchema: {
     type: 'object'
-    properties: Record<string, any>
+    properties: Record<string, unknown>
     required?: string[]
   }
   // x402 extensions
@@ -75,7 +75,7 @@ interface OpenAPISpec {
     version: string
   }
   servers: { url: string }[]
-  paths: Record<string, any>
+  paths: Record<string, unknown>
   'x-402-pricing': {
     price: number
     currency: string
@@ -196,7 +196,7 @@ app.get('/openapi/tools/:slug', async (c) => {
 // POST /mcp/discover - AI-friendly discovery endpoint
 // Agents can describe what they need, get matching tools
 app.post('/mcp/discover', async (c) => {
-  const { query, capabilities, maxPrice, preferredChains } = await c.req.json()
+  const { query, capabilities: _capabilities, maxPrice, preferredChains } = await c.req.json()
 
   const tools = await searchTools({
     query,

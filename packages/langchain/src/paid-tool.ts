@@ -107,7 +107,7 @@ export class PaidTool {
             chain: receipt.chain,
           }
           this.onPayment?.(this.name, receipt.amount, receipt.txHash)
-        } catch {}
+        } catch { /* malformed receipt header — ignore */ }
       }
 
       if (!response.ok) {

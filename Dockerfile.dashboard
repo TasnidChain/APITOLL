@@ -48,6 +48,8 @@ ENV NEXT_PUBLIC_APP_URL=https://apitoll.com
 ENV NEXT_PUBLIC_ADMIN_USER_ID=user_39OxmuQgVSJjiUwjZHG7TI06aLv
 ENV NEXT_TELEMETRY_DISABLED=1
 
+ENV NEXT_PUBLIC_SENTRY_DSN=https://dc97d2898d8afe570fa2e109564844c2@o4510853307629568.ingest.us.sentry.io/4510853318443009
+
 RUN cd apps/dashboard && npx next build
 
 # ── Stage 3: Production runner ───────────────────────

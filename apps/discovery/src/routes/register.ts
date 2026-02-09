@@ -1,4 +1,4 @@
-import { Hono } from 'hono'
+import { Hono, type Context, type Next } from 'hono'
 import { z } from 'zod'
 import {
   createTool,
@@ -22,13 +22,13 @@ const toolSchema = z.object({
   chains: z.array(z.enum(['base', 'solana'])).min(1),
   category: z.string().min(1),
   tags: z.array(z.string()).optional(),
-  inputSchema: z.record(z.any()).optional(),
-  outputSchema: z.record(z.any()).optional(),
-  mcpToolSpec: z.record(z.any()).optional(),
+  inputSchema: z.record(z.unknown()).optional(),
+  outputSchema: z.record(z.unknown()).optional(),
+  mcpToolSpec: z.record(z.unknown()).optional(),
 })
 
 // Middleware to get seller from header
-async function requireSeller(c: any, next: any) {
+async function requireSeller(c: Context, next: Next) {
   const sellerId = c.req.header('X-Seller-ID')
   if (!sellerId) {
     return c.json({ error: 'Missing X-Seller-ID header' }, 401)
@@ -43,7 +43,7 @@ async function requireSeller(c: any, next: any) {
 
 // GET /seller/tools - List seller's tools
 app.get('/seller/tools', requireSeller, async (c) => {
-  const sellerId = (c.get as any)('sellerId') as string | undefined
+  const sellerId = c.get('sellerId') as string | undefined
   if (!sellerId) {
     return c.json({ error: 'Missing seller ID' }, 401)
   }
@@ -53,7 +53,7 @@ app.get('/seller/tools', requireSeller, async (c) => {
 
 // POST /seller/tools - Register a new tool
 app.post('/seller/tools', requireSeller, async (c) => {
-  const sellerId = (c.get as any)('sellerId') as string | undefined
+  const sellerId = c.get('sellerId') as string | undefined
   if (!sellerId) {
     return c.json({ error: 'Missing seller ID' }, 401)
   }
@@ -70,8 +70,8 @@ app.post('/seller/tools', requireSeller, async (c) => {
       ...result.data,
     })
     return c.json({ tool }, 201)
-  } catch (error: any) {
-    if (error.code === '23505') {
+  } catch (error: unknown) {
+    if ((error as { code?: string }).code === '23505') {
       return c.json({ error: 'Tool with this slug already exists' }, 409)
     }
     throw error
@@ -80,7 +80,7 @@ app.post('/seller/tools', requireSeller, async (c) => {
 
 // PATCH /seller/tools/:id - Update a tool
 app.patch('/seller/tools/:id', requireSeller, async (c) => {
-  const sellerId = (c.get as any)('sellerId') as string | undefined
+  const sellerId = c.get('sellerId') as string | undefined
   if (!sellerId) {
     return c.json({ error: 'Missing seller ID' }, 401)
   }
@@ -104,7 +104,7 @@ app.patch('/seller/tools/:id', requireSeller, async (c) => {
 
 // DELETE /seller/tools/:id - Delete (deactivate) a tool
 app.delete('/seller/tools/:id', requireSeller, async (c) => {
-  const sellerId = (c.get as any)('sellerId') as string | undefined
+  const sellerId = c.get('sellerId') as string | undefined
   if (!sellerId) {
     return c.json({ error: 'Missing seller ID' }, 401)
   }

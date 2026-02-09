@@ -53,6 +53,7 @@ export const createStripePaymentIntent = internalAction({
 
 // ─── Transfer USDC via Ethers ────────────────────────────────────────
 
+// Base USDC contract address — canonical source: @apitoll/shared DEFAULT_CHAIN_CONFIGS.base.usdcAddress
 const USDC_ADDRESS_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const USDC_ABI = [
   "function transfer(address to, uint256 amount) returns (bool)",
@@ -102,9 +103,9 @@ export const transferUSDC = internalAction({
         confirmed: true,
         blockNumber: (receipt.blockNumber as number) || 0,
       };
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("USDC transfer error:", e);
-      throw new Error(`USDC transfer failed: ${e.message}`);
+      throw new Error(`USDC transfer failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   },
 });

@@ -1,6 +1,68 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
+import type { ActionCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { api, internal } from "./_generated/api";
+
+// ─── Request Body Interfaces ────────────────────────────────────────
+
+interface TransactionInput {
+  txHash?: string;
+  agentAddress: string;
+  endpointPath: string;
+  method: string;
+  amount: number | string;
+  chain: string;
+  status: string;
+  latencyMs?: number;
+  requestedAt: number | string;
+}
+
+interface TransactionWebhookBody {
+  transactions: TransactionInput[];
+}
+
+interface SignupBody {
+  name: string;
+  billingEmail?: string;
+  billingWallet?: string;
+}
+
+interface DisputeBody {
+  transactionId: Id<"transactions">;
+  reason: string;
+}
+
+interface DepositBody {
+  fiatAmount: number;
+  walletAddress: string;
+  chain: string;
+  agentId?: Id<"agents">;
+}
+
+interface StripeSubscriptionObject {
+  id: string;
+  customer: string;
+  current_period_end: number;
+  items?: {
+    data?: Array<{
+      price?: {
+        id: string;
+      };
+    }>;
+  };
+}
+
+interface StripePaymentIntentObject {
+  id: string;
+}
+
+interface StripeWebhookBody {
+  type: string;
+  data: {
+    object: StripeSubscriptionObject & StripePaymentIntentObject;
+  };
+}
 
 // ─── Environment Variable Validation ─────────────────────────────────
 // Fail fast if critical environment variables are missing
@@ -200,7 +262,7 @@ function getAuthToken(request: Request): string | null {
 }
 
 /** Authenticate org by API key header */
-async function authenticateOrg(ctx: any, request: Request) {
+async function authenticateOrg(ctx: ActionCtx, request: Request) {
   const apiKey = getAuthToken(request);
   if (!apiKey) return null;
   return await ctx.runQuery(api.organizations.getByApiKey, { apiKey });
@@ -230,7 +292,7 @@ http.route({
       return errorResponse("Content-Type must be application/json", 415, request);
     }
 
-    let body: any;
+    let body: TransactionWebhookBody;
     try {
       body = await request.json();
     } catch {
@@ -246,17 +308,17 @@ http.route({
       return errorResponse("Maximum 100 transactions per batch", 400, request);
     }
 
-    const result = await ctx.runMutation(api.transactions.createBatch, {
-      transactions: transactions.map((tx: any) => ({
+    const result = await ctx.runMutation(internal.transactions.createBatch, {
+      transactions: transactions.map((tx: TransactionInput) => ({
         txHash: typeof tx.txHash === "string" ? tx.txHash : undefined,
         agentAddress: String(tx.agentAddress || ""),
         endpointPath: String(tx.endpointPath || ""),
         method: String(tx.method || "GET"),
-        amount: typeof tx.amount === "number" ? tx.amount : parseFloat(tx.amount) || 0,
+        amount: typeof tx.amount === "number" ? tx.amount : parseFloat(String(tx.amount)) || 0,
         chain: tx.chain === "solana" ? "solana" as const : "base" as const,
-        status: (["pending", "settled", "failed", "refunded"].includes(tx.status) ? tx.status : "pending") as any,
+        status: (["pending", "settled", "failed", "refunded"].includes(tx.status) ? tx.status : "pending") as "pending" | "settled" | "failed" | "refunded",
         latencyMs: typeof tx.latencyMs === "number" ? tx.latencyMs : undefined,
-        requestedAt: typeof tx.requestedAt === "number" ? tx.requestedAt : new Date(tx.requestedAt).getTime() || Date.now(),
+        requestedAt: typeof tx.requestedAt === "number" ? tx.requestedAt : new Date(String(tx.requestedAt)).getTime() || Date.now(),
       })),
       sellerId: seller._id,
     });
@@ -281,7 +343,7 @@ http.route({
       return errorResponse("Content-Type must be application/json", 415, request);
     }
 
-    let body: any;
+    let body: SignupBody;
     try {
       body = await request.json();
     } catch {
@@ -590,7 +652,7 @@ http.route({
     const org = await authenticateOrg(ctx, request);
     if (!org) return errorResponse("Unauthorized", 401, request);
 
-    let body: any;
+    let body: DisputeBody;
     try {
       body = await request.json();
     } catch {
@@ -654,7 +716,7 @@ http.route({
     const org = await authenticateOrg(ctx, request);
     if (!org) return errorResponse("Unauthorized", 401, request);
 
-    let body: any;
+    let body: DepositBody;
     try {
       body = await request.json();
     } catch {
@@ -683,7 +745,7 @@ http.route({
           walletAddress,
         }
       );
-    } catch (stripeError: any) {
+    } catch (stripeError: unknown) {
       console.error("Stripe PaymentIntent creation failed:", stripeError);
       return errorResponse("Failed to create payment. Please try again later.", 500, request);
     }
@@ -762,7 +824,7 @@ http.route({
       return errorResponse("Invalid Stripe webhook signature", 401, request);
     }
 
-    let body: any;
+    let body: StripeWebhookBody;
     try {
       body = JSON.parse(bodyText);
     } catch {
@@ -822,7 +884,7 @@ http.route({
         });
 
         if (deposit) {
-          await ctx.runMutation(api.deposits.updateStatus, {
+          await ctx.runMutation(internal.deposits.updateStatus, {
             depositId: deposit._id,
             status: "processing",
           });
@@ -837,14 +899,14 @@ http.route({
               }
             );
 
-            await ctx.runMutation(api.deposits.updateStatus, {
+            await ctx.runMutation(internal.deposits.updateStatus, {
               depositId: deposit._id,
               status: "completed",
               txHash: transferResult.txHash,
             });
-          } catch (transferError: any) {
+          } catch (transferError: unknown) {
             console.error("USDC transfer failed for deposit:", deposit._id, transferError);
-            await ctx.runMutation(api.deposits.updateStatus, {
+            await ctx.runMutation(internal.deposits.updateStatus, {
               depositId: deposit._id,
               status: "failed",
             });

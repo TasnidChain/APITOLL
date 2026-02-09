@@ -162,19 +162,18 @@ export class AnalyticsReporter {
     if (!this.config.webhookUrl) return;
 
     const body = JSON.stringify({
-      transactions: [
-        {
-          txHash: transaction.txHash,
-          agentAddress: transaction.agentAddress,
-          endpointPath: transaction.endpoint,
-          method: transaction.method,
-          amount: parseFloat(transaction.amount),
-          chain: transaction.chain,
-          status: transaction.status,
-          latencyMs: transaction.latencyMs,
-          requestedAt: transaction.requestedAt,
-        },
-      ],
+      type: `transaction.${transaction.status}`,
+      data: {
+        txHash: transaction.txHash,
+        agentAddress: transaction.agentAddress,
+        endpointPath: transaction.endpoint,
+        method: transaction.method,
+        amount: parseFloat(transaction.amount),
+        chain: transaction.chain,
+        status: transaction.status,
+        latencyMs: transaction.latencyMs,
+        requestedAt: transaction.requestedAt,
+      },
     });
 
     const headers: Record<string, string> = {

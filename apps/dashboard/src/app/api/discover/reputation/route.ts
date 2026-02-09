@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../../convex/_generated/api";
+import { convex } from "@/lib/convex-client";
 
 /**
  * Agent Reputation Endpoint — GET /api/discover/reputation
@@ -12,10 +12,6 @@ import { api } from "../../../../../../../convex/_generated/api";
  *   ?wallet=0x... — Check reputation for a wallet
  *   ?agent=name — Check reputation for a named agent
  */
-
-const CONVEX_URL =
-  process.env.NEXT_PUBLIC_CONVEX_URL ??
-  "https://cheery-parrot-104.convex.cloud";
 
 function getTier(score: number) {
   if (score >= 600) return { name: "Elite", discount: 25, priority: true, escrow: true };
@@ -94,8 +90,6 @@ export async function GET(req: NextRequest) {
   let uniqueEndpoints = 0;
 
   try {
-    const convex = new ConvexHttpClient(CONVEX_URL);
-
     // Get recent gossip events (agent activity)
     const recentEvents = await convex.query(api.gossip.getRecentEvents, {
       limit: 200,
@@ -108,13 +102,13 @@ export async function GET(req: NextRequest) {
         ? wallet.toLowerCase()
         : "";
 
-    const agentEvents = recentEvents.filter((e: any) =>
+    const agentEvents = recentEvents.filter((e) =>
       e.agentId.toLowerCase().includes(agentKey)
     );
 
     txCount = agentEvents.length;
-    totalVolume = agentEvents.reduce((sum: number, e: any) => sum + e.amount, 0);
-    const endpoints = new Set(agentEvents.map((e: any) => e.endpoint));
+    totalVolume = agentEvents.reduce((sum: number, e) => sum + e.amount, 0);
+    const endpoints = new Set(agentEvents.map((e) => e.endpoint));
     uniqueEndpoints = endpoints.size;
 
     // Calculate score based on real activity

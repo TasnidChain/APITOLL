@@ -5,7 +5,6 @@ interface DailyStats {
   spend: number
   transactions: number
 }
-import { formatUSD } from '@/lib/utils'
 
 interface SpendChartProps {
   data: DailyStats[]
@@ -30,7 +29,7 @@ export function SpendChart({ data }: SpendChartProps) {
             </div>
           </div>
         ) : (
-          data.map((day, i) => {
+          data.map((day, _i) => {
             const height = (day.spend / maxSpend) * 100
             return (
               <div

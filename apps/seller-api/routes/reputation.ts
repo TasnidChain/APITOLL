@@ -22,8 +22,15 @@ function formatPayment(ctx: ReturnType<typeof getX402Context>) {
   return { txHash: ctx.receipt.txHash, amount: ctx.receipt.amount, chain: ctx.receipt.chain };
 }
 
+interface AgentProfile {
+  totalTransactions?: number; totalSpent?: number; avgSpendPerTx?: number;
+  uniqueEndpoints?: number; chains?: string[]; preferredChain?: string;
+  mutations?: number; mutationRate?: number; activeDays?: number;
+  firstActive?: number; lastActive?: number; frequentEndpoints?: string[];
+}
+
 // Trust score: 0-100 based on activity
-function computeTrustScore(profile: any): number {
+function computeTrustScore(profile: AgentProfile | null): number {
   if (!profile) return 0;
 
   let score = 50; // Base score
@@ -67,7 +74,7 @@ router.get("/api/reputation/agent/:agentId", async (req: Request, res: Response)
   }
 
   const cacheKey = `reputation:agent:${agentId}`;
-  const cached = reputationCache.get<any>(cacheKey);
+  const cached = reputationCache.get<Record<string, unknown>>(cacheKey);
   if (cached) {
     return res.json({ ...cached, cached: true, payment: formatPayment(getX402Context(req)) });
   }
@@ -122,7 +129,7 @@ router.get("/api/reputation/trending", async (req: Request, res: Response) => {
   const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 10, 1), 50);
   const cacheKey = `reputation:trending:${limit}`;
 
-  const cached = reputationCache.get<any>(cacheKey);
+  const cached = reputationCache.get<Record<string, unknown>>(cacheKey);
   if (cached) {
     return res.json({ ...cached, cached: true, payment: formatPayment(getX402Context(req)) });
   }
@@ -133,8 +140,13 @@ router.get("/api/reputation/trending", async (req: Request, res: Response) => {
       convex.query(gossipGetNetworkStats, {}),
     ]);
 
+    interface TrendingItem {
+      endpoint: string; host: string; discoveries: number; uniqueAgents: number;
+      totalVolume: number; avgLatencyMs: number; trendingScore: number;
+      chains: string[]; lastSeen: number;
+    }
     const payload = {
-      trending: (trending || []).map((t: any) => ({
+      trending: ((trending || []) as TrendingItem[]).map((t) => ({
         endpoint: t.endpoint,
         host: t.host,
         discoveries: t.discoveries,

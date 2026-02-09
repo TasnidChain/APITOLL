@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { PolicyEngine } from "./policy-engine";
-import type { Policy, Transaction } from "@apitoll/shared";
+import type { Transaction } from "@apitoll/shared";
 
 function makeTx(overrides: Partial<Transaction> = {}): Transaction {
   return {

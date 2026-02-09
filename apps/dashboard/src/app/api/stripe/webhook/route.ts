@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import Stripe from "stripe";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
-
-const CONVEX_URL =
-  process.env.NEXT_PUBLIC_CONVEX_URL ??
-  "https://cheery-parrot-104.convex.cloud";
-const convex = new ConvexHttpClient(CONVEX_URL);
+import { convex } from "@/lib/convex-client";
 
 /**
  * Derive the plan tier from a Stripe price ID.
@@ -56,8 +51,8 @@ export async function POST(req: NextRequest) {
 
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-  } catch (err: any) {
-    console.error("Webhook signature verification failed:", err.message);
+  } catch (err: unknown) {
+    console.error("Webhook signature verification failed:", err instanceof Error ? err.message : err);
     return NextResponse.json(
       { error: "Invalid signature" },
       { status: 400 }
@@ -85,10 +80,10 @@ export async function POST(req: NextRequest) {
           await stripe.subscriptions.retrieve(stripeSubscriptionId);
         const priceId = subscription.items.data[0]?.price.id ?? "";
         const resolvedPlan = priceIdToPlan(priceId);
-        const billingPeriodEnd = (subscription as any).current_period_end as number;
+        const billingPeriodEnd = subscription.current_period_end;
 
         // Look up the organization by Stripe customer ID
-        let org = await convex.query(api.billing.getByStripeCustomer, {
+        const org = await convex.query(api.billing.getByStripeCustomer, {
           stripeCustomerId,
         });
 
@@ -128,7 +123,7 @@ export async function POST(req: NextRequest) {
 
         const priceId = subscription.items.data[0]?.price.id ?? "";
         const resolvedPlan = priceIdToPlan(priceId);
-        const billingPeriodEnd = (subscription as any).current_period_end as number;
+        const billingPeriodEnd = subscription.current_period_end;
 
         console.log(
           `[Stripe] Subscription updated: customer=${stripeCustomerId} status=${status} plan=${resolvedPlan}`
@@ -204,8 +199,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (error: any) {
-    console.error("Webhook handler error:", error.message);
+  } catch (error: unknown) {
+    console.error("Webhook handler error:", error instanceof Error ? error.message : error);
     return NextResponse.json(
       { error: "Webhook handler failed" },
       { status: 500 }

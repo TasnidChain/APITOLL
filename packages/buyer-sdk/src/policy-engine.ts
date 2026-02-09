@@ -1,7 +1,5 @@
 import {
   type Policy,
-  type BudgetPolicy,
-  type VendorAclPolicy,
   type RateLimitPolicy,
   type Transaction,
   checkBudgetPolicy,

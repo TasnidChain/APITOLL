@@ -1,21 +1,18 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, query } from "./_generated/server";
 
 // ═══════════════════════════════════════════════════
-// SECURITY NOTE: These mutations are called by trusted servers
-// (seller-api, facilitator) via Convex HTTP routes in http.ts
-// that validate API keys BEFORE calling these mutations.
-// Direct client access is acceptable because Convex mutations
-// are not directly callable from the browser — they go through
-// the ConvexReactClient which uses authenticated WebSocket.
-// TODO: Convert to internalMutation for defense-in-depth.
+// SECURITY: Transaction mutations are internalMutation (defense-in-depth).
+// They are only callable from other Convex functions (httpActions in http.ts),
+// NOT from the browser or external ConvexHttpClient.
+// The HTTP routes in http.ts validate API keys before calling these.
 // ═══════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════
 // Create Transaction (from seller SDK webhook)
 // ═══════════════════════════════════════════════════
 
-export const create = mutation({
+export const create = internalMutation({
   args: {
     txHash: v.optional(v.string()),
     agentAddress: v.string(),
@@ -52,7 +49,7 @@ export const create = mutation({
 // Batch Create (for webhook efficiency)
 // ═══════════════════════════════════════════════════
 
-export const createBatch = mutation({
+export const createBatch = internalMutation({
   args: {
     transactions: v.array(
       v.object({
@@ -92,7 +89,7 @@ export const createBatch = mutation({
 // Update Status
 // ═══════════════════════════════════════════════════
 
-export const updateStatus = mutation({
+export const updateStatus = internalMutation({
   args: {
     id: v.id("transactions"),
     status: v.union(
@@ -129,7 +126,7 @@ export const list = query({
     if (args.status) {
       q = ctx.db
         .query("transactions")
-        .withIndex("by_status", (q) => q.eq("status", args.status as any))
+        .withIndex("by_status", (q) => q.eq("status", args.status as string))
         .order("desc");
     }
 

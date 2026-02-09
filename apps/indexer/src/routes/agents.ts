@@ -21,7 +21,7 @@ const createAgentSchema = z.object({
 
 // List agents
 app.get('/', requireOrgAuth, async (c) => {
-  const org = (c.get as any)('org') as { id: string } | undefined
+  const org = c.get('org') as { id: string } | undefined
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
@@ -43,7 +43,7 @@ app.get('/:id', requireOrgAuth, async (c) => {
 
 // Create agent
 app.post('/', requireOrgAuth, async (c) => {
-  const org = (c.get as any)('org') as { id: string } | undefined
+  const org = c.get('org') as { id: string } | undefined
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }

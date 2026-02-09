@@ -158,20 +158,8 @@ function colorize(line: string) {
     return <span className="text-slate-500">{line}</span>
   }
 
-  // Process the line with regex replacements
-  const parts: React.ReactNode[] = []
-  let remaining = line
-  let key = 0
-
-  const patterns: [RegExp, string][] = [
-    [/\b(import|from|export|const|await|new)\b/g, 'text-violet-400'],
-    [/"([^"]*)"/g, 'text-emerald-400'],
-    [/\b(\d+\.?\d*)\b/g, 'text-amber-400'],
-    [/\b(paymentMiddleware|createAgentWallet|createFacilitatorSigner|fetch)\b/g, 'text-cyan-400'],
-  ]
-
   // Simple approach: just color keywords inline
-  const tokens = remaining.split(/(\s+|[{}(),:;=]|"[^"]*")/g)
+  const tokens = line.split(/(\s+|[{}(),:;=]|"[^"]*")/g)
 
   return (
     <>

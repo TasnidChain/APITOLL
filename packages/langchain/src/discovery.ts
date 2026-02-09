@@ -1,6 +1,19 @@
 import { PaidTool, createToolsFromDiscovery } from './paid-tool'
 import { AgentWalletConfig } from './types'
 
+/** Shape of a tool returned from the discovery API */
+interface DiscoveredToolData {
+  name: string
+  description: string
+  'x-402'?: { baseUrl: string; method: string; path: string; price: number; chains: string[] }
+  inputSchema?: Record<string, unknown>
+}
+
+/** Shape of a recommendation from the AI discovery endpoint */
+interface DiscoveryRecommendation {
+  tool: DiscoveredToolData
+}
+
 // ═══════════════════════════════════════════════════
 // Discovery API Integration
 // ═══════════════════════════════════════════════════
@@ -31,15 +44,15 @@ export async function discoverTools(options: {
     throw new Error(`Discovery API error: ${response.statusText}`)
   }
 
-  const data = await response.json() as { tools?: unknown[] }
+  const data = await response.json() as { tools?: DiscoveredToolData[] }
   const toolsData = Array.isArray(data.tools) ? data.tools : []
 
   // Filter by max price if specified
   const filteredTools = options.maxPrice
-    ? toolsData.filter((t: any) => t['x-402']?.price <= options.maxPrice!)
+    ? toolsData.filter((t) => (t['x-402']?.price ?? Infinity) <= options.maxPrice!)
     : toolsData
 
-  return createToolsFromDiscovery(filteredTools as any)
+  return createToolsFromDiscovery(filteredTools as Parameters<typeof createToolsFromDiscovery>[0])
 }
 
 /**
@@ -70,10 +83,10 @@ export async function discoverToolsForTask(
     throw new Error(`Discovery API error: ${response.statusText}`)
   }
 
-  const data = await response.json() as { recommendations?: unknown[] }
+  const data = await response.json() as { recommendations?: DiscoveryRecommendation[] }
   const recommendations = Array.isArray(data.recommendations) ? data.recommendations : []
 
-  const tools = recommendations.map((r: any) => r.tool)
+  const tools = recommendations.map((r) => r.tool)
 
   // Filter by limit
   const limited = options.limit ? tools.slice(0, options.limit) : tools

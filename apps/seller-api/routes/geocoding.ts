@@ -118,7 +118,7 @@ router.get("/api/geocode", async (req: Request, res: Response) => {
   const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 5, 1), 10);
   const cacheKey = `geo:fwd:${q.toLowerCase()}:${limit}`;
 
-  const cached = geocodeCache.get<any>(cacheKey);
+  const cached = geocodeCache.get<Record<string, unknown>>(cacheKey);
   if (cached) {
     return res.json({ ...cached, cached: true, payment: formatPayment(getX402Context(req)) });
   }
@@ -151,7 +151,7 @@ router.get("/api/geocode/reverse", async (req: Request, res: Response) => {
   }
 
   const cacheKey = `geo:rev:${lat.toFixed(5)}:${lon.toFixed(5)}`;
-  const cached = geocodeCache.get<any>(cacheKey);
+  const cached = geocodeCache.get<Record<string, unknown>>(cacheKey);
   if (cached) {
     return res.json({ ...cached, cached: true, payment: formatPayment(getX402Context(req)) });
   }
