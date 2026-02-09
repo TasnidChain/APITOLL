@@ -265,7 +265,7 @@ function getAuthToken(request: Request): string | null {
 async function authenticateOrg(ctx: ActionCtx, request: Request) {
   const apiKey = getAuthToken(request);
   if (!apiKey) return null;
-  return await ctx.runQuery(api.organizations.getByApiKey, { apiKey });
+  return await ctx.runQuery(internal.organizations.getByApiKey, { apiKey });
 }
 
 // ═══════════════════════════════════════════════════
@@ -281,7 +281,7 @@ http.route({
       return errorResponse("Missing X-Seller-Key", 401, request);
     }
 
-    const seller = await ctx.runQuery(api.sellers.getByApiKey, { apiKey });
+    const seller = await ctx.runQuery(internal.sellers.getByApiKey, { apiKey });
     if (!seller) {
       return errorResponse("Invalid seller key", 401, request);
     }
@@ -355,14 +355,14 @@ http.route({
       return errorResponse("name is required (2-100 characters)", 400, request);
     }
 
-    const result = await ctx.runMutation(api.organizations.create, {
+    const result = await ctx.runMutation(internal.organizations.internalCreate, {
       name: name.trim(),
       billingWallet: billingWallet || undefined,
     });
 
     // Update billing email if provided
     if (billingEmail && typeof billingEmail === "string") {
-      await ctx.runMutation(api.billing.setStripeCustomer, {
+      await ctx.runMutation(internal.billing.setStripeCustomer, {
         orgId: result.id,
         stripeCustomerId: "", // will be set when Stripe customer is created
         billingEmail: billingEmail.trim(),
@@ -393,7 +393,7 @@ http.route({
     const org = await authenticateOrg(ctx, request);
     if (!org) return errorResponse("Unauthorized", 401, request);
 
-    const newKey = await ctx.runMutation(api.organizations.regenerateApiKey, {
+    const newKey = await ctx.runMutation(internal.organizations.internalRegenerateApiKey, {
       id: org._id,
     });
 
@@ -419,7 +419,7 @@ http.route({
     const org = await authenticateOrg(ctx, request);
     if (!org) return errorResponse("Unauthorized", 401, request);
 
-    const billing = await ctx.runQuery(api.billing.getBillingSummary, {
+    const billing = await ctx.runQuery(internal.billing.internalGetBillingSummary, {
       orgId: org._id,
     });
 
@@ -538,7 +538,7 @@ http.route({
     const org = await authenticateOrg(ctx, request);
     if (!org) return errorResponse("Unauthorized", 401, request);
 
-    const stats = await ctx.runQuery(api.analytics.getOverview, {});
+    const stats = await ctx.runQuery(internal.analytics.internalGetOverview, {});
     return jsonResponse(stats, 200, request);
   }),
 });
@@ -565,7 +565,7 @@ http.route({
     const maxDays = retentionDays[org.plan] ?? 7;
     const requestedDays = clampInt(url.searchParams.get("days"), 1, maxDays, Math.min(30, maxDays));
 
-    const stats = await ctx.runQuery(api.analytics.getDailyStats, {
+    const stats = await ctx.runQuery(internal.analytics.internalGetDailyStats, {
       days: requestedDays,
     });
 
@@ -592,7 +592,7 @@ http.route({
       return errorResponse("Premium analytics requires Pro or Enterprise plan", 403, request);
     }
 
-    const data = await ctx.runQuery(api.analytics.getSpendByChain);
+    const data = await ctx.runQuery(internal.analytics.internalGetSpendByChain);
     return jsonResponse(data, 200, request);
   }),
 });
@@ -615,7 +615,7 @@ http.route({
     const url = new URL(request.url);
     const limit = clampInt(url.searchParams.get("limit"), 1, 50, 10);
 
-    const data = await ctx.runQuery(api.analytics.getTopEndpoints, { limit });
+    const data = await ctx.runQuery(internal.analytics.internalGetTopEndpoints, { limit });
     return jsonResponse({ endpoints: data }, 200, request);
   }),
 });
@@ -636,7 +636,7 @@ http.route({
       return errorResponse("Admin access required", 403, request);
     }
 
-    const overview = await ctx.runQuery(api.platformRevenue.getOverview);
+    const overview = await ctx.runQuery(internal.platformRevenue.internalGetOverview);
     return jsonResponse(overview, 200, request);
   }),
 });
@@ -665,7 +665,7 @@ http.route({
     }
 
     try {
-      const disputeId = await ctx.runMutation(api.disputes.create, {
+      const disputeId = await ctx.runMutation(internal.disputes.internalCreate, {
         transactionId,
         orgId: org._id,
         reason: String(reason).slice(0, 1000),
@@ -696,7 +696,7 @@ http.route({
     const url = new URL(request.url);
     const status = url.searchParams.get("status") ?? undefined;
 
-    const disputes = await ctx.runQuery(api.disputes.listByOrg, {
+    const disputes = await ctx.runQuery(internal.disputes.internalListByOrg, {
       orgId: org._id,
       status,
     });
@@ -750,7 +750,7 @@ http.route({
       return errorResponse("Failed to create payment. Please try again later.", 500, request);
     }
 
-    const result = await ctx.runMutation(api.deposits.create, {
+    const result = await ctx.runMutation(internal.deposits.create, {
       orgId: org._id,
       agentId: agentId || undefined,
       stripePaymentIntentId: paymentIntent.id,
@@ -839,7 +839,7 @@ http.route({
         const subscription = data.object;
         const customerId = subscription.customer;
 
-        const org = await ctx.runQuery(api.billing.getByStripeCustomer, {
+        const org = await ctx.runQuery(internal.billing.getByStripeCustomer, {
           stripeCustomerId: customerId,
         });
 
@@ -851,7 +851,7 @@ http.route({
               ? "pro" as const
               : "free" as const;
 
-          await ctx.runMutation(api.billing.activateSubscription, {
+          await ctx.runMutation(internal.billing.activateSubscription, {
             orgId: org._id,
             stripeSubscriptionId: subscription.id,
             stripePriceId: priceId,
@@ -864,12 +864,12 @@ http.route({
 
       case "customer.subscription.deleted": {
         const subscription = data.object;
-        const org = await ctx.runQuery(api.billing.getByStripeCustomer, {
+        const org = await ctx.runQuery(internal.billing.getByStripeCustomer, {
           stripeCustomerId: subscription.customer,
         });
 
         if (org) {
-          await ctx.runMutation(api.billing.cancelSubscription, {
+          await ctx.runMutation(internal.billing.cancelSubscription, {
             orgId: org._id,
           });
         }
@@ -937,6 +937,94 @@ http.route({
       200,
       request
     );
+  }),
+});
+
+// ═══════════════════════════════════════════════════
+// Gossip — Record (agent POST, forwarded from Next.js)
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/gossip",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const contentType = request.headers.get("Content-Type");
+    if (!contentType?.includes("application/json")) {
+      return errorResponse("Content-Type must be application/json", 415, request);
+    }
+
+    let body: { agentId?: string; endpoint?: string; host?: string; chain?: string; amount?: number; latencyMs?: number; mutationTriggered?: boolean };
+    try {
+      body = await request.json();
+    } catch {
+      return errorResponse("Invalid JSON body", 400, request);
+    }
+
+    if (!body.agentId || !body.endpoint) {
+      return errorResponse("agentId and endpoint are required", 400, request);
+    }
+
+    try {
+      const result = await ctx.runMutation(internal.gossip.recordGossip, {
+        agentId: String(body.agentId),
+        endpoint: String(body.endpoint),
+        host: String(body.host || ""),
+        chain: body.chain === "solana" ? "solana" as const : "base" as const,
+        amount: typeof body.amount === "number" ? body.amount : 0,
+        latencyMs: typeof body.latencyMs === "number" ? body.latencyMs : 0,
+        mutationTriggered: body.mutationTriggered === true,
+      });
+
+      return jsonResponse(result, 200, request);
+    } catch (err) {
+      return errorResponse(
+        err instanceof Error ? err.message : "Failed to record gossip",
+        500,
+        request
+      );
+    }
+  }),
+});
+
+// ═══════════════════════════════════════════════════
+// Evolution — Save State (agent POST, forwarded from Next.js)
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/evolution/save",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const contentType = request.headers.get("Content-Type");
+    if (!contentType?.includes("application/json")) {
+      return errorResponse("Content-Type must be application/json", 415, request);
+    }
+
+    let body: { agentId?: string; state?: unknown; mutations?: Array<{ type: string; from?: string; to?: string; successRate?: number; timestamp: number }> };
+    try {
+      body = await request.json();
+    } catch {
+      return errorResponse("Invalid JSON body", 400, request);
+    }
+
+    if (!body.agentId) {
+      return errorResponse("agentId is required", 400, request);
+    }
+
+    try {
+      const result = await ctx.runMutation(internal.evolution.saveState, {
+        agentId: String(body.agentId),
+        state: body.state ?? undefined,
+        mutations: Array.isArray(body.mutations) ? body.mutations : undefined,
+      });
+
+      return jsonResponse(result, 200, request);
+    } catch (err) {
+      return errorResponse(
+        err instanceof Error ? err.message : "Failed to save evolution state",
+        500,
+        request
+      );
+    }
   }),
 });
 

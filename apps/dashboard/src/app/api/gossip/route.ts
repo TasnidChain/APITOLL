@@ -104,17 +104,31 @@ export async function POST(req: NextRequest) {
       parsedPath = "/";
     }
 
-    // Record gossip in Convex
-    const gossipResult = await convex.mutation(api.gossip.recordGossip, {
-      agentId: agent_id,
-      endpoint,
-      host,
-      chain: chain === "solana" ? "solana" : "base",
-      amount: amount ?? 0,
-      latencyMs: latency_ms ?? 0,
-      mutationTriggered: mutation_triggered ?? false,
+    // Record gossip via Convex HTTP endpoint (gossip.recordGossip is internalMutation)
+    const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(".cloud", ".site") || "";
+    const gossipRes = await fetch(`${convexSiteUrl}/api/gossip`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentId: agent_id,
+        endpoint,
+        host,
+        chain: chain === "solana" ? "solana" : "base",
+        amount: amount ?? 0,
+        latencyMs: latency_ms ?? 0,
+        mutationTriggered: mutation_triggered ?? false,
+      }),
     });
 
+    if (!gossipRes.ok) {
+      const errBody = await gossipRes.json().catch(() => ({ error: "Unknown" }));
+      return NextResponse.json(
+        { error: `Gossip recording failed: ${(errBody as { error?: string }).error || gossipRes.status}` },
+        { status: 500 }
+      );
+    }
+
+    const gossipResult = await gossipRes.json() as { trending_score: number; is_new_agent: boolean };
     const { trending_score, is_new_agent } = gossipResult;
 
     // ------------------------------------------------------------------

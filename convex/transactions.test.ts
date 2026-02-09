@@ -215,7 +215,8 @@ describe("transactions", () => {
         });
       }
 
-      const results = await t.query(api.transactions.list, {});
+      const asUser = t.withIdentity({ subject: "user_test_tx" });
+      const results = await asUser.query(api.transactions.list, {});
       expect(results).toHaveLength(3);
     });
 
@@ -242,7 +243,8 @@ describe("transactions", () => {
         requestedAt: Date.now(),
       });
 
-      const settled = await t.query(api.transactions.list, {
+      const asUser = t.withIdentity({ subject: "user_test_tx" });
+      const settled = await asUser.query(api.transactions.list, {
         status: "settled",
       });
       expect(settled).toHaveLength(1);
@@ -272,7 +274,8 @@ describe("transactions", () => {
         requestedAt: Date.now(),
       });
 
-      const baseOnly = await t.query(api.transactions.list, {
+      const asUser = t.withIdentity({ subject: "user_test_tx" });
+      const baseOnly = await asUser.query(api.transactions.list, {
         chain: "base",
       });
       expect(baseOnly).toHaveLength(1);
@@ -294,7 +297,8 @@ describe("transactions", () => {
         });
       }
 
-      const limited = await t.query(api.transactions.list, { limit: 3 });
+      const asUser = t.withIdentity({ subject: "user_test_tx" });
+      const limited = await asUser.query(api.transactions.list, { limit: 3 });
       expect(limited).toHaveLength(3);
     });
   });
@@ -326,7 +330,8 @@ describe("transactions", () => {
         requestedAt: Date.now(),
       });
 
-      const results = await t.query(api.transactions.getByAgent, {
+      const asUser = t.withIdentity({ subject: "user_test_tx" });
+      const results = await asUser.query(api.transactions.getByAgent, {
         agentAddress: addr,
       });
       expect(results).toHaveLength(1);

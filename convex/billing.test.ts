@@ -1,7 +1,7 @@
 import { convexTest } from "convex-test";
 import { describe, it, expect } from "vitest";
 import schema from "./schema";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { modules } from "./test.setup";
 import { priceIdToPlan } from "./billing";
 
@@ -44,7 +44,7 @@ describe("billing", () => {
       const t = convexTest(schema, modules);
       const orgId = await createOrg(t, "free");
 
-      const result = await t.mutation(api.billing.incrementUsage, { orgId });
+      const result = await t.mutation(internal.billing.incrementUsage, { orgId });
       expect(result.allowed).toBe(true);
       expect(result.remaining).toBe(999);
     });
@@ -62,7 +62,7 @@ describe("billing", () => {
         });
       });
 
-      const result = await t.mutation(api.billing.incrementUsage, { orgId });
+      const result = await t.mutation(internal.billing.incrementUsage, { orgId });
       expect(result.allowed).toBe(false);
       expect(result.remaining).toBe(0);
     });
@@ -79,7 +79,7 @@ describe("billing", () => {
         });
       });
 
-      const result = await t.mutation(api.billing.incrementUsage, { orgId });
+      const result = await t.mutation(internal.billing.incrementUsage, { orgId });
       expect(result.allowed).toBe(true);
       expect(result.remaining).toBe(999); // reset to 1000, used 1 = 999 remaining
     });
@@ -88,7 +88,7 @@ describe("billing", () => {
       const t = convexTest(schema, modules);
       const orgId = await createOrg(t, "pro");
 
-      const result = await t.mutation(api.billing.incrementUsage, { orgId });
+      const result = await t.mutation(internal.billing.incrementUsage, { orgId });
       expect(result.allowed).toBe(true);
       expect(result.remaining).toBe(99999);
     });
@@ -106,7 +106,7 @@ describe("billing", () => {
         return id;
       });
 
-      const result = await t.mutation(api.billing.incrementUsage, { orgId });
+      const result = await t.mutation(internal.billing.incrementUsage, { orgId });
       expect(result.allowed).toBe(false);
     });
   });
@@ -116,8 +116,9 @@ describe("billing", () => {
     it("allows first agent on free plan", async () => {
       const t = convexTest(schema, modules);
       const orgId = await createOrg(t, "free");
+      const asUser = t.withIdentity({ subject: "user_test_billing" });
 
-      const result = await t.query(api.billing.checkAgentLimit, { orgId });
+      const result = await asUser.query(api.billing.checkAgentLimit, { orgId });
       expect(result.allowed).toBe(true);
       expect(result.limit).toBe(1);
       expect(result.current).toBe(0);
@@ -140,7 +141,8 @@ describe("billing", () => {
         });
       });
 
-      const result = await t.query(api.billing.checkAgentLimit, { orgId });
+      const asUser = t.withIdentity({ subject: "user_test_billing" });
+      const result = await asUser.query(api.billing.checkAgentLimit, { orgId });
       expect(result.allowed).toBe(false);
       expect(result.current).toBe(1);
     });
@@ -164,7 +166,8 @@ describe("billing", () => {
         });
       }
 
-      const result = await t.query(api.billing.checkAgentLimit, { orgId });
+      const asUser = t.withIdentity({ subject: "user_test_billing" });
+      const result = await asUser.query(api.billing.checkAgentLimit, { orgId });
       expect(result.allowed).toBe(true);
       expect(result.current).toBe(9);
       expect(result.limit).toBe(10);
@@ -177,7 +180,8 @@ describe("billing", () => {
       const t = convexTest(schema, modules);
       const orgId = await createOrg(t, "free");
 
-      const result = await t.query(api.billing.checkSellerLimit, { orgId });
+      const asUser = t.withIdentity({ subject: "user_test_billing" });
+      const result = await asUser.query(api.billing.checkSellerLimit, { orgId });
       expect(result.allowed).toBe(true);
       expect(result.limit).toBe(2);
     });
@@ -198,7 +202,8 @@ describe("billing", () => {
         });
       }
 
-      const result = await t.query(api.billing.checkSellerLimit, { orgId });
+      const asUser = t.withIdentity({ subject: "user_test_billing" });
+      const result = await asUser.query(api.billing.checkSellerLimit, { orgId });
       expect(result.allowed).toBe(false);
       expect(result.current).toBe(2);
     });
@@ -211,7 +216,7 @@ describe("billing", () => {
       const orgId = await createOrg(t, "free");
       const periodEnd = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
 
-      await t.mutation(api.billing.activateSubscription, {
+      await t.mutation(internal.billing.activateSubscription, {
         orgId,
         stripeSubscriptionId: "sub_test_123",
         stripePriceId: "price_pro_monthly",
@@ -244,7 +249,7 @@ describe("billing", () => {
         });
       });
 
-      await t.mutation(api.billing.cancelSubscription, { orgId });
+      await t.mutation(internal.billing.cancelSubscription, { orgId });
 
       const org = await t.run(async (ctx) => {
         return await ctx.db.get(orgId);
@@ -269,7 +274,7 @@ describe("billing", () => {
         });
       });
 
-      const found = await t.query(api.billing.getByStripeCustomer, {
+      const found = await t.query(internal.billing.getByStripeCustomer, {
         stripeCustomerId: "cus_test_lookup",
       });
 
@@ -280,7 +285,7 @@ describe("billing", () => {
     it("returns null for unknown Stripe customer", async () => {
       const t = convexTest(schema, modules);
 
-      const found = await t.query(api.billing.getByStripeCustomer, {
+      const found = await t.query(internal.billing.getByStripeCustomer, {
         stripeCustomerId: "cus_nonexistent",
       });
 

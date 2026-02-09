@@ -1,6 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { requireAuth } from "./helpers";
+import { internalMutation, mutation, query } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Create Referral Code
@@ -47,7 +47,8 @@ export const createReferral = mutation({
 // Track Referral Event (called on each referred tx)
 // ═══════════════════════════════════════════════════
 
-export const trackReferralEvent = mutation({
+// SECURITY: internalMutation — only called from httpActions after tx validation
+export const trackReferralEvent = internalMutation({
   args: {
     referralCode: v.string(),
     transactionId: v.id("transactions"),
@@ -169,6 +170,7 @@ export const deactivate = mutation({
 export const platformStats = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const referrals = await ctx.db.query("referrals").collect();
     const active = referrals.filter((r) => r.isActive);
 

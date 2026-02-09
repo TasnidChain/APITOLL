@@ -110,10 +110,13 @@ export const listByOrg = query({
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    await requireAuth(ctx);
+    const webhooks = await ctx.db
       .query("webhooks")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
       .collect();
+    // SECURITY: Strip signing secrets — never expose to frontend
+    return webhooks.map(({ secret: _secret, ...safe }) => safe);
   },
 });
 
@@ -126,9 +129,12 @@ export const get = query({
     id: v.id("webhooks"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const webhook = await ctx.db.get(args.id);
     if (!webhook) throw new Error("Webhook not found");
-    return webhook;
+    // SECURITY: Strip signing secret — never expose to frontend
+    const { secret: _secret, ...safe } = webhook;
+    return safe;
   },
 });
 
@@ -284,6 +290,7 @@ export const listDeliveries = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     return await ctx.db
       .query("webhookDeliveries")
       .withIndex("by_webhook", (q) => q.eq("webhookId", args.webhookId))
@@ -301,6 +308,7 @@ export const getStats = query({
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const webhooks = await ctx.db
       .query("webhooks")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))

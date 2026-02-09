@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../../../../convex/_generated/api'
 import { useOrgId, useBillingSummary, useOrg, usePolicies, useAlertRules } from '@/lib/hooks'
 import {
@@ -24,6 +24,10 @@ export default function SettingsPage() {
   const billing = useBillingSummary(orgId)
   const policies = usePolicies(orgId)
   const alertRules = useAlertRules(orgId)
+  const orgKeyData = useQuery(
+    api.organizations.getApiKey,
+    orgId ? { id: orgId } : 'skip'
+  )
   const [copied, setCopied] = useState(false)
   const [showRegenConfirm, setShowRegenConfirm] = useState(false)
 
@@ -55,16 +59,18 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false)
   const [regenLoading, setRegenLoading] = useState(false)
 
+  const orgApiKey = orgKeyData?.apiKey ?? ''
+
   const handleCopy = () => {
-    if (org?.apiKey) {
-      navigator.clipboard.writeText(org.apiKey)
+    if (orgApiKey) {
+      navigator.clipboard.writeText(orgApiKey)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
   }
 
-  const maskedKey = org?.apiKey
-    ? `${org.apiKey.slice(0, 8)}${'*'.repeat(32)}${org.apiKey.slice(-4)}`
+  const maskedKey = orgApiKey
+    ? `${orgApiKey.slice(0, 8)}${'*'.repeat(32)}${orgApiKey.slice(-4)}`
     : 'Loading...'
 
   const handleRegenerate = async () => {

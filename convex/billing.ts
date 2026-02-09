@@ -1,20 +1,21 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, query } from "./_generated/server";
+import { requireAuth } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Stripe Subscription Management
 //
-// NOTE: These mutations remain public because they are called by the
-// Next.js dashboard Stripe webhook (ConvexHttpClient) which cannot
-// invoke internalMutation. The Stripe webhook verifies the request
-// signature before calling these, so the trust boundary is enforced
-// at the webhook handler level, not here.
+// SECURITY: All billing mutations are internalMutation.
+// They are called from:
+//   1. convex/http.ts Stripe webhook handler (ctx.runMutation)
+//   2. convex/http.ts signup handler (ctx.runMutation)
+// NOT directly callable from browser or external ConvexHttpClient.
 // ═══════════════════════════════════════════════════
 
 /**
  * Create or update Stripe customer for an organization.
  */
-export const setStripeCustomer = mutation({
+export const setStripeCustomer = internalMutation({
   args: {
     orgId: v.id("organizations"),
     stripeCustomerId: v.string(),
@@ -31,7 +32,7 @@ export const setStripeCustomer = mutation({
 /**
  * Activate a subscription (called from Stripe webhook).
  */
-export const activateSubscription = mutation({
+export const activateSubscription = internalMutation({
   args: {
     orgId: v.id("organizations"),
     stripeSubscriptionId: v.string(),
@@ -52,7 +53,7 @@ export const activateSubscription = mutation({
 /**
  * Cancel a subscription (downgrade to free).
  */
-export const cancelSubscription = mutation({
+export const cancelSubscription = internalMutation({
   args: {
     orgId: v.id("organizations"),
   },
@@ -69,7 +70,7 @@ export const cancelSubscription = mutation({
 /**
  * Get by Stripe customer ID (for webhook handling).
  */
-export const getByStripeCustomer = query({
+export const getByStripeCustomer = internalQuery({
   args: { stripeCustomerId: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -87,6 +88,8 @@ export const getByStripeCustomer = query({
 export const getBillingSummary = query({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
     const org = await ctx.db.get(args.orgId);
     if (!org) return null;
 
@@ -120,6 +123,20 @@ export const getBillingSummary = query({
   },
 });
 
+// INTERNAL version — called from httpActions in http.ts (which authenticate via org API key)
+export const internalGetBillingSummary = internalQuery({
+  args: { orgId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    const org = await ctx.db.get(args.orgId);
+    if (!org) return null;
+    const today = new Date().toISOString().split("T")[0];
+    const dailyCalls = org.dailyCallDate === today ? (org.dailyCallCount ?? 0) : 0;
+    const agents = await ctx.db.query("agents").withIndex("by_org", (q) => q.eq("orgId", args.orgId)).collect();
+    const sellers = await ctx.db.query("sellers").filter((q) => q.eq(q.field("orgId"), args.orgId)).collect();
+    return { plan: org.plan, stripeCustomerId: org.stripeCustomerId, stripeSubscriptionId: org.stripeSubscriptionId, billingEmail: org.billingEmail, billingPeriodEnd: org.billingPeriodEnd, usage: { dailyCalls, totalAgents: agents.length, totalSellers: sellers.length } };
+  },
+});
+
 // ═══════════════════════════════════════════════════
 // Plan Enforcement
 // ═══════════════════════════════════════════════════
@@ -135,7 +152,7 @@ const PLAN_LIMITS = {
  * Increment daily call count and check plan limits.
  * Returns { allowed: boolean, remaining: number }.
  */
-export const incrementUsage = mutation({
+export const incrementUsage = internalMutation({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
     const org = await ctx.db.get(args.orgId);
@@ -164,6 +181,7 @@ export const incrementUsage = mutation({
 export const checkAgentLimit = query({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const org = await ctx.db.get(args.orgId);
     if (!org) return { allowed: false, limit: 0, current: 0 };
 
@@ -188,6 +206,7 @@ export const checkAgentLimit = query({
 export const checkSellerLimit = query({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const org = await ctx.db.get(args.orgId);
     if (!org) return { allowed: false, limit: 0, current: 0 };
 

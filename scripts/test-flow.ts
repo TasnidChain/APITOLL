@@ -31,7 +31,7 @@ const STEP_INFO = "\x1b[34mℹ️\x1b[0m";
 const STEP_WAIT = "\x1b[33m⏳\x1b[0m";
 
 function errMsg(e: unknown): string {
-  return e instanceof Error ? errMsg(e) : String(e);
+  return e instanceof Error ? e.message : String(e);
 }
 
 async function main() {

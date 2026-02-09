@@ -274,7 +274,7 @@ function NewDepositModal({
   onClose: () => void
 }) {
   const agents = useAgents(orgId as Id<"organizations">)
-  const createDeposit = useMutation(api.deposits.create)
+  const createDeposit = useMutation(api.deposits.createDeposit)
   const [amount, setAmount] = useState('')
   const [selectedAgent, setSelectedAgent] = useState('')
   const [txHash, setTxHash] = useState('')

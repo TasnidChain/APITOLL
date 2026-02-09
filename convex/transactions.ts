@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, query } from "./_generated/server";
+import { requireAuth } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // SECURITY: Transaction mutations are internalMutation (defense-in-depth).
@@ -121,6 +122,7 @@ export const list = query({
     agentId: v.optional(v.id("agents")),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     let q = ctx.db.query("transactions").order("desc");
 
     if (args.status) {
@@ -155,6 +157,7 @@ export const getByAgent = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     return await ctx.db
       .query("transactions")
       .withIndex("by_agent", (q) => q.eq("agentAddress", args.agentAddress))
@@ -173,6 +176,7 @@ export const getBySeller = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     return await ctx.db
       .query("transactions")
       .withIndex("by_seller", (q) => q.eq("sellerId", args.sellerId))

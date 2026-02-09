@@ -103,15 +103,20 @@ export default function ApiKeysPage() {
   const org = useOrg(orgId)
 
   const sellers = useQuery(
-    api.sellers.listByOrg,
+    api.sellers.listApiKeysByOrg,
     orgId ? { orgId } : 'skip'
   )
 
-  if (!org || sellers === undefined) {
+  const orgKeyData = useQuery(
+    api.organizations.getApiKey,
+    orgId ? { id: orgId } : 'skip'
+  )
+
+  if (!org || sellers === undefined || orgKeyData === undefined) {
     return <PageLoading />
   }
 
-  const orgApiKey = org.apiKey
+  const orgApiKey = orgKeyData?.apiKey ?? ''
 
   const buyerSdkCode = `import { createAgentWallet } from '@apitoll/buyer-sdk'
 

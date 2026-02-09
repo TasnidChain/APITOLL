@@ -170,29 +170,48 @@ export async function POST(req: NextRequest) {
     }
 
     // ------------------------------------------------------------------
-    // Save evolution state to Convex
+    // Save evolution state via Convex HTTP endpoint (evolution.saveState is internalMutation)
     // ------------------------------------------------------------------
     const newMutations = Array.isArray(mutations) ? mutations : [];
+    const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(".cloud", ".site") || "";
 
-    const saveResult = await convex.mutation(api.evolution.saveState, {
-      agentId: agent_id,
-      state: state ?? undefined,
-      mutations: newMutations.length > 0 ? newMutations : undefined,
+    const saveRes = await fetch(`${convexSiteUrl}/api/evolution/save`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agentId: agent_id,
+        state: state ?? undefined,
+        mutations: newMutations.length > 0 ? newMutations : undefined,
+      }),
     });
 
+    if (!saveRes.ok) {
+      const errBody = await saveRes.json().catch(() => ({ error: "Unknown" }));
+      return NextResponse.json(
+        { error: `Evolution save failed: ${(errBody as { error?: string }).error || saveRes.status}` },
+        { status: 500 }
+      );
+    }
+
+    const saveResult = await saveRes.json() as { mutationDepth: number; totalMutations: number };
+
     // ------------------------------------------------------------------
-    // Record gossip event for the mutation (so network stats reflect it)
+    // Record gossip event for the mutation via Convex HTTP (gossip.recordGossip is internalMutation)
     // ------------------------------------------------------------------
     let networkMutations = 0;
     try {
-      await convex.mutation(api.gossip.recordGossip, {
-        agentId: agent_id,
-        endpoint: `evolve://${agent_id}`,
-        host: "apitoll.com",
-        chain: "base" as const,
-        amount: 0,
-        latencyMs: 0,
-        mutationTriggered: true,
+      await fetch(`${convexSiteUrl}/api/gossip`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: agent_id,
+          endpoint: `evolve://${agent_id}`,
+          host: "apitoll.com",
+          chain: "base",
+          amount: 0,
+          latencyMs: 0,
+          mutationTriggered: true,
+        }),
       });
 
       // Fetch network-wide mutation count

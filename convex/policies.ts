@@ -71,6 +71,7 @@ export const listByOrg = query({
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     return await ctx.db
       .query("policies")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
@@ -87,6 +88,7 @@ export const listByAgent = query({
     agentId: v.id("agents"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     return await ctx.db
       .query("policies")
       .withIndex("by_agent", (q) => q.eq("agentId", args.agentId))

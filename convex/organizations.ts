@@ -1,6 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { requireAuth } from "./helpers";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./helpers";
 
 // ─── Secure API Key Generation ───────────────────────────────────
 
@@ -22,6 +22,7 @@ export const create = mutation({
     billingWallet: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     // Validate name
     const name = args.name.trim();
     if (name.length < 2 || name.length > 100) {
@@ -47,7 +48,9 @@ export const create = mutation({
 // Get by API Key
 // ═══════════════════════════════════════════════════
 
-export const getByApiKey = query({
+// SECURITY: internalQuery — API key lookup should NOT be exposed to browsers.
+// Used by authenticateOrg() in http.ts httpActions.
+export const getByApiKey = internalQuery({
   args: { apiKey: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -64,7 +67,26 @@ export const getByApiKey = query({
 export const get = query({
   args: { id: v.id("organizations") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    await requireAuth(ctx);
+    const org = await ctx.db.get(args.id);
+    if (!org) return null;
+    // SECURITY: Strip apiKey — never expose to frontend
+    const { apiKey: _apiKey, ...safe } = org;
+    return safe;
+  },
+});
+
+// ═══════════════════════════════════════════════════
+// Get Org API Key (authenticated users only — for the API Keys page)
+// ═══════════════════════════════════════════════════
+
+export const getApiKey = query({
+  args: { id: v.id("organizations") },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+    const org = await ctx.db.get(args.id);
+    if (!org) return null;
+    return { apiKey: org.apiKey };
   },
 });
 
@@ -77,10 +99,13 @@ export const list = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    await requireAdmin(ctx);
+    const orgs = await ctx.db
       .query("organizations")
       .order("desc")
       .take(args.limit ?? 50);
+    // SECURITY: Strip apiKeys — never expose to frontend
+    return orgs.map(({ apiKey: _apiKey, ...safe }) => safe);
   },
 });
 
@@ -94,7 +119,7 @@ export const updatePlan = mutation({
     plan: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     await ctx.db.patch(args.id, { plan: args.plan });
   },
 });
@@ -114,6 +139,23 @@ export const updateBillingWallet = mutation({
   },
 });
 
+// INTERNAL version — called from httpActions in http.ts (signup endpoint)
+export const internalCreate = internalMutation({
+  args: {
+    name: v.string(),
+    billingWallet: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const name = args.name.trim();
+    if (name.length < 2 || name.length > 100) {
+      throw new Error("Organization name must be 2-100 characters");
+    }
+    const apiKey = generateSecureKey("org");
+    const id = await ctx.db.insert("organizations", { name, billingWallet: args.billingWallet, plan: "free", apiKey, createdAt: Date.now() });
+    return { id, apiKey };
+  },
+});
+
 // ═══════════════════════════════════════════════════
 // Regenerate API Key (secure)
 // ═══════════════════════════════════════════════════
@@ -122,6 +164,16 @@ export const regenerateApiKey = mutation({
   args: { id: v.id("organizations") },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
+    const newApiKey = generateSecureKey("org");
+    await ctx.db.patch(args.id, { apiKey: newApiKey });
+    return newApiKey;
+  },
+});
+
+// INTERNAL version — called from httpActions in http.ts (which authenticate via org API key)
+export const internalRegenerateApiKey = internalMutation({
+  args: { id: v.id("organizations") },
+  handler: async (ctx, args) => {
     const newApiKey = generateSecureKey("org");
     await ctx.db.patch(args.id, { apiKey: newApiKey });
     return newApiKey;

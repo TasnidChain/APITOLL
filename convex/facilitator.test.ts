@@ -1,11 +1,22 @@
 import { convexTest } from "convex-test";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import schema from "./schema";
 import { api } from "./_generated/api";
 import { modules } from "./test.setup";
 
 describe("facilitator payments", () => {
+  const TEST_SECRET = "test-facilitator-secret-for-tests";
+
+  beforeEach(() => {
+    vi.stubEnv("FACILITATOR_CONVEX_SECRET", TEST_SECRET);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   const basePayment = {
+    _secret: TEST_SECRET,
     paymentId: "pay_test_001",
     originalUrl: "https://api.example.com/weather",
     originalMethod: "GET",
@@ -30,6 +41,7 @@ describe("facilitator payments", () => {
 
       // Verify record exists
       const payment = await t.query(api.facilitator.getPayment, {
+        _secret: TEST_SECRET,
         paymentId: "pay_test_001",
       });
       expect(payment?.originalUrl).toBe("https://api.example.com/weather");
@@ -56,6 +68,7 @@ describe("facilitator payments", () => {
 
       // Verify status was updated
       const payment = await t.query(api.facilitator.getPayment, {
+        _secret: TEST_SECRET,
         paymentId: "pay_test_001",
       });
       expect(payment?.status).toBe("completed");
@@ -75,6 +88,7 @@ describe("facilitator payments", () => {
       });
 
       const payment = await t.query(api.facilitator.getPayment, {
+        _secret: TEST_SECRET,
         paymentId: "pay_test_001",
       });
       // Original URL should be preserved (upsert only patches status fields)
@@ -90,6 +104,7 @@ describe("facilitator payments", () => {
       await t.mutation(api.facilitator.upsertPayment, basePayment);
 
       await t.mutation(api.facilitator.updatePaymentStatus, {
+        _secret: TEST_SECRET,
         paymentId: "pay_test_001",
         status: "completed",
         txHash: "0xdef456",
@@ -97,6 +112,7 @@ describe("facilitator payments", () => {
       });
 
       const payment = await t.query(api.facilitator.getPayment, {
+        _secret: TEST_SECRET,
         paymentId: "pay_test_001",
       });
       expect(payment?.status).toBe("completed");
@@ -109,6 +125,7 @@ describe("facilitator payments", () => {
       await t.mutation(api.facilitator.upsertPayment, basePayment);
 
       await t.mutation(api.facilitator.updatePaymentStatus, {
+        _secret: TEST_SECRET,
         paymentId: "pay_test_001",
         status: "failed",
         error: "Insufficient USDC balance",
@@ -116,6 +133,7 @@ describe("facilitator payments", () => {
       });
 
       const payment = await t.query(api.facilitator.getPayment, {
+        _secret: TEST_SECRET,
         paymentId: "pay_test_001",
       });
       expect(payment?.status).toBe("failed");
@@ -127,6 +145,7 @@ describe("facilitator payments", () => {
 
       await expect(
         t.mutation(api.facilitator.updatePaymentStatus, {
+          _secret: TEST_SECRET,
           paymentId: "pay_does_not_exist",
           status: "completed",
         })
@@ -141,6 +160,7 @@ describe("facilitator payments", () => {
       await t.mutation(api.facilitator.upsertPayment, basePayment);
 
       const payment = await t.query(api.facilitator.getPayment, {
+        _secret: TEST_SECRET,
         paymentId: "pay_test_001",
       });
 
@@ -152,6 +172,7 @@ describe("facilitator payments", () => {
       const t = convexTest(schema, modules);
 
       const payment = await t.query(api.facilitator.getPayment, {
+        _secret: TEST_SECRET,
         paymentId: "pay_nonexistent",
       });
 
@@ -189,10 +210,12 @@ describe("facilitator payments", () => {
         status: "failed",
       });
 
-      const active = await t.query(api.facilitator.getActivePayments, {});
+      const active = await t.query(api.facilitator.getActivePayments, {
+        _secret: TEST_SECRET,
+      });
 
       expect(active).toHaveLength(2);
-      const ids = active.map((p) => p.paymentId).sort();
+      const ids = active.map((p: { paymentId: string }) => p.paymentId).sort();
       expect(ids).toEqual(["pay_pending", "pay_processing"]);
     });
 
@@ -206,7 +229,9 @@ describe("facilitator payments", () => {
         status: "completed",
       });
 
-      const active = await t.query(api.facilitator.getActivePayments, {});
+      const active = await t.query(api.facilitator.getActivePayments, {
+        _secret: TEST_SECRET,
+      });
       expect(active).toHaveLength(0);
     });
   });

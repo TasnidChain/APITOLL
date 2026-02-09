@@ -58,6 +58,7 @@ export const listByOrg = query({
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     return await ctx.db
       .query("alertRules")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))

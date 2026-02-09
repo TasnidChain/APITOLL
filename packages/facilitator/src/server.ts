@@ -57,6 +57,9 @@ const upsertPaymentRef = makeFunctionReference<"mutation">("facilitator:upsertPa
 const updatePaymentStatusRef = makeFunctionReference<"mutation">("facilitator:updatePaymentStatus");
 const getActivePaymentsRef = makeFunctionReference<"query">("facilitator:getActivePayments");
 
+// Shared secret for Convex facilitator functions (defense-in-depth)
+const FACILITATOR_CONVEX_SECRET = process.env.FACILITATOR_CONVEX_SECRET || '';
+
 // ─── Environment Validation ─────────────────────────────────────
 
 function requireEnv(name: string): string {
@@ -158,6 +161,7 @@ async function persistPayment(payment: PaymentRecord) {
   if (!convexClient) return;
   try {
     await convexClient.mutation(upsertPaymentRef, {
+      _secret: FACILITATOR_CONVEX_SECRET,
       paymentId: payment.id,
       originalUrl: payment.originalUrl,
       originalMethod: payment.originalMethod,
@@ -188,6 +192,7 @@ async function persistPaymentStatus(paymentId: string, status: PaymentRecord['st
   if (!convexClient) return;
   try {
     await convexClient.mutation(updatePaymentStatusRef, {
+      _secret: FACILITATOR_CONVEX_SECRET,
       paymentId,
       status,
       txHash,
@@ -205,7 +210,7 @@ async function persistPaymentStatus(paymentId: string, status: PaymentRecord['st
 async function recoverPaymentsFromConvex() {
   if (!convexClient) return;
   try {
-    const activePayments = await convexClient.query(getActivePaymentsRef, {});
+    const activePayments = await convexClient.query(getActivePaymentsRef, { _secret: FACILITATOR_CONVEX_SECRET });
     let recovered = 0;
     for (const p of activePayments) {
       if (!pendingPayments.has(p.paymentId)) {

@@ -1,11 +1,11 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, query } from "./_generated/server";
 
 // ═══════════════════════════════════════════════════
 // Record Gossip Event (called by /api/gossip endpoint)
 // ═══════════════════════════════════════════════════
 
-export const recordGossip = mutation({
+export const recordGossip = internalMutation({
   args: {
     agentId: v.string(),
     endpoint: v.string(),
@@ -194,7 +194,7 @@ export const getRecentEvents = query({
 // Check Milestones & Fire Webhooks
 // ═══════════════════════════════════════════════════
 
-export const checkMilestones = mutation({
+export const checkMilestones = internalMutation({
   args: {
     endpoint: v.string(),
     host: v.string(),

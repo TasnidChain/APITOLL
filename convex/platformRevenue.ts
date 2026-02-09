@@ -1,11 +1,12 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, query } from "./_generated/server";
+import { requireAdmin } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Record Platform Revenue (from transaction fees)
 // ═══════════════════════════════════════════════════
 
-export const record = mutation({
+export const record = internalMutation({
   args: {
     transactionId: v.id("transactions"),
     amount: v.number(),
@@ -32,6 +33,7 @@ export const record = mutation({
 
 export const getOverview = query({
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const allRevenue = await ctx.db.query("platformRevenue").collect();
 
     const totalRevenue = allRevenue.reduce((sum, r) => sum + r.amount, 0);
@@ -74,6 +76,7 @@ export const getOverview = query({
 export const getDailyRevenue = query({
   args: { days: v.optional(v.number()) },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const numDays = args.days ?? 30;
     const now = Date.now();
     const startTime = now - numDays * 24 * 60 * 60 * 1000;
@@ -100,5 +103,20 @@ export const getDailyRevenue = query({
     return Array.from(dailyMap.entries())
       .map(([date, amount]) => ({ date, revenue: amount }))
       .sort((a, b) => a.date.localeCompare(b.date));
+  },
+});
+
+// INTERNAL version — called from httpActions in http.ts (which authenticate via org API key)
+export const internalGetOverview = internalQuery({
+  handler: async (ctx) => {
+    const allRevenue = await ctx.db.query("platformRevenue").collect();
+    const totalRevenue = allRevenue.reduce((sum, r) => sum + r.amount, 0);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const todayRevenue = allRevenue.filter((r) => r.collectedAt >= today.getTime()).reduce((sum, r) => sum + r.amount, 0);
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const monthRevenue = allRevenue.filter((r) => r.collectedAt >= thirtyDaysAgo).reduce((sum, r) => sum + r.amount, 0);
+    const byChain = { base: 0, solana: 0 };
+    for (const r of allRevenue) { byChain[r.chain] += r.amount; }
+    return { totalRevenue, todayRevenue, monthRevenue, totalEntries: allRevenue.length, byChain };
   },
 });

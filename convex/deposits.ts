@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation, internalMutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
+import { requireAuth } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Create Deposit (Stripe → USDC on-ramp)
@@ -7,7 +8,7 @@ import { mutation, internalMutation, query } from "./_generated/server";
 
 const ON_RAMP_FEE_BPS = 150; // 1.5% on-ramp fee
 
-export const create = mutation({
+export const create = internalMutation({
   args: {
     orgId: v.id("organizations"),
     agentId: v.optional(v.id("agents")),
@@ -77,6 +78,44 @@ export const updateStatus = internalMutation({
     }
 
     await ctx.db.patch(args.depositId, update);
+  },
+});
+
+// ═══════════════════════════════════════════════════
+// Public Create Deposit (from dashboard — requires Clerk auth)
+// ═══════════════════════════════════════════════════
+
+export const createDeposit = mutation({
+  args: {
+    orgId: v.id("organizations"),
+    agentId: v.optional(v.id("agents")),
+    stripePaymentIntentId: v.string(),
+    fiatAmount: v.number(),
+    walletAddress: v.string(),
+    chain: v.union(v.literal("base"), v.literal("solana")),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+
+    const ON_RAMP_FEE_BPS = 150; // 1.5%
+    const feeAmount = (args.fiatAmount * ON_RAMP_FEE_BPS) / 10000;
+    const usdcAmount = args.fiatAmount - feeAmount;
+
+    const id = await ctx.db.insert("deposits", {
+      orgId: args.orgId,
+      agentId: args.agentId,
+      stripePaymentIntentId: args.stripePaymentIntentId,
+      fiatAmount: args.fiatAmount,
+      usdcAmount: parseFloat(usdcAmount.toFixed(6)),
+      exchangeRate: 1.0,
+      feeAmount: parseFloat(feeAmount.toFixed(6)),
+      status: "pending",
+      walletAddress: args.walletAddress,
+      chain: args.chain,
+      createdAt: Date.now(),
+    });
+
+    return { id, usdcAmount, feeAmount };
   },
 });
 

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { requireAuth } from "./helpers";
 
 // ═══════════════════════════════════════════════════
@@ -40,13 +40,38 @@ export const listByOrg = query({
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     // Get sellers that belong to this org
     const sellers = await ctx.db
       .query("sellers")
       .filter((q) => q.eq(q.field("orgId"), args.orgId))
       .collect();
 
-    return sellers;
+    // SECURITY: Strip apiKeys — never expose to frontend
+    return sellers.map(({ apiKey: _apiKey, ...safe }) => safe);
+  },
+});
+
+// ═══════════════════════════════════════════════════
+// List Seller API Keys by Org (for API Keys page)
+// ═══════════════════════════════════════════════════
+
+export const listApiKeysByOrg = query({
+  args: {
+    orgId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuth(ctx);
+    const sellers = await ctx.db
+      .query("sellers")
+      .filter((q) => q.eq(q.field("orgId"), args.orgId))
+      .collect();
+    // Return only the fields needed for the API keys page
+    return sellers.map((s) => ({
+      _id: s._id,
+      name: s.name,
+      apiKey: s.apiKey,
+    }));
   },
 });
 
@@ -54,7 +79,9 @@ export const listByOrg = query({
 // Get by API Key
 // ═══════════════════════════════════════════════════
 
-export const getByApiKey = query({
+// SECURITY: internalQuery — API key lookup should NOT be exposed to browsers.
+// Used by httpActions in http.ts for seller authentication.
+export const getByApiKey = internalQuery({
   args: { apiKey: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -71,7 +98,12 @@ export const getByApiKey = query({
 export const get = query({
   args: { id: v.id("sellers") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    await requireAuth(ctx);
+    const seller = await ctx.db.get(args.id);
+    if (!seller) return null;
+    // SECURITY: Strip apiKey — never expose to frontend
+    const { apiKey: _apiKey, ...safe } = seller;
+    return safe;
   },
 });
 
@@ -82,6 +114,7 @@ export const get = query({
 export const getStats = query({
   args: { id: v.id("sellers") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     const transactions = await ctx.db
       .query("transactions")
       .withIndex("by_seller", (q) => q.eq("sellerId", args.id))

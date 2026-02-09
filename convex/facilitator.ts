@@ -4,12 +4,22 @@ import { mutation, query } from "./_generated/server";
 // ═══════════════════════════════════════════════════
 // Facilitator Payment Persistence
 //
-// These mutations remain public because they are called by the external
-// facilitator server (pay.apitoll.com) via ConvexHttpClient, which cannot
-// invoke internalMutation. The facilitator authenticates via API key
-// before calling these. Future: add a shared secret check here for
-// defense-in-depth.
+// SECURITY: These mutations are called by the external facilitator server
+// (pay.apitoll.com) via ConvexHttpClient, which cannot invoke internalMutation.
+// Defense-in-depth: every mutation validates a shared secret (FACILITATOR_CONVEX_SECRET)
+// that only the facilitator server knows. Set this env var in both Convex and the
+// facilitator service.
 // ═══════════════════════════════════════════════════
+
+function validateFacilitatorSecret(secret: string | undefined) {
+  const expected = process.env.FACILITATOR_CONVEX_SECRET;
+  if (!expected) {
+    throw new Error("FACILITATOR_CONVEX_SECRET not configured on Convex");
+  }
+  if (!secret || secret !== expected) {
+    throw new Error("Invalid facilitator secret");
+  }
+}
 
 /**
  * Create or update a payment record.
@@ -17,6 +27,7 @@ import { mutation, query } from "./_generated/server";
  */
 export const upsertPayment = mutation({
   args: {
+    _secret: v.string(),
     paymentId: v.string(),
     originalUrl: v.string(),
     originalMethod: v.string(),
@@ -41,25 +52,29 @@ export const upsertPayment = mutation({
     completedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    validateFacilitatorSecret(args._secret);
+    // Strip _secret before any DB operations
+    const { _secret: _, ...data } = args;
+
     // Check if payment already exists
     const existing = await ctx.db
       .query("facilitatorPayments")
-      .withIndex("by_payment_id", (q) => q.eq("paymentId", args.paymentId))
+      .withIndex("by_payment_id", (q) => q.eq("paymentId", data.paymentId))
       .first();
 
     if (existing) {
       // Update existing record
       await ctx.db.patch(existing._id, {
-        status: args.status,
-        txHash: args.txHash,
-        error: args.error,
-        completedAt: args.completedAt,
+        status: data.status,
+        txHash: data.txHash,
+        error: data.error,
+        completedAt: data.completedAt,
       });
       return existing._id;
     }
 
     // Create new record
-    return await ctx.db.insert("facilitatorPayments", args);
+    return await ctx.db.insert("facilitatorPayments", data);
   },
 });
 
@@ -68,6 +83,7 @@ export const upsertPayment = mutation({
  */
 export const updatePaymentStatus = mutation({
   args: {
+    _secret: v.string(),
     paymentId: v.string(),
     status: v.union(
       v.literal("pending"),
@@ -80,6 +96,7 @@ export const updatePaymentStatus = mutation({
     completedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    validateFacilitatorSecret(args._secret);
     const payment = await ctx.db
       .query("facilitatorPayments")
       .withIndex("by_payment_id", (q) => q.eq("paymentId", args.paymentId))
@@ -104,8 +121,9 @@ export const updatePaymentStatus = mutation({
  * Get a single payment by its UUID.
  */
 export const getPayment = query({
-  args: { paymentId: v.string() },
+  args: { _secret: v.string(), paymentId: v.string() },
   handler: async (ctx, args) => {
+    validateFacilitatorSecret(args._secret);
     return await ctx.db
       .query("facilitatorPayments")
       .withIndex("by_payment_id", (q) => q.eq("paymentId", args.paymentId))
@@ -118,8 +136,9 @@ export const getPayment = query({
  * Used on facilitator startup to recover in-flight payments.
  */
 export const getActivePayments = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { _secret: v.string() },
+  handler: async (ctx, args) => {
+    validateFacilitatorSecret(args._secret);
     const pending = await ctx.db
       .query("facilitatorPayments")
       .withIndex("by_status", (q) => q.eq("status", "pending"))

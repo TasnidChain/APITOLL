@@ -12,7 +12,7 @@ export interface Webhook {
   orgId: Id<'organizations'>
   sellerId?: Id<'sellers'>
   url: string
-  secret: string
+  secret?: string
   events: string[]
   isActive: boolean
   failureCount: number

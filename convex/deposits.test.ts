@@ -1,7 +1,7 @@
 import { convexTest } from "convex-test";
 import { describe, it, expect } from "vitest";
 import schema from "./schema";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { modules } from "./test.setup";
 
 describe("deposits", () => {
@@ -22,7 +22,7 @@ describe("deposits", () => {
       const t = convexTest(schema, modules);
       const orgId = await createTestOrg(t);
 
-      const result = await t.mutation(api.deposits.create, {
+      const result = await t.mutation(internal.deposits.create, {
         orgId,
         stripePaymentIntentId: "pi_test_001",
         fiatAmount: 100,
@@ -40,7 +40,7 @@ describe("deposits", () => {
       const t = convexTest(schema, modules);
       const orgId = await createTestOrg(t);
 
-      const result = await t.mutation(api.deposits.create, {
+      const result = await t.mutation(internal.deposits.create, {
         orgId,
         stripePaymentIntentId: "pi_test_002",
         fiatAmount: 10,
@@ -57,7 +57,7 @@ describe("deposits", () => {
       const t = convexTest(schema, modules);
       const orgId = await createTestOrg(t);
 
-      const result = await t.mutation(api.deposits.create, {
+      const result = await t.mutation(internal.deposits.create, {
         orgId,
         stripePaymentIntentId: "pi_test_003",
         fiatAmount: 10000,
@@ -74,7 +74,7 @@ describe("deposits", () => {
       const t = convexTest(schema, modules);
       const orgId = await createTestOrg(t);
 
-      const result = await t.mutation(api.deposits.create, {
+      const result = await t.mutation(internal.deposits.create, {
         orgId,
         stripePaymentIntentId: "pi_test_004",
         fiatAmount: 50,
@@ -108,7 +108,7 @@ describe("deposits", () => {
         });
       });
 
-      const result = await t.mutation(api.deposits.create, {
+      const result = await t.mutation(internal.deposits.create, {
         orgId,
         agentId,
         stripePaymentIntentId: "pi_test_005",
@@ -131,7 +131,7 @@ describe("deposits", () => {
       const t = convexTest(schema, modules);
       const orgId = await createTestOrg(t);
 
-      await t.mutation(api.deposits.create, {
+      await t.mutation(internal.deposits.create, {
         orgId,
         stripePaymentIntentId: "pi_unique_lookup",
         fiatAmount: 100,
@@ -165,7 +165,7 @@ describe("deposits", () => {
       const orgId = await createTestOrg(t);
 
       // Create 3 deposits: 2 completed, 1 pending
-      const deposit1 = await t.mutation(api.deposits.create, {
+      const deposit1 = await t.mutation(internal.deposits.create, {
         orgId,
         stripePaymentIntentId: "pi_stats_1",
         fiatAmount: 100,
@@ -173,7 +173,7 @@ describe("deposits", () => {
         chain: "base",
       });
 
-      const deposit2 = await t.mutation(api.deposits.create, {
+      const deposit2 = await t.mutation(internal.deposits.create, {
         orgId,
         stripePaymentIntentId: "pi_stats_2",
         fiatAmount: 200,
@@ -182,7 +182,7 @@ describe("deposits", () => {
       });
 
       // Leave 3rd one as pending
-      await t.mutation(api.deposits.create, {
+      await t.mutation(internal.deposits.create, {
         orgId,
         stripePaymentIntentId: "pi_stats_3",
         fiatAmount: 50,

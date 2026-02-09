@@ -38,6 +38,7 @@ export const listByOrg = query({
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     return await ctx.db
       .query("agents")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
@@ -52,6 +53,7 @@ export const listByOrg = query({
 export const get = query({
   args: { id: v.id("agents") },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     return await ctx.db.get(args.id);
   },
 });
@@ -63,6 +65,7 @@ export const get = query({
 export const getByWallet = query({
   args: { walletAddress: v.string() },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     return await ctx.db
       .query("agents")
       .withIndex("by_wallet", (q) => q.eq("walletAddress", args.walletAddress))

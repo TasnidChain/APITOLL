@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { requireAdmin } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Seed Default Categories
@@ -7,6 +8,7 @@ import { mutation, query } from "./_generated/server";
 
 export const seed = mutation({
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const defaultCategories = [
       { slug: "data", name: "Data & APIs", description: "Weather, prices, news, and other data feeds", icon: "database" },
       { slug: "ai", name: "AI & ML", description: "Language models, image generation, embeddings", icon: "brain" },

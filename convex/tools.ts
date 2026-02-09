@@ -1,6 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
-import { requireAuth } from "./helpers";
+import { internalMutation, mutation, query } from "./_generated/server";
+import { requireAuth, requireAdmin } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Create Tool (for Discovery)
@@ -279,9 +279,10 @@ export const deactivate = mutation({
 
 // ═══════════════════════════════════════════════════
 // Increment Calls (called after successful usage)
+// SECURITY: internalMutation — only called from httpActions after payment validation
 // ═══════════════════════════════════════════════════
 
-export const incrementCalls = mutation({
+export const incrementCalls = internalMutation({
   args: {
     id: v.id("tools"),
     latencyMs: v.number(),
@@ -398,7 +399,7 @@ export const setFeatured = mutation({
     boostScore: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     const updates: {
       isFeatured: boolean;
       listingTier: "free" | "featured" | "verified" | "premium";
@@ -433,7 +434,7 @@ export const setVerified = mutation({
     isVerified: v.boolean(),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    await requireAdmin(ctx);
     await ctx.db.patch(args.id, {
       isVerified: args.isVerified,
       listingTier: args.isVerified ? "verified" : "free",

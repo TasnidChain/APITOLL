@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { requireAuth, requireAdmin } from "./helpers";
 
 // ═══════════════════════════════════════════════════
@@ -55,6 +55,7 @@ export const listByOrg = query({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireAuth(ctx);
     let disputes;
 
     if (args.status) {
@@ -90,6 +91,7 @@ export const listByOrg = query({
 
 export const listOpen = query({
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const disputes = await ctx.db
       .query("disputes")
       .withIndex("by_status", (q) => q.eq("status", "open"))
@@ -167,5 +169,42 @@ export const updateStatus = mutation({
     await ctx.db.patch(args.disputeId, {
       status: args.status,
     });
+  },
+});
+
+// INTERNAL version — called from httpActions in http.ts (which authenticate via org API key)
+export const internalListByOrg = internalQuery({
+  args: { orgId: v.id("organizations"), status: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    let disputes;
+    if (args.status) {
+      disputes = await ctx.db.query("disputes").withIndex("by_status", (q) => q.eq("status", args.status as "open" | "under_review" | "resolved" | "rejected")).collect();
+      disputes = disputes.filter((d) => d.orgId === args.orgId);
+    } else {
+      disputes = await ctx.db.query("disputes").withIndex("by_org", (q) => q.eq("orgId", args.orgId)).collect();
+    }
+    const enriched = await Promise.all(disputes.map(async (dispute) => {
+      const transaction = await ctx.db.get(dispute.transactionId);
+      return { ...dispute, transaction };
+    }));
+    return enriched.sort((a, b) => b.createdAt - a.createdAt);
+  },
+});
+
+// INTERNAL version of create — called from httpActions in http.ts
+export const internalCreate = internalMutation({
+  args: {
+    transactionId: v.id("transactions"),
+    orgId: v.id("organizations"),
+    reason: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const transaction = await ctx.db.get(args.transactionId);
+    if (!transaction) throw new Error("Transaction not found");
+    const existing = await ctx.db.query("disputes").withIndex("by_transaction", (q) => q.eq("transactionId", args.transactionId)).first();
+    if (existing) throw new Error("A dispute already exists for this transaction");
+    if (transaction.status !== "settled") throw new Error("Only settled transactions can be disputed");
+    const id = await ctx.db.insert("disputes", { transactionId: args.transactionId, orgId: args.orgId, reason: args.reason, status: "open", createdAt: Date.now() });
+    return id;
   },
 });

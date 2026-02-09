@@ -17,19 +17,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json().catch(() => ({}));
-    let customerId = body.customerId;
+    // SECURITY: Always look up customer by authenticated userId.
+    // Never accept customerId from the request body (IDOR vulnerability).
+    let customerId: string | undefined;
 
-    // If no customerId provided, try to look up by userId metadata
-    if (!customerId) {
-      const customers = await stripe.customers.search({
-        query: `metadata["userId"]:"${userId}"`,
-        limit: 1,
-      });
+    const customers = await stripe.customers.search({
+      query: `metadata["userId"]:"${userId}"`,
+      limit: 1,
+    });
 
-      if (customers.data.length > 0) {
-        customerId = customers.data[0].id;
-      }
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
     }
 
     if (!customerId) {
