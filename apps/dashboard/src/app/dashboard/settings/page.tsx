@@ -73,7 +73,7 @@ export default function SettingsPage() {
     try {
       await regenerateApiKey({ id: orgId })
       setShowRegenConfirm(false)
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to regenerate key:', err)
     } finally {
       setRegenLoading(false)
@@ -86,28 +86,32 @@ export default function SettingsPage() {
     try {
       await updateBillingWallet({ id: orgId, billingWallet: walletInput })
       setEditingWallet(false)
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to update wallet:', err)
     }
   }
 
   const handleToggleAlert = async (ruleType: string) => {
     if (!orgId) return
-    const existing = alertRules?.find((r) => r.ruleType === ruleType)
-    if (existing) {
-      await toggleAlertRule({ id: existing._id })
-    } else {
-      // Create the alert rule
-      const thresholds: Record<string, Record<string, number>> = {
-        budget_threshold: { percentage: 80 },
-        low_balance: { amount: 1.0 },
-        high_failure_rate: { rate: 10, windowMinutes: 60 },
+    try {
+      const existing = alertRules?.find((r) => r.ruleType === ruleType)
+      if (existing) {
+        await toggleAlertRule({ id: existing._id })
+      } else {
+        // Create the alert rule
+        const thresholds: Record<string, Record<string, number>> = {
+          budget_threshold: { percentage: 80 },
+          low_balance: { amount: 1.0 },
+          high_failure_rate: { rate: 10, windowMinutes: 60 },
+        }
+        await createAlertRule({
+          orgId,
+          ruleType: ruleType as "budget_threshold" | "budget_exceeded" | "low_balance" | "high_failure_rate" | "anomalous_spend",
+          thresholdJson: thresholds[ruleType] ?? { percentage: 80 },
+        })
       }
-      await createAlertRule({
-        orgId,
-        ruleType: ruleType as "budget_threshold" | "budget_exceeded" | "low_balance" | "high_failure_rate" | "anomalous_spend",
-        thresholdJson: thresholds[ruleType] ?? { percentage: 80 },
-      })
+    } catch (err: unknown) {
+      console.error('Failed to toggle alert rule:', err)
     }
   }
 
@@ -138,7 +142,7 @@ export default function SettingsPage() {
 
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to save settings:', err)
     } finally {
       setSaving(false)

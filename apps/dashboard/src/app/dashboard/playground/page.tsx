@@ -493,14 +493,9 @@ function ResponsePanel({ state }: { state: RequestState }) {
 export default function PlaygroundPage() {
   const orgId = useOrgId()
 
-  // Try to load active tools for quick-select. Falls back to empty array.
-  let tools: Tool[] = []
-  try {
-    const result = useQuery(api.tools.search, { limit: 20 })
-    if (Array.isArray(result)) tools = result
-  } catch {
-    // api.tools.listActive may not exist; gracefully ignore
-  }
+  // Load active tools for quick-select (unconditional hook call).
+  const toolsResult = useQuery(api.tools.search, { limit: 20 })
+  const tools: Tool[] = Array.isArray(toolsResult) ? toolsResult : []
 
   // Request builder state
   const [method, setMethod] = useState<HttpMethod>('GET')

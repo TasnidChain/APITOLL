@@ -54,7 +54,7 @@ export default function PoliciesPage() {
   const _createPolicy = useMutation(api.policies.create)
   const _updatePolicy = useMutation(api.policies.update)
   const togglePolicy = useMutation(api.policies.toggleActive)
-  const _removePolicy = useMutation(api.policies.remove)
+  const removePolicy = useMutation(api.policies.remove)
 
   const activePolicies = policies?.filter((p: Policy) => p.isActive) ?? []
   const inactivePolicies = policies?.filter((p: Policy) => !p.isActive) ?? []

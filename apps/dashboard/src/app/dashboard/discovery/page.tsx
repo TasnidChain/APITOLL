@@ -113,7 +113,9 @@ interface TrendingItem {
   host: string
   discoveries: number
   uniqueAgents: number
+  unique_agents: number
   totalVolume: number
+  total_volume_usdc: number
   trendingScore: number
 }
 
