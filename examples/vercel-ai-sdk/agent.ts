@@ -16,7 +16,7 @@
 
 import { createAgentWallet, createFacilitatorSigner } from "@apitoll/buyer-sdk";
 
-const FACILITATOR_URL = process.env.FACILITATOR_URL || "https://facilitator-production-fbd7.up.railway.app";
+const FACILITATOR_URL = process.env.FACILITATOR_URL || "https://pay.apitoll.com";
 
 // ─── Agent wallet ──────────────────────────────────────────────
 

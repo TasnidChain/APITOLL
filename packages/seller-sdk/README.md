@@ -94,7 +94,7 @@ import { AnalyticsReporter } from "@apitoll/seller-sdk";
 
 const reporter = new AnalyticsReporter({
   apiKey: "your-seller-api-key",
-  dashboardUrl: "https://cheery-parrot-104.convex.cloud",
+  dashboardUrl: "https://apitoll.com",
 });
 
 // Transactions are automatically batched and reported

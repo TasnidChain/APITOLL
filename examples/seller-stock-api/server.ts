@@ -50,7 +50,7 @@ app.use(
         description: "Portfolio analysis with allocation breakdown",
       },
     },
-    facilitatorUrl: process.env.FACILITATOR_URL || "https://facilitator-production-fbd7.up.railway.app",
+    facilitatorUrl: process.env.FACILITATOR_URL || "https://pay.apitoll.com",
     discovery: {
       sellerName: "Stock & Crypto Data API",
       referralCode: process.env.REFERRAL_CODE || "stock-data",

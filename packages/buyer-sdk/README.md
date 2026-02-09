@@ -94,7 +94,7 @@ For custodial wallets that use the API Toll facilitator:
 import { createAgentWallet, createFacilitatorSigner } from "@apitoll/buyer-sdk";
 
 const signer = createFacilitatorSigner({
-  facilitatorUrl: "https://facilitator-production-fbd7.up.railway.app",
+  facilitatorUrl: "https://pay.apitoll.com",
   apiKey: "your-facilitator-api-key",
 });
 

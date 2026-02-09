@@ -188,8 +188,8 @@ export async function GET(req: NextRequest) {
       install: "npm install @apitoll/buyer-sdk",
       usage: [
         "import { createAgentWallet, createFacilitatorSigner } from '@apitoll/buyer-sdk';",
-        "const agent = createAgentWallet({ name: 'MyAgent', chain: 'base', policies: [{ type: 'budget', dailyCap: 10, maxPerRequest: 0.01 }], signer: createFacilitatorSigner({ facilitatorUrl: 'https://facilitator-production-fbd7.up.railway.app' }) });",
-        "const res = await agent.fetch('https://seller-api-production.up.railway.app/api/joke');",
+        "const agent = createAgentWallet({ name: 'MyAgent', chain: 'base', policies: [{ type: 'budget', dailyCap: 10, maxPerRequest: 0.01 }], signer: createFacilitatorSigner({ facilitatorUrl: 'https://pay.apitoll.com' }) });",
+        "const res = await agent.fetch('https://api.apitoll.com/api/joke');",
       ],
       npm: {
         buyer_sdk: "https://www.npmjs.com/package/@apitoll/buyer-sdk",
@@ -254,7 +254,7 @@ export async function GET(req: NextRequest) {
       github: "https://github.com/TasnidChain/APITOLL",
       dashboard: "https://apitoll.com/dashboard",
       facilitator:
-        "https://facilitator-production-fbd7.up.railway.app",
+        "https://pay.apitoll.com",
       x402_spec: "https://www.x402.org/",
       npm_org: "https://www.npmjs.com/org/apitoll",
     },

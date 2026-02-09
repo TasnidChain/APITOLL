@@ -64,8 +64,8 @@ export function PlatformTab() {
         <div className="space-y-3">
           {[
             { label: 'Dashboard', url: 'https://apitoll.com', status: 'Live' },
-            { label: 'Convex Backend', url: 'https://cheery-parrot-104.convex.cloud', status: 'Live' },
-            { label: 'Facilitator', url: 'https://facilitator-production-fbd7.up.railway.app', status: 'Live' },
+            { label: 'Convex Backend', url: process.env.NEXT_PUBLIC_CONVEX_URL || '', status: 'Live' },
+            { label: 'Facilitator', url: 'https://pay.apitoll.com', status: 'Live' },
             { label: 'Discovery API', url: 'https://apitoll.com/api/discovery', status: 'Live' },
           ].map((svc) => (
             <div

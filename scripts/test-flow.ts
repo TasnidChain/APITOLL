@@ -14,15 +14,15 @@
  *   npx tsx scripts/test-flow.ts
  *
  *   # Or test against production:
- *   FACILITATOR_URL=https://facilitator-production-fbd7.up.railway.app \
- *   SELLER_URL=https://seller-api-production.up.railway.app \
+ *   FACILITATOR_URL=https://pay.apitoll.com \
+ *   SELLER_URL=https://api.apitoll.com \
  *   FACILITATOR_API_KEY=your-key \
  *   npx tsx scripts/test-flow.ts
  */
 
 const FACILITATOR_URL = process.env.FACILITATOR_URL || "http://localhost:3000";
 const SELLER_URL = process.env.SELLER_URL || "http://localhost:4402";
-const FACILITATOR_API_KEY = process.env.FACILITATOR_API_KEY || "apitoll-dev-key-2024";
+const FACILITATOR_API_KEY = process.env.FACILITATOR_API_KEY || "";
 const AGENT_WALLET = process.env.AGENT_WALLET || "0x2955B6a41a2d10A5cC5C8A4a144829502a73B0a5";
 
 const STEP_PASS = "\x1b[32m✅\x1b[0m";

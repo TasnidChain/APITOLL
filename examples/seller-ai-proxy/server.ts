@@ -40,7 +40,7 @@ app.use(
         description: "Analyze sentiment of text. Send { text }",
       },
     },
-    facilitatorUrl: process.env.FACILITATOR_URL || "https://facilitator-production-fbd7.up.railway.app",
+    facilitatorUrl: process.env.FACILITATOR_URL || "https://pay.apitoll.com",
     discovery: {
       sellerName: "AI Proxy API",
       referralCode: process.env.REFERRAL_CODE || "ai-proxy",

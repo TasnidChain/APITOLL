@@ -15,7 +15,9 @@ import { convex } from "@/lib/convex-client";
  */
 
 const FACILITATOR_HEALTH_URL =
-  "https://facilitator-production-fbd7.up.railway.app/health";
+  process.env.FACILITATOR_URL
+    ? `${process.env.FACILITATOR_URL}/health`
+    : "https://pay.apitoll.com/health";
 
 // ---------------------------------------------------------------------------
 // GET /api/health

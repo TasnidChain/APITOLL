@@ -379,7 +379,7 @@ export default defineSchema({
   // ═══════════════════════════════════════════════════
   gossip: defineTable({
     endpoint: v.string(),         // "/api/joke" — normalized path
-    host: v.string(),             // "seller-api-production.up.railway.app"
+    host: v.string(),             // "api.apitoll.com"
     discoveries: v.number(),      // total times discovered by agents
     uniqueAgents: v.number(),     // unique agents that found this
     totalVolume: v.number(),      // total USDC spent through this

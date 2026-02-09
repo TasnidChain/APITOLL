@@ -205,7 +205,7 @@ if [[ -n "${FACILITATOR_URL:-}" ]]; then
   if [[ "$FACILITATOR_URL" == "http://localhost"* ]]; then
     echo -e "${WARN} FACILITATOR_URL is localhost: ${FACILITATOR_URL}"
     echo "   For production, set it to your Railway URL:"
-    echo "   FACILITATOR_URL=https://facilitator-production-fbd7.up.railway.app"
+    echo "   FACILITATOR_URL=https://pay.apitoll.com"
     WARNINGS=$((WARNINGS + 1))
   else
     echo -e "${PASS} FACILITATOR_URL set: ${FACILITATOR_URL}"
@@ -355,8 +355,8 @@ elif [[ $ERRORS -gt 0 ]]; then
 fi
 
 echo -e "  ${CYAN}Dashboard:${NC}    https://apitoll.com"
-echo -e "  ${CYAN}Facilitator:${NC}  https://facilitator-production-fbd7.up.railway.app"
-echo -e "  ${CYAN}Seller API:${NC}   https://seller-api-production.up.railway.app"
+echo -e "  ${CYAN}Facilitator:${NC}  https://pay.apitoll.com"
+echo -e "  ${CYAN}Seller API:${NC}   https://api.apitoll.com"
 echo -e "  ${CYAN}Explorer:${NC}     ${EXPLORER}"
 echo -e "  ${CYAN}USDC:${NC}         ${USDC_ADDRESS}"
 echo ""

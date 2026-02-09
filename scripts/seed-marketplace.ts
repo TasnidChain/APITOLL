@@ -11,7 +11,11 @@
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
 
-const CONVEX_URL = process.env.CONVEX_URL || "https://cheery-parrot-104.convex.cloud";
+const CONVEX_URL = process.env.CONVEX_URL;
+if (!CONVEX_URL) {
+  console.error("CONVEX_URL environment variable is required");
+  process.exit(1);
+}
 const SELLER_WALLET = process.env.SELLER_WALLET || "0x2955B6a41a2d10A5cC5C8A4a144829502a73B0a5";
 
 const baseUrl = process.argv[2];

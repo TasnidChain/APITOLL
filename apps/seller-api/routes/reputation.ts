@@ -6,7 +6,10 @@ import { reputationCache } from "../cache";
 
 const router = Router();
 
-const CONVEX_URL = process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL || "https://cheery-parrot-104.convex.cloud";
+const CONVEX_URL = process.env.CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_URL;
+if (!CONVEX_URL) {
+  throw new Error("CONVEX_URL environment variable is required");
+}
 const convex = new ConvexHttpClient(CONVEX_URL);
 
 // Function references by string name — avoids importing convex/_generated/api
