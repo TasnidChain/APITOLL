@@ -523,7 +523,7 @@ export default function PlaygroundPage() {
 
   // ---- Tool quick-select ----
   const selectTool = (tool: Tool) => {
-    setMethod(tool.method?.toUpperCase() ?? 'GET')
+    setMethod((tool.method?.toUpperCase() ?? 'GET') as HttpMethod)
     setUrl(`${tool.baseUrl ?? ''}${tool.path ?? ''}`)
     setHeaders([
       { key: 'Content-Type', value: 'application/json', id: nextHeaderId() },

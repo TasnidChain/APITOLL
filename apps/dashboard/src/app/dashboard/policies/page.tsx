@@ -20,7 +20,8 @@ import {
   Bell,
   Bot,
 } from 'lucide-react'
-import type { Policy, PolicyType, BudgetRules, VendorAclRules, RateLimitRules, Agent } from '@/lib/types'
+import type { Policy, PolicyType, BudgetRules, VendorAclRules, RateLimitRules } from '@/lib/types'
+import type { DashboardAgent } from '@/lib/hooks'
 
 const policyTypeConfig = {
   budget: {
@@ -207,20 +208,20 @@ function PolicyRow({
   onDelete,
 }: {
   policy: Policy
-  agents: Agent[] | undefined
+  agents: DashboardAgent[] | undefined
   onToggle: () => void
   onDelete: () => void
 }) {
   const config = policyTypeConfig[policy.policyType]
   const Icon = config.icon
   const agent = policy.agentId
-    ? agents?.find((a: Agent) => a._id === policy.agentId)
+    ? agents?.find((a) => a._id === policy.agentId)
     : null
 
   const renderRules = () => {
-    const rules = policy.rulesJson
     switch (policy.policyType) {
-      case 'budget':
+      case 'budget': {
+        const rules = policy.rulesJson as BudgetRules
         return (
           <div className="flex gap-4 text-xs text-muted-foreground">
             {rules.dailyLimit && <span>Daily: {formatUSD(rules.dailyLimit)}</span>}
@@ -228,7 +229,9 @@ function PolicyRow({
             {rules.monthlyLimit && <span>Monthly: {formatUSD(rules.monthlyLimit)}</span>}
           </div>
         )
-      case 'vendor_acl':
+      }
+      case 'vendor_acl': {
+        const rules = policy.rulesJson as VendorAclRules
         return (
           <div className="flex gap-4 text-xs text-muted-foreground">
             {rules.allowedVendors?.length && (
@@ -239,13 +242,16 @@ function PolicyRow({
             )}
           </div>
         )
-      case 'rate_limit':
+      }
+      case 'rate_limit': {
+        const rules = policy.rulesJson as RateLimitRules
         return (
           <div className="flex gap-4 text-xs text-muted-foreground">
             {rules.maxRequestsPerMinute && <span>{rules.maxRequestsPerMinute}/min</span>}
             {rules.maxRequestsPerHour && <span>{rules.maxRequestsPerHour}/hr</span>}
           </div>
         )
+      }
       default:
         return null
     }
@@ -304,7 +310,7 @@ function CreatePolicyModal({
   onClose,
 }: {
   orgId: Id<'organizations'>
-  agents: Agent[] | undefined
+  agents: DashboardAgent[] | undefined
   onClose: () => void
 }) {
   const createPolicy = useMutation(api.policies.create)
@@ -426,7 +432,7 @@ function CreatePolicyModal({
               className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="">All Agents (org-wide)</option>
-              {agents?.map((agent: Agent) => (
+              {agents?.map((agent) => (
                 <option key={agent._id} value={agent._id}>
                   {agent.name} ({agent.chain})
                 </option>

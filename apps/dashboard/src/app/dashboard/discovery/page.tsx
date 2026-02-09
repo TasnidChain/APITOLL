@@ -169,9 +169,9 @@ function TrendingSection() {
           <Loader2 className="h-5 w-5 animate-spin mr-2" />
           Loading network activity...
         </div>
-      ) : trendingData?.trending?.length > 0 ? (
+      ) : (trendingData?.trending?.length ?? 0) > 0 ? (
         <div className="space-y-2">
-          {trendingData.trending.slice(0, 5).map((item, i) => (
+          {trendingData!.trending!.slice(0, 5).map((item, i) => (
             <div
               key={item.endpoint}
               className="flex items-center justify-between rounded-lg border bg-card/50 px-4 py-3 transition-colors hover:bg-card"

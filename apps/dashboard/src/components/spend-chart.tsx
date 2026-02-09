@@ -1,5 +1,7 @@
 'use client'
 
+import { formatUSD } from '@/lib/utils'
+
 interface DailyStats {
   date: string
   spend: number

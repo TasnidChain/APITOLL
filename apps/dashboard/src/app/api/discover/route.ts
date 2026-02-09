@@ -162,7 +162,7 @@ export async function GET(req: NextRequest) {
     categories = (categoriesRaw ?? []).map((c) => ({
       slug: c.slug,
       name: c.name,
-      description: c.description,
+      description: c.description ?? "",
       tool_count: c.toolCount,
     }));
   } catch (err) {

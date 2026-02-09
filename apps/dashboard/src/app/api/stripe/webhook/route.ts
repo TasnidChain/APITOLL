@@ -78,9 +78,10 @@ export async function POST(req: NextRequest) {
         // Retrieve the full subscription to get the price ID and billing period
         const subscription =
           await stripe.subscriptions.retrieve(stripeSubscriptionId);
-        const priceId = subscription.items.data[0]?.price.id ?? "";
+        const firstItem = subscription.items.data[0];
+        const priceId = firstItem?.price.id ?? "";
         const resolvedPlan = priceIdToPlan(priceId);
-        const billingPeriodEnd = subscription.current_period_end;
+        const billingPeriodEnd = firstItem?.current_period_end ?? 0;
 
         // Look up the organization by Stripe customer ID
         const org = await convex.query(api.billing.getByStripeCustomer, {
@@ -121,9 +122,10 @@ export async function POST(req: NextRequest) {
         const stripeCustomerId = subscription.customer as string;
         const status = subscription.status;
 
-        const priceId = subscription.items.data[0]?.price.id ?? "";
+        const firstItem = subscription.items.data[0];
+        const priceId = firstItem?.price.id ?? "";
         const resolvedPlan = priceIdToPlan(priceId);
-        const billingPeriodEnd = subscription.current_period_end;
+        const billingPeriodEnd = firstItem?.current_period_end ?? 0;
 
         console.log(
           `[Stripe] Subscription updated: customer=${stripeCustomerId} status=${status} plan=${resolvedPlan}`

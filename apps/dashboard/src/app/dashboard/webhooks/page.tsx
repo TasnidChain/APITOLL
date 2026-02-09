@@ -582,7 +582,7 @@ function WebhookCard({
                     key={delivery._id}
                     className="flex items-center gap-3 text-xs bg-muted/30 rounded-lg px-3 py-2"
                   >
-                    {delivery.status === 'success' ? (
+                    {delivery.status === 'delivered' ? (
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                     ) : delivery.status === 'failed' ? (
                       <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />
@@ -772,7 +772,8 @@ export default function WebhooksPage() {
 
   const handleCreate = async (url: string, events: string[]) => {
     if (!orgId) return
-    return await createWebhook({ orgId, url, events })
+    const result = await createWebhook({ orgId, url, events })
+    return { signingSecret: result.secret }
   }
 
   const handleUpdate = async (id: Id<'webhooks'>, data: { status?: string }) => {
@@ -784,7 +785,8 @@ export default function WebhooksPage() {
   }
 
   const handleRotateSecret = async (id: Id<'webhooks'>) => {
-    return await rotateSecret({ id })
+    const secret = await rotateSecret({ id })
+    return { signingSecret: secret }
   }
 
   const handleTestPing = async (id: Id<'webhooks'>) => {
