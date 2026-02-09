@@ -69,8 +69,14 @@ import avatarRouter from "./routes/avatar";
 // Blockchain
 import ensRouter from "./routes/ens";
 
+// Tier 2 APIs (high-demand agent tools)
+import enrichRouter from "./routes/enrich";
+import emailRouter from "./routes/email";
+import pdfExtractRouter from "./routes/pdf-extract";
+import financeRouter from "./routes/finance";
+
 const app = express();
-app.use(express.json({ limit: "100kb" }));
+app.use(express.json({ limit: "25mb" })); // PDF base64 uploads can be large
 
 // ═══════════════════════════════════════════════════
 // Security Headers (applied to all responses)
@@ -360,6 +366,69 @@ app.use(
         chains: ["base"],
         description: "ENS name resolution (name ↔ address)",
       },
+
+      // ─── Tier 2: Data Enrichment ───────────────────
+      "GET /api/enrich/domain": {
+        price: "0.020",
+        chains: ["base"],
+        description: "Domain/company enrichment — tech stack, social links, DNS",
+      },
+      "GET /api/enrich/github": {
+        price: "0.010",
+        chains: ["base"],
+        description: "GitHub user profile + top repos by stars",
+      },
+      "GET /api/enrich/wiki": {
+        price: "0.005",
+        chains: ["base"],
+        description: "Wikipedia summary for any topic",
+      },
+
+      // ─── Tier 2: Email ─────────────────────────────
+      "POST /api/email/send": {
+        price: "0.003",
+        chains: ["base"],
+        description: "Send email via Resend or SMTP (max 10 recipients)",
+      },
+      "POST /api/email/validate": {
+        price: "0.002",
+        chains: ["base"],
+        description: "Validate email addresses with MX record check",
+      },
+
+      // ─── Tier 2: Document Extraction ───────────────
+      "POST /api/extract/pdf": {
+        price: "0.010",
+        chains: ["base"],
+        description: "Extract text from PDF (URL or base64, up to 100 pages)",
+      },
+      "POST /api/extract/text": {
+        price: "0.002",
+        chains: ["base"],
+        description: "Extract clean text from HTML content or URL",
+      },
+
+      // ─── Tier 2: Finance ───────────────────────────
+      "GET /api/finance/quote": {
+        price: "0.002",
+        chains: ["base"],
+        description: "Real-time stock quote (multi-symbol supported)",
+      },
+      "GET /api/finance/history": {
+        price: "0.005",
+        chains: ["base"],
+        description: "Historical OHLCV candles (1m to 5y range)",
+      },
+      "GET /api/finance/forex": {
+        price: "0.001",
+        chains: ["base"],
+        description: "150+ currency exchange rates",
+      },
+      "GET /api/finance/convert": {
+        price: "0.001",
+        chains: ["base"],
+        description: "Currency conversion with live rates",
+      },
     },
     chainConfigs: {
       base: {
@@ -403,6 +472,18 @@ app.use(
         { name: "QR Code", url: `${BASE_URL}/api/qr`, price: "0.002", description: "Generate QR codes.", method: "GET" },
         { name: "ENS", url: `${BASE_URL}/api/ens`, price: "0.002", description: "ENS name resolution.", method: "GET" },
         { name: "Jokes", url: `${BASE_URL}/api/joke`, price: "0.001", description: "Random programming joke.", method: "GET" },
+        // Tier 2
+        { name: "Domain Enrichment", url: `${BASE_URL}/api/enrich/domain`, price: "0.020", description: "Domain intel — tech stack, socials, DNS.", method: "GET" },
+        { name: "GitHub Enrichment", url: `${BASE_URL}/api/enrich/github`, price: "0.010", description: "GitHub profile + top repos.", method: "GET" },
+        { name: "Wikipedia", url: `${BASE_URL}/api/enrich/wiki`, price: "0.005", description: "Wikipedia summary for any topic.", method: "GET" },
+        { name: "Email Send", url: `${BASE_URL}/api/email/send`, price: "0.003", description: "Send email via Resend/SMTP.", method: "POST" },
+        { name: "Email Validate", url: `${BASE_URL}/api/email/validate`, price: "0.002", description: "Validate emails with MX check.", method: "POST" },
+        { name: "PDF Extract", url: `${BASE_URL}/api/extract/pdf`, price: "0.010", description: "PDF to text extraction.", method: "POST" },
+        { name: "Text Extract", url: `${BASE_URL}/api/extract/text`, price: "0.002", description: "HTML to clean text.", method: "POST" },
+        { name: "Stock Quote", url: `${BASE_URL}/api/finance/quote`, price: "0.002", description: "Real-time stock quotes.", method: "GET" },
+        { name: "Stock History", url: `${BASE_URL}/api/finance/history`, price: "0.005", description: "Historical OHLCV candles.", method: "GET" },
+        { name: "Forex Rates", url: `${BASE_URL}/api/finance/forex`, price: "0.001", description: "150+ currency exchange rates.", method: "GET" },
+        { name: "Currency Convert", url: `${BASE_URL}/api/finance/convert`, price: "0.001", description: "Currency conversion.", method: "GET" },
       ],
     },
   })
@@ -473,6 +554,12 @@ app.use(avatarRouter);
 // Blockchain
 app.use(ensRouter);
 
+// Tier 2 APIs (high-demand agent tools)
+app.use(enrichRouter);
+app.use(emailRouter);
+app.use(pdfExtractRouter);
+app.use(financeRouter);
+
 // ═══════════════════════════════════════════════════
 // Free Endpoints (no payment required)
 // ═══════════════════════════════════════════════════
@@ -500,7 +587,7 @@ app.get("/health", (_req, res) => {
     status: "ok",
     service: "apitoll-tools",
     seller: process.env.SELLER_WALLET ? `${process.env.SELLER_WALLET.slice(0, 6)}...${process.env.SELLER_WALLET.slice(-4)}` : null,
-    endpoints: 49,
+    endpoints: 60,
     categories: {
       original: ["joke", "search", "scrape", "crypto/price", "crypto/trending", "news", "reputation/agent", "reputation/trending", "geocode", "geocode/reverse"],
       dataLookup: ["weather", "ip", "timezone", "currency", "country", "company", "whois", "dns", "domain", "holidays"],
@@ -518,7 +605,7 @@ app.get("/api/tools", (_req, res) => {
   res.json({
     platform: "apitoll",
     protocol: "x402",
-    totalEndpoints: 49,
+    totalEndpoints: 60,
     tools: [
       // ── Original ──────────────────────────────────
       { endpoint: "GET /api/joke", price: "$0.001 USDC", description: "Random programming joke", category: "original" },
@@ -583,6 +670,25 @@ app.get("/api/tools", (_req, res) => {
 
       // ── Blockchain ────────────────────────────────
       { endpoint: "GET /api/ens?name=...", price: "$0.002 USDC", description: "ENS name ↔ address resolution", category: "blockchain" },
+
+      // ── Data Enrichment ─────────────────────────
+      { endpoint: "GET /api/enrich/domain?domain=...", price: "$0.020 USDC", description: "Domain enrichment — tech stack, socials, DNS", category: "enrichment" },
+      { endpoint: "GET /api/enrich/github?username=...", price: "$0.010 USDC", description: "GitHub user profile + top repos", category: "enrichment" },
+      { endpoint: "GET /api/enrich/wiki?q=...", price: "$0.005 USDC", description: "Wikipedia summary", category: "enrichment" },
+
+      // ── Email ───────────────────────────────────
+      { endpoint: "POST /api/email/send", price: "$0.003 USDC", description: "Send email (Resend or SMTP)", category: "email" },
+      { endpoint: "POST /api/email/validate", price: "$0.002 USDC", description: "Email validation with MX check", category: "email" },
+
+      // ── Document Extraction ─────────────────────
+      { endpoint: "POST /api/extract/pdf", price: "$0.010 USDC", description: "PDF to text extraction", category: "documents" },
+      { endpoint: "POST /api/extract/text", price: "$0.002 USDC", description: "HTML to clean text", category: "documents" },
+
+      // ── Finance ─────────────────────────────────
+      { endpoint: "GET /api/finance/quote?symbol=...", price: "$0.002 USDC", description: "Real-time stock quote", category: "finance" },
+      { endpoint: "GET /api/finance/history?symbol=...", price: "$0.005 USDC", description: "Historical OHLCV candles", category: "finance" },
+      { endpoint: "GET /api/finance/forex?base=...", price: "$0.001 USDC", description: "150+ currency exchange rates", category: "finance" },
+      { endpoint: "GET /api/finance/convert?from=...&to=...", price: "$0.001 USDC", description: "Currency conversion", category: "finance" },
     ],
     chain: "base",
     protocol_version: "x402-v1",
@@ -600,10 +706,10 @@ if (!process.env.SELLER_WALLET) {
 
 app.listen(PORT, () => {
   console.log(`\n${"=".repeat(60)}`);
-  console.log(`  API Toll — 49 Paid API Endpoints`);
+  console.log(`  API Toll — 60 Paid API Endpoints`);
   console.log(`  Running on http://localhost:${PORT}`);
   console.log(`${"=".repeat(60)}`);
-  console.log(`\n  Paid Endpoints (x402 USDC on Base): 49`);
+  console.log(`\n  Paid Endpoints (x402 USDC on Base): 60`);
   console.log(`  ────────────────────────────────────────`);
   console.log(`  Original (10)    : joke, search, scrape, crypto, news, reputation, geocode`);
   console.log(`  Data & Lookup (10): weather, ip, timezone, currency, country, company, whois, dns, domain, holidays`);
@@ -612,6 +718,10 @@ app.listen(PORT, () => {
   console.log(`  Compute (9)      : hash, jwt/decode, regex, cron, diff, json/validate, base64, uuid, markdown`);
   console.log(`  Media (5)        : qr, placeholder, color, favicon, avatar`);
   console.log(`  Blockchain (1)   : ens`);
+  console.log(`  Enrichment (3)   : enrich/domain, enrich/github, enrich/wiki`);
+  console.log(`  Email (2)        : email/send, email/validate`);
+  console.log(`  Documents (2)    : extract/pdf, extract/text`);
+  console.log(`  Finance (4)      : finance/quote, finance/history, finance/forex, finance/convert`);
   console.log(`\n  Free Endpoints:`);
   console.log(`  ────────────────────────────────────────`);
   console.log(`  GET  /health`);

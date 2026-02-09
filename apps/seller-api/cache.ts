@@ -83,3 +83,8 @@ export const mediaCache = new TTLCache(300);
 
 // Blockchain
 export const blockchainCache = new TTLCache(200);
+
+// Tier 2 APIs
+export const enrichCache = new TTLCache(500);
+export const pdfCache = new TTLCache(100);
+export const financeCache = new TTLCache(500);

@@ -128,13 +128,14 @@ async function resolveAndCheck(hostname: string): Promise<void> {
 export interface SafeFetchOptions extends Omit<RequestInit, "signal"> {
   timeoutMs?: number;
   maxRedirects?: number;
+  signal?: AbortSignal;
 }
 
 export async function safeFetch(
   url: string,
   options: SafeFetchOptions = {}
 ): Promise<Response> {
-  const { timeoutMs = 10000, maxRedirects = 5, ...fetchOptions } = options;
+  const { timeoutMs = 10000, maxRedirects = 5, signal: callerSignal, ...fetchOptions } = options;
 
   // Step 1: Parse and validate the URL
   let parsed: URL;
@@ -162,7 +163,7 @@ export async function safeFetch(
   while (true) {
     const response = await fetch(currentUrl, {
       ...fetchOptions,
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: callerSignal || AbortSignal.timeout(timeoutMs),
       redirect: "manual", // Don't auto-follow — we check each redirect
     });
 
