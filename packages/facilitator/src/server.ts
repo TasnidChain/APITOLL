@@ -336,6 +336,30 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+// ─── Root Route (no auth required) ──────────────────────────────
+
+app.get('/', (req: Request, res: Response) => {
+  const accept = req.headers.accept || '';
+  if (accept.includes('text/html')) {
+    return res.redirect(302, 'https://apitoll.com');
+  }
+  res.json({
+    service: 'apitoll-facilitator',
+    protocol: 'x402',
+    description: 'API Toll payment facilitator — handles USDC micropayments for AI agent API calls on Base.',
+    docs: 'https://github.com/TasnidChain/APITOLL',
+    dashboard: 'https://apitoll.com/dashboard',
+    health: 'https://pay.apitoll.com/health',
+    endpoints: {
+      pay: 'POST /pay — Initiate a payment',
+      status: 'GET /pay/:paymentId — Check payment status',
+      forward: 'POST /forward/:paymentId — Forward request to seller after payment',
+      verify: 'POST /verify — Verify a payment on-chain',
+    },
+    discovery: 'https://apitoll.com/api/discover',
+  });
+});
+
 // ─── Health Check (no auth required) ────────────────────────────
 
 app.get('/health', (_req: Request, res: Response) => {

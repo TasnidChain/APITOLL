@@ -142,6 +142,25 @@ app.use(geocodingRouter);
 // ═══════════════════════════════════════════════════
 // Free Endpoints (no payment required)
 // ═══════════════════════════════════════════════════
+
+// Root route — redirect browsers to dashboard, agents get JSON
+app.get("/", (req, res) => {
+  const accept = req.headers.accept || "";
+  if (accept.includes("text/html")) {
+    return res.redirect(302, "https://apitoll.com/dashboard/sellers");
+  }
+  res.json({
+    service: "apitoll-seller-api",
+    protocol: "x402",
+    description: "API Toll seller API — pay-per-call tools for AI agents on Base using USDC.",
+    docs: "https://github.com/TasnidChain/APITOLL",
+    dashboard: "https://apitoll.com/dashboard",
+    health: "https://api.apitoll.com/health",
+    tools: "https://api.apitoll.com/api/tools",
+    discovery: "https://apitoll.com/api/discover",
+  });
+});
+
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
