@@ -34,6 +34,7 @@ export default function FundWalletPage() {
   if (!orgId || !org) return <PageLoading />
 
   const walletAddress = org.billingWallet ?? ''
+  const hasWallet = walletAddress.length > 0
   const activeAmount = selectedAmount ?? (parseFloat(customAmount) || 0)
 
   const handleQuickAmount = (amount: number) => {
@@ -54,10 +55,29 @@ export default function FundWalletPage() {
     }
   }
 
-  const coinbaseUrl = `https://pay.coinbase.com/buy/select-asset?appId=apitoll&addresses={"${walletAddress}":["base"]}&assets=["USDC"]`
+  const coinbaseUrl = hasWallet
+    ? `https://pay.coinbase.com/buy/select-asset?appId=apitoll&addresses=${encodeURIComponent(JSON.stringify({ [walletAddress]: ['base'] }))}&assets=${encodeURIComponent(JSON.stringify(['USDC']))}`
+    : ''
 
   return (
     <div className="p-8">
+      {/* No Wallet Warning */}
+      {!hasWallet && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+          <Info className="mt-0.5 h-5 w-5 text-amber-500 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Wallet not configured</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              You need to set a billing wallet address in{' '}
+              <a href="/dashboard/settings" className="font-medium text-primary hover:underline">
+                Settings
+              </a>{' '}
+              before you can fund your account. This is the Base address where your USDC will be held.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Fund Wallet</h1>
@@ -145,13 +165,22 @@ export default function FundWalletPage() {
             Fund with credit card, debit card, or bank transfer via Coinbase
           </p>
 
-          <button
-            onClick={() => window.open(coinbaseUrl, '_blank')}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            Buy USDC
-            <ExternalLink className="h-4 w-4" />
-          </button>
+          {hasWallet ? (
+            <button
+              onClick={() => window.open(coinbaseUrl, '_blank')}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Buy USDC
+              <ExternalLink className="h-4 w-4" />
+            </button>
+          ) : (
+            <a
+              href="/dashboard/settings"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-destructive/50 bg-destructive/5 px-4 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              Set wallet in Settings first
+            </a>
+          )}
         </div>
 
         {/* Direct USDC Transfer */}

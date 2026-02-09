@@ -78,14 +78,13 @@ export default function BillingPage() {
   const orgId = useOrgId()
   const billing = useBillingSummary(orgId)
   const [upgrading, setUpgrading] = useState<string | null>(null)
+  const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null)
+  const [upgradeError, setUpgradeError] = useState(false)
+  const searchParams = useSearchParams()
 
   if (!billing && orgId) return <PageLoading />
 
   const currentPlan = billing?.plan ?? 'free'
-
-  const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null)
-  const [upgradeError, setUpgradeError] = useState(false)
-  const searchParams = useSearchParams()
   const checkoutSuccess = searchParams.get('success') === 'true'
   const checkoutCanceled = searchParams.get('canceled') === 'true'
 

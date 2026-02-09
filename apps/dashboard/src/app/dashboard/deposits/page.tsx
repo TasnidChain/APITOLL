@@ -163,8 +163,11 @@ export default function DepositsPage() {
         </div>
 
         <div className="mt-4 rounded-lg bg-muted/50 p-3">
-          <p className="text-xs font-medium text-muted-foreground mb-1">Base USDC Contract</p>
+          <p className="text-xs font-medium text-muted-foreground mb-1">Base USDC Contract (reference only)</p>
           <p className="text-xs font-mono text-muted-foreground">{USDC_CONTRACT}</p>
+          <p className="mt-1 text-xs text-amber-600">
+            ⚠ Do NOT send funds to this contract address. Send USDC to your agent&apos;s wallet address instead.
+          </p>
         </div>
       </div>
 
