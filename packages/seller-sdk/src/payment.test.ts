@@ -46,8 +46,8 @@ describe("buildPaymentRequirements", () => {
     const reqs = buildPaymentRequirements(testEndpoint, TEST_WALLET, CHAIN_CONFIGS, platformFee);
     expect(reqs[0].extra).toBeDefined();
     expect((reqs[0].extra as { platformFee?: { feeBps: number; platformWallet: string } }).platformFee).toBeDefined();
-    expect((reqs[0].extra as { platformFee?: { feeBps: number; platformWallet: string } }).platformFee.feeBps).toBe(300);
-    expect((reqs[0].extra as { platformFee?: { feeBps: number; platformWallet: string } }).platformFee.platformWallet).toBe("0xPlatform");
+    expect((reqs[0].extra as { platformFee?: { feeBps: number; platformWallet: string } }).platformFee!.feeBps).toBe(300);
+    expect((reqs[0].extra as { platformFee?: { feeBps: number; platformWallet: string } }).platformFee!.platformWallet).toBe("0xPlatform");
   });
 
   it("omits platform fee metadata when feeBps is 0", () => {

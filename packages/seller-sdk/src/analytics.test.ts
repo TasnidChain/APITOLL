@@ -268,13 +268,13 @@ describe("AnalyticsReporter (webhooks)", () => {
     expect(capturedArgs).not.toBeNull();
     expect(capturedArgs![0]).toBe("https://hooks.example.com/tx");
 
-    const headers = capturedArgs![1].headers;
+    const headers = (capturedArgs![1] as { headers: Record<string, string> }).headers;
     const signature = headers["X-Webhook-Signature"];
     expect(signature).toBeDefined();
     expect(signature).toMatch(/^[a-f0-9]{64}$/);
 
     // Verify the signature matches the payload
-    const body = capturedArgs![1].body;
+    const body = (capturedArgs![1] as { body: string }).body;
     const isValid = await verifyHmacSignature(body, secret, signature);
     expect(isValid).toBe(true);
 

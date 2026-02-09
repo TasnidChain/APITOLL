@@ -153,7 +153,7 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
       port: parseInt(process.env.REDIS_PORT || '6379'),
       retryStrategy: (times: number) => Math.min(times * 50, 2000),
     });
-    redis.on('error', (err: Error) => {
+    redis!.on('error', (err: Error) => {
       console.warn('Redis connection error, using in-memory rate limiting:', err.message);
     });
   } catch {
@@ -394,7 +394,7 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
       if (typeof encoding === 'function') {
         return originalEnd(chunk, encoding);
       } else {
-        return originalEnd(chunk, encoding, cb);
+        return originalEnd(chunk, encoding as BufferEncoding, cb);
       }
     } as Response["end"];
 
