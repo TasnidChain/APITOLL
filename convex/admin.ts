@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { requireAdmin } from "./helpers";
 
 // ═══════════════════════════════════════════════════
@@ -317,5 +317,26 @@ export const getActivityLog = query({
     );
 
     return enriched;
+  },
+});
+
+// ═══════════════════════════════════════════════════
+// One-time Backfill: Set clerkUserId on Existing Orgs
+// ═══════════════════════════════════════════════════
+
+export const backfillClerkUserId = internalMutation({
+  args: {
+    clerkUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const orgs = await ctx.db.query("organizations").collect();
+    let updated = 0;
+    for (const org of orgs) {
+      if (!org.clerkUserId) {
+        await ctx.db.patch(org._id, { clerkUserId: args.clerkUserId });
+        updated++;
+      }
+    }
+    return { updated, total: orgs.length };
   },
 });
