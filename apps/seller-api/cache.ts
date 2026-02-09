@@ -56,3 +56,7 @@ export const newsCache = new TTLCache(100);
 export const geocodeCache = new TTLCache(1000);
 export const reputationCache = new TTLCache(200);
 export const scraperCache = new TTLCache(200);
+export const codeExecCache = new TTLCache(100);
+export const enrichCache = new TTLCache(500);
+export const pdfCache = new TTLCache(100);
+export const financeCache = new TTLCache(500);

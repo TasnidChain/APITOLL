@@ -5,5 +5,5 @@
     "rootDir": ".",
     "noEmit": true
   },
-  "include": ["*.ts", "routes/**/*.ts"]
+  "include": ["*.ts", "*.d.ts", "routes/**/*.ts"]
 }
