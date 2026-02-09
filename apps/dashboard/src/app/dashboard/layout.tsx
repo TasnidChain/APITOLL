@@ -5,7 +5,7 @@ import {
   SignedOut,
   RedirectToSignIn,
 } from '@clerk/nextjs'
-import { Sidebar } from '@/components/sidebar'
+import { Sidebar, MobileHeader } from '@/components/sidebar'
 import { ConvexClientProvider } from '@/lib/convex'
 import { PWAInstallButton } from '@/components/pwa'
 import { useClerkReady } from '@/components/clerk-provider'
@@ -28,7 +28,8 @@ export default function DashboardLayout({
       </SignedOut>
       <SignedIn>
         <ConvexClientProvider>
-          <div className="flex h-screen bg-background text-foreground">
+          <div className="flex h-screen flex-col md:flex-row bg-background text-foreground">
+            <MobileHeader />
             <Sidebar />
             <main className="flex-1 overflow-auto bg-muted/30">
               {children}

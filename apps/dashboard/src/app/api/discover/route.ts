@@ -118,7 +118,15 @@ export async function GET(req: NextRequest) {
 
   let tools: ReturnType<typeof mapToolToDiscovery>[] = [];
   let trending: ReturnType<typeof mapTrendingEntry>[] = [];
-  let network: { totalTransactions?: number; totalVolume?: number; activeAgents?: number; activeEndpoints?: number } | null = null;
+  let network: {
+    total_tools_tracked?: number;
+    active_tools_1h?: number;
+    active_tools_24h?: number;
+    total_discoveries?: number;
+    total_volume_usdc?: number;
+    total_unique_agents?: number;
+    total_mutations?: number;
+  } | null = null;
   let categories: { slug: string; name: string; description: string; tool_count: number }[] = [];
 
   try {
