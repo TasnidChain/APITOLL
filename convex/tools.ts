@@ -401,7 +401,7 @@ export const setFeatured = mutation({
     await requireAuth(ctx);
     const updates: {
       isFeatured: boolean;
-      listingTier: string;
+      listingTier: "free" | "featured" | "verified" | "premium";
       boostScore: number;
       featuredUntil?: number;
     } = {

@@ -109,7 +109,7 @@ export const update = mutation({
     const policy = await ctx.db.get(args.id);
     if (!policy) throw new Error("Policy not found");
 
-    const update: { rulesJson: string; isActive?: boolean } = { rulesJson: args.rulesJson };
+    const update: { rulesJson: typeof args.rulesJson; isActive?: boolean } = { rulesJson: args.rulesJson };
     if (args.isActive !== undefined) {
       update.isActive = args.isActive;
     }

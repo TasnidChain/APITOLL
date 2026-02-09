@@ -60,7 +60,7 @@ export const listByOrg = query({
     if (args.status) {
       disputes = await ctx.db
         .query("disputes")
-        .withIndex("by_status", (q) => q.eq("status", args.status as string))
+        .withIndex("by_status", (q) => q.eq("status", args.status as "open" | "under_review" | "resolved" | "rejected"))
         .collect();
 
       // Filter by org in memory

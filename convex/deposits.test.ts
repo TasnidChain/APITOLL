@@ -6,7 +6,7 @@ import { modules } from "./test.setup";
 
 describe("deposits", () => {
   // Helper: create an org for deposit tests
-  async function createTestOrg(t: ReturnType<typeof convexTest<typeof schema>>) {
+  async function createTestOrg(t: ReturnType<typeof convexTest>) {
     return await t.run(async (ctx) => {
       return await ctx.db.insert("organizations", {
         name: "Test Org",

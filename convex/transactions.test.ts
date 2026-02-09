@@ -1,7 +1,7 @@
 import { convexTest } from "convex-test";
 import { describe, it, expect } from "vitest";
 import schema from "./schema";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { modules } from "./test.setup";
 
 describe("transactions", () => {
@@ -215,7 +215,7 @@ describe("transactions", () => {
         });
       }
 
-      const results = await t.query(internal.transactions.list, {});
+      const results = await t.query(api.transactions.list, {});
       expect(results).toHaveLength(3);
     });
 
@@ -242,7 +242,7 @@ describe("transactions", () => {
         requestedAt: Date.now(),
       });
 
-      const settled = await t.query(internal.transactions.list, {
+      const settled = await t.query(api.transactions.list, {
         status: "settled",
       });
       expect(settled).toHaveLength(1);
@@ -272,7 +272,7 @@ describe("transactions", () => {
         requestedAt: Date.now(),
       });
 
-      const baseOnly = await t.query(internal.transactions.list, {
+      const baseOnly = await t.query(api.transactions.list, {
         chain: "base",
       });
       expect(baseOnly).toHaveLength(1);
@@ -294,7 +294,7 @@ describe("transactions", () => {
         });
       }
 
-      const limited = await t.query(internal.transactions.list, { limit: 3 });
+      const limited = await t.query(api.transactions.list, { limit: 3 });
       expect(limited).toHaveLength(3);
     });
   });
@@ -326,7 +326,7 @@ describe("transactions", () => {
         requestedAt: Date.now(),
       });
 
-      const results = await t.query(internal.transactions.getByAgent, {
+      const results = await t.query(api.transactions.getByAgent, {
         agentAddress: addr,
       });
       expect(results).toHaveLength(1);

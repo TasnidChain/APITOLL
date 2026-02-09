@@ -126,7 +126,7 @@ export const list = query({
     if (args.status) {
       q = ctx.db
         .query("transactions")
-        .withIndex("by_status", (q) => q.eq("status", args.status as string))
+        .withIndex("by_status", (q) => q.eq("status", args.status as "pending" | "settled" | "failed" | "refunded"))
         .order("desc");
     }
 

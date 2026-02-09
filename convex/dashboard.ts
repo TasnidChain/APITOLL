@@ -189,7 +189,7 @@ export const listTransactions = query({
     // Enrich with seller and agent names
     const enriched = await Promise.all(
       transactions.map(async (tx) => {
-        const agent = agentMap.get(tx.agentId);
+        const agent = tx.agentId ? agentMap.get(tx.agentId) : undefined;
         const seller = tx.sellerId ? await ctx.db.get(tx.sellerId) : null;
 
         return {

@@ -8,7 +8,7 @@ import { priceIdToPlan } from "./billing";
 describe("billing", () => {
   // Helper: create an org with a specific plan
   async function createOrg(
-    t: ReturnType<typeof convexTest<typeof schema>>,
+    t: ReturnType<typeof convexTest>,
     plan: "free" | "pro" | "enterprise" = "free"
   ) {
     return await t.run(async (ctx) => {
