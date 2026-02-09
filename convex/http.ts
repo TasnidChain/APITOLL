@@ -4,6 +4,59 @@ import type { ActionCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { api, internal } from "./_generated/api";
 
+// ─── Rate Limit Config ──────────────────────────────────────────────
+// Defines rate limits per route category
+const RATE_LIMITS = {
+  signup: { windowMs: 3_600_000, maxRequests: 5 },      // 5 signups per hour per IP
+  gossip: { windowMs: 60_000, maxRequests: 30 },         // 30 gossip events per minute per agent
+  evolution: { windowMs: 60_000, maxRequests: 20 },      // 20 evolution saves per minute per agent
+  publicRead: { windowMs: 60_000, maxRequests: 100 },    // 100 reads per minute per IP
+  authWrite: { windowMs: 60_000, maxRequests: 30 },      // 30 writes per minute per org
+} as const;
+
+/** Extract client IP from request (Convex forwards X-Forwarded-For) */
+function getClientIP(request: Request): string {
+  return (
+    request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() ||
+    request.headers.get("X-Real-IP") ||
+    "unknown"
+  );
+}
+
+/** Rate limit check helper — returns Response if limited, null if allowed */
+async function checkRateLimit(
+  ctx: ActionCtx,
+  key: string,
+  config: { windowMs: number; maxRequests: number },
+  request: Request
+): Promise<Response | null> {
+  const result = await ctx.runMutation(internal.rateLimit.checkRateLimit, {
+    key,
+    windowMs: config.windowMs,
+    maxRequests: config.maxRequests,
+  });
+
+  if (!result.allowed) {
+    const retryAfter = Math.ceil(result.retryAfterMs / 1000);
+    return new Response(
+      JSON.stringify({
+        error: "Rate limit exceeded. Please try again later.",
+        retryAfterSeconds: retryAfter,
+      }),
+      {
+        status: 429,
+        headers: {
+          ...SECURITY_HEADERS,
+          ...corsHeaders(request),
+          "Retry-After": String(retryAfter),
+        },
+      }
+    );
+  }
+
+  return null;
+}
+
 // ─── Request Body Interfaces ────────────────────────────────────────
 
 interface TransactionInput {
@@ -113,12 +166,13 @@ async function hmacSha256Hex(key: string, message: string): Promise<string> {
 
 /**
  * Timing-safe string comparison to prevent timing attacks.
+ * SECURITY FIX: Even on length mismatch, do full comparison to avoid length oracle.
  */
 function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  const maxLen = Math.max(a.length, b.length);
+  let result = a.length ^ b.length; // non-zero if different lengths
+  for (let i = 0; i < maxLen; i++) {
+    result |= (a.charCodeAt(i % a.length) || 0) ^ (b.charCodeAt(i % b.length) || 0);
   }
   return result === 0;
 }
@@ -286,6 +340,10 @@ http.route({
       return errorResponse("Invalid seller key", 401, request);
     }
 
+    // SECURITY: Rate limit transaction webhooks — 30 per minute per seller
+    const limited = await checkRateLimit(ctx, `txwh:${seller._id}`, RATE_LIMITS.authWrite, request);
+    if (limited) return limited;
+
     // Validate content type
     const contentType = request.headers.get("Content-Type");
     if (!contentType?.includes("application/json")) {
@@ -338,6 +396,11 @@ http.route({
   path: "/api/signup",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
+    // SECURITY: Rate limit signups — 5 per hour per IP
+    const ip = getClientIP(request);
+    const limited = await checkRateLimit(ctx, `signup:${ip}`, RATE_LIMITS.signup, request);
+    if (limited) return limited;
+
     const contentType = request.headers.get("Content-Type");
     if (!contentType?.includes("application/json")) {
       return errorResponse("Content-Type must be application/json", 415, request);
@@ -353,6 +416,21 @@ http.route({
     const { name, billingEmail, billingWallet } = body;
     if (!name || typeof name !== "string" || name.length < 2 || name.length > 100) {
       return errorResponse("name is required (2-100 characters)", 400, request);
+    }
+
+    // SECURITY: Validate billingEmail format if provided
+    if (billingEmail && typeof billingEmail === "string") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(billingEmail) || billingEmail.length > 254) {
+        return errorResponse("Invalid email address format", 400, request);
+      }
+    }
+
+    // SECURITY: Validate billingWallet if provided
+    if (billingWallet && typeof billingWallet === "string") {
+      if (billingWallet.length > 64 || !/^[a-zA-Z0-9]+$/.test(billingWallet)) {
+        return errorResponse("Invalid wallet address format", 400, request);
+      }
     }
 
     const result = await ctx.runMutation(internal.organizations.internalCreate, {
@@ -435,11 +513,16 @@ http.route({
   path: "/api/tools",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
+    // SECURITY: Rate limit public reads — 100 per minute per IP
+    const ip = getClientIP(request);
+    const limited = await checkRateLimit(ctx, `read:${ip}`, RATE_LIMITS.publicRead, request);
+    if (limited) return limited;
+
     const url = new URL(request.url);
-    const query = url.searchParams.get("q") ?? undefined;
-    const category = url.searchParams.get("category") ?? undefined;
+    const query = url.searchParams.get("q")?.slice(0, 200) ?? undefined; // SECURITY: limit query length
+    const category = url.searchParams.get("category")?.slice(0, 50) ?? undefined;
     const maxPrice = clampFloat(url.searchParams.get("maxPrice"), 0, 1000, 0) || undefined;
-    const chains = url.searchParams.get("chains")?.split(",").filter(Boolean);
+    const chains = url.searchParams.get("chains")?.split(",").filter(Boolean).slice(0, 5); // SECURITY: limit chains
     const limit = clampInt(url.searchParams.get("limit"), 1, 100, 20);
 
     const tools = await ctx.runQuery(api.tools.search, {
@@ -628,11 +711,14 @@ http.route({
   path: "/api/admin/revenue",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
-    const org = await authenticateOrg(ctx, request);
-    if (!org) return errorResponse("Unauthorized", 401, request);
+    // SECURITY FIX: Use admin secret instead of plan-based auth.
+    // Previously any enterprise org could view platform-wide revenue.
+    // Now requires the ADMIN_API_SECRET env var (shared secret for admin API access).
+    const adminSecret = process.env.ADMIN_API_SECRET;
+    const providedSecret = request.headers.get("X-Admin-Secret");
 
-    // Only enterprise orgs can view platform revenue (admin feature)
-    if (org.plan !== "enterprise") {
+    // SECURITY FIX: Use timing-safe comparison to prevent timing attacks
+    if (!adminSecret || !providedSecret || !timingSafeEqual(adminSecret, providedSecret)) {
       return errorResponse("Admin access required", 403, request);
     }
 
@@ -673,8 +759,17 @@ http.route({
 
       return jsonResponse({ disputeId, status: "open" }, 201, request);
     } catch (err) {
+      // SECURITY: Only expose safe error messages, not internal details
+      const safeMessages = [
+        "Transaction not found",
+        "Dispute already exists for this transaction",
+        "Transaction does not belong to this organization",
+      ];
+      const message = err instanceof Error ? err.message : "";
+      const isSafe = safeMessages.some((m) => message.includes(m));
+      console.error("Dispute creation failed:", err);
       return errorResponse(
-        err instanceof Error ? err.message : "Failed to create dispute",
+        isSafe ? message : "Failed to create dispute",
         400,
         request
       );
@@ -964,24 +1059,40 @@ http.route({
       return errorResponse("agentId and endpoint are required", 400, request);
     }
 
+    // SECURITY: Input validation — prevent oversized strings
+    const agentId = String(body.agentId).slice(0, 128);
+    const endpoint = String(body.endpoint).slice(0, 512);
+    const host = String(body.host || "").slice(0, 256);
+
+    // SECURITY: Validate endpoint looks like a URL path
+    if (!/^https?:\/\/|^\//.test(endpoint)) {
+      return errorResponse("endpoint must be a URL or path", 400, request);
+    }
+
+    // SECURITY: Rate limit gossip — 30 per minute per agent
+    const limited = await checkRateLimit(ctx, `gossip:${agentId}`, RATE_LIMITS.gossip, request);
+    if (limited) return limited;
+
+    // SECURITY: Clamp numeric values to sane ranges
+    const amount = typeof body.amount === "number" ? Math.max(0, Math.min(body.amount, 1_000_000)) : 0;
+    const latencyMs = typeof body.latencyMs === "number" ? Math.max(0, Math.min(body.latencyMs, 300_000)) : 0;
+
     try {
       const result = await ctx.runMutation(internal.gossip.recordGossip, {
-        agentId: String(body.agentId),
-        endpoint: String(body.endpoint),
-        host: String(body.host || ""),
+        agentId,
+        endpoint,
+        host,
         chain: body.chain === "solana" ? "solana" as const : "base" as const,
-        amount: typeof body.amount === "number" ? body.amount : 0,
-        latencyMs: typeof body.latencyMs === "number" ? body.latencyMs : 0,
+        amount,
+        latencyMs,
         mutationTriggered: body.mutationTriggered === true,
       });
 
       return jsonResponse(result, 200, request);
     } catch (err) {
-      return errorResponse(
-        err instanceof Error ? err.message : "Failed to record gossip",
-        500,
-        request
-      );
+      // SECURITY: Don't leak internal error details
+      console.error("Gossip recording failed:", err);
+      return errorResponse("Failed to record gossip", 500, request);
     }
   }),
 });
@@ -1010,20 +1121,36 @@ http.route({
       return errorResponse("agentId is required", 400, request);
     }
 
+    // SECURITY: Input validation
+    const agentId = String(body.agentId).slice(0, 128);
+
+    // SECURITY: Rate limit evolution saves — 20 per minute per agent
+    const limited = await checkRateLimit(ctx, `evolution:${agentId}`, RATE_LIMITS.evolution, request);
+    if (limited) return limited;
+
+    // SECURITY: Limit mutations array size to prevent DB bloat
+    const mutations = Array.isArray(body.mutations)
+      ? body.mutations.slice(0, 100).map((m) => ({
+          type: String(m.type).slice(0, 64),
+          from: m.from ? String(m.from).slice(0, 256) : undefined,
+          to: m.to ? String(m.to).slice(0, 256) : undefined,
+          successRate: typeof m.successRate === "number" ? Math.max(0, Math.min(m.successRate, 1)) : undefined,
+          timestamp: typeof m.timestamp === "number" ? m.timestamp : Date.now(),
+        }))
+      : undefined;
+
     try {
       const result = await ctx.runMutation(internal.evolution.saveState, {
-        agentId: String(body.agentId),
+        agentId,
         state: body.state ?? undefined,
-        mutations: Array.isArray(body.mutations) ? body.mutations : undefined,
+        mutations,
       });
 
       return jsonResponse(result, 200, request);
     } catch (err) {
-      return errorResponse(
-        err instanceof Error ? err.message : "Failed to save evolution state",
-        500,
-        request
-      );
+      // SECURITY: Don't leak internal error details
+      console.error("Evolution save failed:", err);
+      return errorResponse("Failed to save evolution state", 500, request);
     }
   }),
 });

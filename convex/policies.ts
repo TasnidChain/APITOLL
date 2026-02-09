@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireAuth } from "./helpers";
+import { requireAuth, requireOrgAccess } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Shared policy rule validators (must match schema.ts)
@@ -38,10 +38,8 @@ export const create = mutation({
     rulesJson: v.union(budgetRulesValidator, vendorAclRulesValidator, rateLimitRulesValidator),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
-    // Ensure org exists
-    const org = await ctx.db.get(args.orgId);
-    if (!org) throw new Error("Organization not found");
+    // SECURITY FIX: Verify caller owns this organization
+    await requireOrgAccess(ctx, args.orgId);
 
     // If agent-specific, ensure agent exists and belongs to org
     if (args.agentId) {
@@ -71,7 +69,8 @@ export const listByOrg = query({
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this organization
+    await requireOrgAccess(ctx, args.orgId);
     return await ctx.db
       .query("policies")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
@@ -107,9 +106,10 @@ export const update = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
     const policy = await ctx.db.get(args.id);
     if (!policy) throw new Error("Policy not found");
+    // SECURITY FIX: Verify caller owns the policy's organization
+    await requireOrgAccess(ctx, policy.orgId);
 
     const update: { rulesJson: typeof args.rulesJson; isActive?: boolean } = { rulesJson: args.rulesJson };
     if (args.isActive !== undefined) {
@@ -129,9 +129,10 @@ export const toggleActive = mutation({
     id: v.id("policies"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
     const policy = await ctx.db.get(args.id);
     if (!policy) throw new Error("Policy not found");
+    // SECURITY FIX: Verify caller owns the policy's organization
+    await requireOrgAccess(ctx, policy.orgId);
     await ctx.db.patch(args.id, { isActive: !policy.isActive });
   },
 });
@@ -145,9 +146,10 @@ export const remove = mutation({
     id: v.id("policies"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
     const policy = await ctx.db.get(args.id);
     if (!policy) throw new Error("Policy not found");
+    // SECURITY FIX: Verify caller owns the policy's organization
+    await requireOrgAccess(ctx, policy.orgId);
     await ctx.db.delete(args.id);
   },
 });

@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
-import { requireAuth } from "./helpers";
+import { requireOrgAccess } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Dashboard-specific queries
@@ -14,9 +14,8 @@ import { requireAuth } from "./helpers";
 export const getOverviewStats = query({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
-    const org = await ctx.db.get(args.orgId);
-    if (!org) return null;
+    // SECURITY FIX: Verify caller owns this organization
+    const { org } = await requireOrgAccess(ctx, args.orgId);
 
     // Get all agents for this org
     const agents = await ctx.db
@@ -91,7 +90,8 @@ export const getDailyStats = query({
     days: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this organization
+    await requireOrgAccess(ctx, args.orgId);
     const numDays = args.days ?? 30;
     const now = Date.now();
     const startTime = now - numDays * 24 * 60 * 60 * 1000;
@@ -158,7 +158,8 @@ export const listTransactions = query({
     chain: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this organization
+    await requireOrgAccess(ctx, args.orgId);
     const agents = await ctx.db
       .query("agents")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
@@ -224,7 +225,8 @@ export const listTransactions = query({
 export const listAgents = query({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this organization
+    await requireOrgAccess(ctx, args.orgId);
     const agents = await ctx.db
       .query("agents")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
@@ -282,7 +284,8 @@ export const listAgents = query({
 export const listSellers = query({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this organization
+    await requireOrgAccess(ctx, args.orgId);
     const sellers = await ctx.db
       .query("sellers")
       .filter((q) => q.eq(q.field("orgId"), args.orgId))

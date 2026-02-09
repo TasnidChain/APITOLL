@@ -115,10 +115,9 @@ export async function GET(req: NextRequest) {
       leaderboard,
       tip: "Enable evolution in buyer-sdk: createAgentWallet({ evolution: true })",
     });
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Failed to retrieve evolution state";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    // SECURITY FIX: Don't leak internal error details
+    return NextResponse.json({ error: "Failed to retrieve evolution state" }, { status: 500 });
   }
 }
 
@@ -237,9 +236,8 @@ export async function POST(req: NextRequest) {
       leaderboard,
       network_mutations: networkMutations,
     });
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Failed to save evolution state";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    // SECURITY FIX: Don't leak internal error details
+    return NextResponse.json({ error: "Failed to save evolution state" }, { status: 500 });
   }
 }

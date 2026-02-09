@@ -102,6 +102,8 @@ export const trackReferralEvent = internalMutation({
 export const getByCode = query({
   args: { referralCode: v.string() },
   handler: async (ctx, args) => {
+    // SECURITY FIX: Require authentication to look up referral data
+    await requireAuth(ctx);
     return await ctx.db
       .query("referrals")
       .withIndex("by_code", (q) => q.eq("referralCode", args.referralCode))
@@ -116,6 +118,8 @@ export const getByCode = query({
 export const getByWallet = query({
   args: { referrerWallet: v.string() },
   handler: async (ctx, args) => {
+    // SECURITY FIX: Require authentication
+    await requireAuth(ctx);
     return await ctx.db
       .query("referrals")
       .withIndex("by_wallet", (q) => q.eq("referrerWallet", args.referrerWallet))
@@ -126,6 +130,8 @@ export const getByWallet = query({
 export const getBySeller = query({
   args: { sellerId: v.id("sellers") },
   handler: async (ctx, args) => {
+    // SECURITY FIX: Require authentication
+    await requireAuth(ctx);
     return await ctx.db
       .query("referrals")
       .withIndex("by_seller", (q) => q.eq("referrerSellerId", args.sellerId))
@@ -143,6 +149,8 @@ export const getEvents = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // SECURITY FIX: Require authentication
+    await requireAuth(ctx);
     return await ctx.db
       .query("referralEvents")
       .withIndex("by_referral", (q) => q.eq("referralId", args.referralId))

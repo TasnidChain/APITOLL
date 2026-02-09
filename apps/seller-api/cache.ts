@@ -49,10 +49,37 @@ export class TTLCache {
   }
 }
 
-// Shared caches — one per tool with appropriate capacity
+// Shared caches — one per tool/category with appropriate capacity
 export const searchCache = new TTLCache(500);
 export const cryptoCache = new TTLCache(200);
 export const newsCache = new TTLCache(100);
 export const geocodeCache = new TTLCache(1000);
 export const reputationCache = new TTLCache(200);
 export const scraperCache = new TTLCache(200);
+
+// Data & Lookup
+export const weatherCache = new TTLCache(500);
+export const ipCache = new TTLCache(500);
+export const timezoneCache = new TTLCache(200);
+export const currencyCache = new TTLCache(200);
+export const countryCache = new TTLCache(300);
+export const companyCache = new TTLCache(200);
+export const whoisCache = new TTLCache(200);
+export const dnsCache = new TTLCache(500);
+export const domainCache = new TTLCache(200);
+export const holidayCache = new TTLCache(200);
+
+// Text Processing (POST endpoints — smaller caches)
+export const textCache = new TTLCache(500);
+
+// Web & URL Utilities
+export const webCache = new TTLCache(500);
+
+// Compute & Dev Tools
+export const computeCache = new TTLCache(300);
+
+// Media & Visual
+export const mediaCache = new TTLCache(300);
+
+// Blockchain
+export const blockchainCache = new TTLCache(200);

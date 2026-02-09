@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
-import { requireAuth, requireAdmin } from "./helpers";
+import { requireAuth, requireAdmin, requireOrgAccess } from "./helpers";
 
 // ─── Secure API Key Generation ───────────────────────────────────
 
@@ -22,7 +22,7 @@ export const create = mutation({
     billingWallet: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    const identity = await requireAuth(ctx);
     // Validate name
     const name = args.name.trim();
     if (name.length < 2 || name.length > 100) {
@@ -32,11 +32,13 @@ export const create = mutation({
     // Generate secure API key (32 bytes = 64 hex chars)
     const apiKey = generateSecureKey("org");
 
+    // SECURITY FIX: Store clerkUserId so org ownership can be verified
     const id = await ctx.db.insert("organizations", {
       name,
       billingWallet: args.billingWallet,
       plan: "free",
       apiKey,
+      clerkUserId: identity.subject,
       createdAt: Date.now(),
     });
 
@@ -67,7 +69,8 @@ export const getByApiKey = internalQuery({
 export const get = query({
   args: { id: v.id("organizations") },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this organization
+    await requireOrgAccess(ctx, args.id);
     const org = await ctx.db.get(args.id);
     if (!org) return null;
     // SECURITY: Strip apiKey — never expose to frontend
@@ -83,7 +86,8 @@ export const get = query({
 export const getApiKey = query({
   args: { id: v.id("organizations") },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this organization before exposing API key
+    await requireOrgAccess(ctx, args.id);
     const org = await ctx.db.get(args.id);
     if (!org) return null;
     return { apiKey: org.apiKey };
@@ -134,7 +138,8 @@ export const updateBillingWallet = mutation({
     billingWallet: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this organization
+    await requireOrgAccess(ctx, args.id);
     await ctx.db.patch(args.id, { billingWallet: args.billingWallet });
   },
 });
@@ -163,7 +168,8 @@ export const internalCreate = internalMutation({
 export const regenerateApiKey = mutation({
   args: { id: v.id("organizations") },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this organization
+    await requireOrgAccess(ctx, args.id);
     const newApiKey = generateSecureKey("org");
     await ctx.db.patch(args.id, { apiKey: newApiKey });
     return newApiKey;

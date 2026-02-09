@@ -4,6 +4,7 @@ import { Readability } from "@mozilla/readability";
 import { parseHTML } from "linkedom";
 import TurndownService from "turndown";
 import { scraperCache } from "../cache";
+import { safeFetch } from "../safe-fetch";
 
 const router = Router();
 const turndown = new TurndownService({ headingStyle: "atx", codeBlockStyle: "fenced" });
@@ -15,43 +16,11 @@ function formatPayment(ctx: ReturnType<typeof getX402Context>) {
   return { txHash: ctx.receipt.txHash, amount: ctx.receipt.amount, chain: ctx.receipt.chain };
 }
 
-// SSRF protection
-function isBlockedUrl(hostname: string): boolean {
-  const blocked = ["localhost", "127.0.0.1", "::1", "[::1]", "0.0.0.0", "[::]"];
-  const blockedPrefixes = [
-    "10.", "192.168.",
-    "172.16.", "172.17.", "172.18.", "172.19.",
-    "172.20.", "172.21.", "172.22.", "172.23.",
-    "172.24.", "172.25.", "172.26.", "172.27.",
-    "172.28.", "172.29.", "172.30.", "172.31.",
-    "169.254.", "fc00:", "fd00:", "fe80:",
-  ];
-  return (
-    blocked.includes(hostname) ||
-    blockedPrefixes.some((p) => hostname.startsWith(p)) ||
-    /^\d+$/.test(hostname)
-  );
-}
-
 router.post("/api/scrape", async (req: Request, res: Response) => {
   const { url, includeMetadata = true } = req.body || {};
 
   if (!url || typeof url !== "string") {
     return res.status(400).json({ error: "Missing required field: url" });
-  }
-
-  // Validate URL
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-    if (!["http:", "https:"].includes(parsed.protocol)) {
-      return res.status(400).json({ error: "Only HTTP/HTTPS URLs allowed" });
-    }
-    if (isBlockedUrl(parsed.hostname)) {
-      return res.status(400).json({ error: "Cannot scrape internal/local addresses" });
-    }
-  } catch {
-    return res.status(400).json({ error: "Invalid URL" });
   }
 
   // Check cache
@@ -62,14 +31,13 @@ router.post("/api/scrape", async (req: Request, res: Response) => {
   }
 
   try {
-    // Fetch the page
-    const resp = await fetch(url, {
+    // Fetch the page (safeFetch handles SSRF, redirects, DNS rebinding)
+    const resp = await safeFetch(url, {
       headers: {
         "User-Agent": "APIToll-Scraper/1.0 (compatible; agent-tool)",
         "Accept": "text/html,application/xhtml+xml",
       },
-      signal: AbortSignal.timeout(10_000),
-      redirect: "follow",
+      timeoutMs: 10000,
     });
 
     if (!resp.ok) {
@@ -132,7 +100,10 @@ router.post("/api/scrape", async (req: Request, res: Response) => {
     if (message.includes("TimeoutError") || message.includes("AbortError") || message.includes("timeout")) {
       return res.status(504).json({ error: "Target page timed out (10s limit)" });
     }
-    res.status(502).json({ error: "Scraping failed", details: message });
+    if (message.includes("internal") || message.includes("private") || message.includes("blocked")) {
+      return res.status(400).json({ error: message });
+    }
+    res.status(502).json({ error: "Scraping failed" });
   }
 });
 

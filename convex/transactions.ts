@@ -38,6 +38,16 @@ export const create = internalMutation({
     blockNumber: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // SECURITY FIX: Deduplicate by txHash to prevent double-counting
+    if (args.txHash) {
+      const existing = await ctx.db
+        .query("transactions")
+        .withIndex("by_tx_hash", (q) => q.eq("txHash", args.txHash!))
+        .first();
+      if (existing) {
+        return existing._id; // Return existing instead of creating duplicate
+      }
+    }
     const id = await ctx.db.insert("transactions", {
       ...args,
       currency: args.currency ?? "USDC",
@@ -74,7 +84,19 @@ export const createBatch = internalMutation({
   },
   handler: async (ctx, args) => {
     const ids = [];
+    let skipped = 0;
     for (const tx of args.transactions) {
+      // SECURITY FIX: Deduplicate by txHash to prevent double-counting revenue
+      if (tx.txHash) {
+        const existing = await ctx.db
+          .query("transactions")
+          .withIndex("by_tx_hash", (q) => q.eq("txHash", tx.txHash!))
+          .first();
+        if (existing) {
+          skipped++;
+          continue;
+        }
+      }
       const id = await ctx.db.insert("transactions", {
         ...tx,
         sellerId: args.sellerId,
@@ -82,7 +104,7 @@ export const createBatch = internalMutation({
       });
       ids.push(id);
     }
-    return { created: ids.length };
+    return { created: ids.length, skipped };
   },
 });
 

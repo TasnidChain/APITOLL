@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { requireAuth, requireAdmin } from "./helpers";
+import { requireAuth, requireAdmin, requireOrgAccess } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Create Tool (for Discovery)
@@ -70,6 +70,28 @@ export const registerPublic = mutation({
     referralCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // NOTE: No auth required — this is a public API for seller onboarding.
+    // Defense: tools start as unverified + input validation + rate limiting in http/dashboard layer.
+
+    // SECURITY FIX: Strict input validation (CRITICAL-02)
+    if (!args.name || args.name.trim().length === 0) throw new Error("Name is required");
+    if (args.name.length > 100) throw new Error("Name must be under 100 characters");
+    if (args.description.length > 1000) throw new Error("Description must be under 1000 characters");
+    try {
+      const u = new URL(args.baseUrl);
+      if (!["http:", "https:"].includes(u.protocol)) throw new Error("baseUrl must be HTTP(S)");
+    } catch {
+      throw new Error("baseUrl must be a valid HTTP(S) URL");
+    }
+    // Validate price range
+    if (args.price < 0 || args.price > 1000) throw new Error("Price must be between 0 and 1000 USDC");
+    // Validate wallet address format (basic)
+    if (args.walletAddress && args.walletAddress.length > 64) throw new Error("Wallet address too long");
+    // Validate category length
+    if (args.category.length > 50) throw new Error("Category must be under 50 characters");
+    // Validate chains
+    if (args.chains.length > 5) throw new Error("Maximum 5 chains allowed");
+
     // Generate slug from name
     const slug = args.name
       .toLowerCase()
@@ -255,7 +277,16 @@ export const update = mutation({
     outputSchema: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    const identity = await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns the tool via seller → org chain
+    const tool = await ctx.db.get(args.id);
+    if (!tool) throw new Error("Tool not found");
+    if (tool.sellerId) {
+      const seller = await ctx.db.get(tool.sellerId);
+      if (seller?.orgId) {
+        await requireOrgAccess(ctx, seller.orgId);
+      }
+    }
     const { id, ...updates } = args;
     const filteredUpdates = Object.fromEntries(
       Object.entries(updates).filter(([_, v]) => v !== undefined)
@@ -273,6 +304,15 @@ export const deactivate = mutation({
   args: { id: v.id("tools") },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns the tool via seller → org chain
+    const tool = await ctx.db.get(args.id);
+    if (!tool) throw new Error("Tool not found");
+    if (tool.sellerId) {
+      const seller = await ctx.db.get(tool.sellerId);
+      if (seller?.orgId) {
+        await requireOrgAccess(ctx, seller.orgId);
+      }
+    }
     await ctx.db.patch(args.id, { isActive: false });
   },
 });

@@ -115,6 +115,8 @@ export default defineSchema({
     billingWallet: v.optional(v.string()),
     plan: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
     apiKey: v.string(),
+    // SECURITY FIX: Clerk user ID for org ownership verification
+    clerkUserId: v.optional(v.string()),
     // Stripe billing fields
     stripeCustomerId: v.optional(v.string()),
     stripeSubscriptionId: v.optional(v.string()),
@@ -127,7 +129,8 @@ export default defineSchema({
     createdAt: v.optional(v.number()),
   })
     .index("by_api_key", ["apiKey"])
-    .index("by_stripe_customer", ["stripeCustomerId"]),
+    .index("by_stripe_customer", ["stripeCustomerId"])
+    .index("by_clerk_user", ["clerkUserId"]),
 
   // ═══════════════════════════════════════════════════
   // Agents (buyer-side wallets)
@@ -499,6 +502,17 @@ export default defineSchema({
   })
     .index("by_payment_id", ["paymentId"])
     .index("by_status", ["status"]),
+
+  // ═══════════════════════════════════════════════════
+  // Rate Limiting (DB-backed for Convex httpActions)
+  // ═══════════════════════════════════════════════════
+  rateLimits: defineTable({
+    key: v.string(),           // e.g., "signup:192.168.1.1" or "gossip:agentXYZ"
+    count: v.number(),         // requests in current window
+    windowStart: v.number(),   // timestamp of window start
+  })
+    .index("by_key", ["key"])
+    .index("by_window", ["windowStart"]),
 
   agentEvolution: defineTable({
     agentId: v.string(),

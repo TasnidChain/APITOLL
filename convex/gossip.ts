@@ -64,8 +64,10 @@ export const recordGossip = internalMutation({
         : existing.mutations;
 
       // Calculate trending score
-      const ageHours = Math.max((now - existing.firstSeen) / 3600000, 0.1);
-      const velocity = (newDiscoveries / ageHours) * 200;
+      // SECURITY FIX: Use minimum 1 hour age to prevent velocity gaming
+      // (previously min was 0.1h, giving 10x velocity boost to new endpoints)
+      const ageHours = Math.max((now - existing.firstSeen) / 3600000, 1);
+      const velocity = Math.min((newDiscoveries / ageHours) * 50, 500); // cap velocity at 500
       const recency = Math.pow(0.5, ageHours / 24);
       const score = Math.round(
         (newDiscoveries * 10 +
@@ -88,8 +90,12 @@ export const recordGossip = internalMutation({
 
       return { trending_score: score, is_new_agent: isNewAgent };
     } else {
-      // First time seeing this endpoint
-      const score = 260; // base: 10 + 50 (agent) + 200 (velocity)
+      // First time seeing this endpoint — start with a LOW score
+      // SECURITY FIX: Previously started at 260, which exceeded the auto-indexing
+      // threshold of 200, allowing a single unauthenticated POST to auto-register
+      // a malicious tool. Now starts at 10 (base score for 1 discovery).
+      // An endpoint must accumulate real usage from multiple agents to trend.
+      const score = 10; // base: 1 discovery * 10 points
       await ctx.db.insert("gossip", {
         endpoint: key,
         host: args.host,

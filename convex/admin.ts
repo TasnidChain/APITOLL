@@ -148,8 +148,10 @@ export const listAllOrgs = query({
           .filter((q) => q.eq(q.field("orgId"), org._id))
           .collect();
 
+        // SECURITY FIX: Strip apiKey from admin listing to prevent leaks
+        const { apiKey: _apiKey, ...safeOrg } = org;
         return {
-          ...org,
+          ...safeOrg,
           agentCount: agents.length,
           sellerCount: sellers.length,
         };

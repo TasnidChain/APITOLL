@@ -188,10 +188,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(response);
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Invalid gossip payload";
-    return NextResponse.json({ error: message }, { status: 400 });
+  } catch {
+    // SECURITY FIX: Don't leak internal error details
+    return NextResponse.json({ error: "Invalid gossip payload" }, { status: 400 });
   }
 }
 
@@ -249,9 +248,8 @@ export async function GET(req: NextRequest) {
         },
       }
     );
-  } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Failed to fetch trending data";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    // SECURITY FIX: Don't leak internal error details
+    return NextResponse.json({ error: "Failed to fetch trending data" }, { status: 500 });
   }
 }

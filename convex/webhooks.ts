@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { requireAuth } from "./helpers";
+import { requireAuth, requireOrgAccess } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Valid Webhook Events
@@ -55,9 +55,8 @@ export const create = mutation({
     events: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
-    const org = await ctx.db.get(args.orgId);
-    if (!org) throw new Error("Organization not found");
+    // SECURITY FIX: Verify caller owns this organization
+    await requireOrgAccess(ctx, args.orgId);
 
     if (args.sellerId) {
       const seller = await ctx.db.get(args.sellerId);
@@ -110,7 +109,8 @@ export const listByOrg = query({
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this organization
+    await requireOrgAccess(ctx, args.orgId);
     const webhooks = await ctx.db
       .query("webhooks")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
@@ -129,9 +129,10 @@ export const get = query({
     id: v.id("webhooks"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
     const webhook = await ctx.db.get(args.id);
     if (!webhook) throw new Error("Webhook not found");
+    // SECURITY FIX: Verify caller owns the webhook's organization
+    await requireOrgAccess(ctx, webhook.orgId);
     // SECURITY: Strip signing secret — never expose to frontend
     const { secret: _secret, ...safe } = webhook;
     return safe;
@@ -150,9 +151,10 @@ export const update = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
     const webhook = await ctx.db.get(args.id);
     if (!webhook) throw new Error("Webhook not found");
+    // SECURITY FIX: Verify caller owns the webhook's organization
+    await requireOrgAccess(ctx, webhook.orgId);
 
     const update: { url?: string; events?: string[]; isActive?: boolean; failureCount?: number } = {};
 
@@ -202,9 +204,10 @@ export const rotateSecret = mutation({
     id: v.id("webhooks"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
     const webhook = await ctx.db.get(args.id);
     if (!webhook) throw new Error("Webhook not found");
+    // SECURITY FIX: Verify caller owns the webhook's organization
+    await requireOrgAccess(ctx, webhook.orgId);
 
     const secret = generateSecret();
     await ctx.db.patch(args.id, { secret });
@@ -222,9 +225,10 @@ export const remove = mutation({
     id: v.id("webhooks"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
     const webhook = await ctx.db.get(args.id);
     if (!webhook) throw new Error("Webhook not found");
+    // SECURITY FIX: Verify caller owns the webhook's organization
+    await requireOrgAccess(ctx, webhook.orgId);
 
     // Delete associated deliveries
     const deliveries = await ctx.db
@@ -249,9 +253,10 @@ export const createTestDelivery = mutation({
     webhookId: v.id("webhooks"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
     const webhook = await ctx.db.get(args.webhookId);
     if (!webhook) throw new Error("Webhook not found");
+    // SECURITY FIX: Verify caller owns the webhook's organization
+    await requireOrgAccess(ctx, webhook.orgId);
 
     const payload = JSON.stringify({
       event: "test.ping",
@@ -308,7 +313,8 @@ export const getStats = query({
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this organization
+    await requireOrgAccess(ctx, args.orgId);
     const webhooks = await ctx.db
       .query("webhooks")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))

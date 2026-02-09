@@ -11,12 +11,29 @@ import { mutation, query } from "./_generated/server";
 // facilitator service.
 // ═══════════════════════════════════════════════════
 
+/**
+ * Timing-safe string comparison without Node.js crypto module.
+ * Works in Convex's V8 runtime (no Buffer/crypto available).
+ */
+function timingSafeStringEqual(a: string, b: string): boolean {
+  const maxLen = Math.max(a.length, b.length);
+  let result = a.length ^ b.length;
+  for (let i = 0; i < maxLen; i++) {
+    result |= (a.charCodeAt(i % a.length) || 0) ^ (b.charCodeAt(i % b.length) || 0);
+  }
+  return result === 0;
+}
+
 function validateFacilitatorSecret(secret: string | undefined) {
   const expected = process.env.FACILITATOR_CONVEX_SECRET;
   if (!expected) {
     throw new Error("FACILITATOR_CONVEX_SECRET not configured on Convex");
   }
-  if (!secret || secret !== expected) {
+  if (!secret) {
+    throw new Error("Invalid facilitator secret");
+  }
+  // SECURITY FIX: Timing-safe comparison (HIGH-03)
+  if (!timingSafeStringEqual(secret, expected)) {
     throw new Error("Invalid facilitator secret");
   }
 }
