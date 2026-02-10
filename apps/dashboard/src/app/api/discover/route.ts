@@ -133,30 +133,19 @@ export async function GET(req: NextRequest) {
     // Fetch featured tools, trending gossip, network stats, and categories in parallel
     const [featuredRaw, trendingRaw, networkStats, categoriesRaw] =
       await Promise.all([
-        // If there's a category or chain filter, use search; otherwise use getFeatured
-        categoryFilter
-          ? convex.query(api.tools.search, {
-              category: categoryFilter,
-              chains: chainFilter ? [chainFilter] : undefined,
-              limit,
-            })
-          : convex.query(api.tools.getFeatured, { limit }),
+        // Search tools — use category filter if provided, otherwise get all active tools
+        convex.query(api.tools.search, {
+          category: categoryFilter ?? undefined,
+          chains: chainFilter ? [chainFilter] : undefined,
+          limit,
+        }),
         convex.query(api.gossip.getTrending, { limit: 10 }),
         convex.query(api.gossip.getNetworkStats, {}),
         convex.query(api.categories.list, {}),
       ]);
 
-    // Map featured tools to discovery shape
-    let mappedTools = (featuredRaw ?? []).map(mapToolToDiscovery);
-
-    // Apply chain filter if we used getFeatured (search already handles it)
-    if (!categoryFilter && chainFilter) {
-      mappedTools = mappedTools.filter((t) =>
-        t.chains.includes(chainFilter)
-      );
-    }
-
-    tools = mappedTools;
+    // Map tools to discovery shape
+    tools = (featuredRaw ?? []).map(mapToolToDiscovery);
     trending = (trendingRaw ?? []).map(mapTrendingEntry);
     network = networkStats ?? null;
     categories = (categoriesRaw ?? []).map((c) => ({
