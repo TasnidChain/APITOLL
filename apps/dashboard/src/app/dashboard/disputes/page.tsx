@@ -118,19 +118,19 @@ export default function DisputesPage() {
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-sm text-muted-foreground">Open</p>
-            <p className="text-2xl font-bold text-warning">
+            <p className={cn('text-2xl font-bold', disputes.filter((d) => d.status === 'open').length > 0 ? 'text-warning' : 'text-muted-foreground')}>
               {disputes.filter((d) => d.status === 'open').length}
             </p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-sm text-muted-foreground">Under Review</p>
-            <p className="text-2xl font-bold text-primary">
+            <p className={cn('text-2xl font-bold', disputes.filter((d) => d.status === 'under_review').length > 0 ? 'text-primary' : 'text-muted-foreground')}>
               {disputes.filter((d) => d.status === 'under_review').length}
             </p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-sm text-muted-foreground">Resolved</p>
-            <p className="text-2xl font-bold text-success">
+            <p className={cn('text-2xl font-bold', disputes.filter((d) => d.status === 'resolved').length > 0 ? 'text-success' : 'text-muted-foreground')}>
               {disputes.filter((d) => d.status === 'resolved').length}
             </p>
           </div>
@@ -298,22 +298,22 @@ function EscrowTab({ orgId }: { orgId: Id<'organizations'> }) {
         <div className="grid gap-4 sm:grid-cols-5">
           <div className="rounded-lg border bg-card p-4">
             <p className="text-sm text-muted-foreground">Currently Held</p>
-            <p className="text-2xl font-bold text-amber-500">{stats.held}</p>
+            <p className={cn('text-2xl font-bold', stats.held > 0 ? 'text-amber-500' : 'text-muted-foreground')}>{stats.held}</p>
             {stats.heldAmount > 0 && (
               <p className="text-xs text-muted-foreground mt-1">{formatUSD(stats.heldAmount)}</p>
             )}
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-sm text-muted-foreground">Released</p>
-            <p className="text-2xl font-bold text-emerald-500">{stats.released}</p>
+            <p className={cn('text-2xl font-bold', stats.released > 0 ? 'text-emerald-500' : 'text-muted-foreground')}>{stats.released}</p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-sm text-muted-foreground">Disputed</p>
-            <p className="text-2xl font-bold text-red-500">{stats.disputed}</p>
+            <p className={cn('text-2xl font-bold', stats.disputed > 0 ? 'text-red-500' : 'text-muted-foreground')}>{stats.disputed}</p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-sm text-muted-foreground">Refunded</p>
-            <p className="text-2xl font-bold text-blue-500">{stats.refunded}</p>
+            <p className={cn('text-2xl font-bold', stats.refunded > 0 ? 'text-blue-500' : 'text-muted-foreground')}>{stats.refunded}</p>
           </div>
           <div className="rounded-lg border bg-card p-4">
             <p className="text-sm text-muted-foreground">Total</p>

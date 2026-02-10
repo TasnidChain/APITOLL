@@ -213,8 +213,6 @@ export default function PoliciesPage() {
 function AlertEventsSection({ orgId }: { orgId: Id<'organizations'> }) {
   const events = useQuery(api.alertEvaluator.listAlertEvents, { orgId, limit: 10 })
 
-  if (!events || events.length === 0) return null
-
   const severityConfig = {
     budget_threshold: { color: 'text-amber-500', bg: 'bg-amber-500/10' },
     budget_exceeded: { color: 'text-red-500', bg: 'bg-red-500/10' },
@@ -230,8 +228,15 @@ function AlertEventsSection({ orgId }: { orgId: Id<'organizations'> }) {
           <AlertCircle className="h-4 w-4 text-amber-500" />
           <h3 className="font-semibold">Recent Alerts</h3>
         </div>
-        <span className="text-xs text-muted-foreground">{events.length} events</span>
+        <span className="text-xs text-muted-foreground">{events?.length ?? 0} events</span>
       </div>
+      {!events || events.length === 0 ? (
+        <div className="py-8 text-center text-muted-foreground">
+          <Bell className="mx-auto mb-2 h-8 w-8 opacity-40" />
+          <p className="text-sm font-medium">No alerts fired yet</p>
+          <p className="mt-1 text-xs">Alerts will appear here when your rules are triggered</p>
+        </div>
+      ) : (
       <div className="divide-y max-h-80 overflow-y-auto">
         {events.map((event) => {
           const config = severityConfig[event.ruleType as keyof typeof severityConfig] ?? { color: 'text-muted-foreground', bg: 'bg-muted' }
@@ -253,14 +258,13 @@ function AlertEventsSection({ orgId }: { orgId: Id<'organizations'> }) {
           )
         })}
       </div>
+      )}
     </div>
   )
 }
 
 function AuditLogSection({ orgId }: { orgId: Id<'organizations'> }) {
   const auditLog = useQuery(api.policies.getAuditLog, { orgId, limit: 20 })
-
-  if (!auditLog || auditLog.length === 0) return null
 
   const actionConfig = {
     created: { label: 'Created', color: 'text-emerald-500' },
@@ -276,8 +280,15 @@ function AuditLogSection({ orgId }: { orgId: Id<'organizations'> }) {
           <FileText className="h-4 w-4 text-muted-foreground" />
           <h3 className="font-semibold">Policy Audit Log</h3>
         </div>
-        <span className="text-xs text-muted-foreground">{auditLog.length} entries</span>
+        <span className="text-xs text-muted-foreground">{auditLog?.length ?? 0} entries</span>
       </div>
+      {!auditLog || auditLog.length === 0 ? (
+        <div className="py-8 text-center text-muted-foreground">
+          <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
+          <p className="text-sm font-medium">No audit entries yet</p>
+          <p className="mt-1 text-xs">Policy changes will be logged here automatically</p>
+        </div>
+      ) : (
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
@@ -313,6 +324,7 @@ function AuditLogSection({ orgId }: { orgId: Id<'organizations'> }) {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   )
 }
