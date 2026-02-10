@@ -18,6 +18,7 @@ const links = [
   { label: 'Features', href: '#features' },
   { label: 'How It Works', href: '#how-it-works' },
   { label: 'Pricing', href: '#pricing' },
+  { label: 'API Docs', href: 'https://api.apitoll.com/api/docs', external: true },
 ]
 
 export function Navbar() {
@@ -39,6 +40,7 @@ export function Navbar() {
             <a
               key={l.href}
               href={l.href}
+              {...('external' in l && l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
               className="text-sm font-medium text-slate-400 transition-colors hover:text-white"
             >
               {l.label}
@@ -100,6 +102,7 @@ export function Navbar() {
                 key={l.href}
                 href={l.href}
                 onClick={() => setMobileOpen(false)}
+                {...('external' in l && l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                 className="text-sm font-medium text-slate-400 transition-colors hover:text-white"
               >
                 {l.label}

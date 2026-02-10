@@ -23,6 +23,7 @@ import {
   Banknote,
   Menu,
   X,
+  FileCode2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { UserButton, useUser } from '@clerk/nextjs'
@@ -33,6 +34,7 @@ const ADMIN_USER_ID = process.env.NEXT_PUBLIC_ADMIN_USER_ID || ''
 const navigation = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Discovery', href: '/dashboard/discovery', icon: Compass },
+  { name: 'API Docs', href: 'https://api.apitoll.com/api/docs', icon: FileCode2, external: true },
   { name: 'Leaderboard', href: '/dashboard/leaderboard', icon: Trophy },
   { name: 'Transactions', href: '/dashboard/transactions', icon: ArrowLeftRight },
   { name: 'Agents', href: '/dashboard/agents', icon: Bot },
@@ -66,21 +68,39 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         {navigation
           .filter((item) => !('adminOnly' in item && item.adminOnly) || isAdmin)
           .map((item) => {
-          const isActive =
-            item.href === '/dashboard'
+          const isExternal = 'external' in item && item.external
+          const isActive = isExternal
+            ? false
+            : item.href === '/dashboard'
               ? pathname === '/dashboard'
               : pathname.startsWith(item.href)
+          const classes = cn(
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+            isActive
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+          )
+          if (isExternal) {
+            return (
+              <a
+                key={item.name}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={onNavigate}
+                className={classes}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.name}
+              </a>
+            )
+          }
           return (
             <Link
               key={item.name}
               href={item.href}
               onClick={onNavigate}
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-              )}
+              className={classes}
             >
               <item.icon className="h-4 w-4" />
               {item.name}
