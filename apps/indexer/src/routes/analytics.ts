@@ -2,11 +2,13 @@ import { Hono } from 'hono'
 import { requireOrgAuth } from '../middleware/auth'
 import { getOverviewStats, getDailyStats } from '../db/queries'
 
-const app = new Hono()
+type Env = { Variables: { org: { id: string } } }
+
+const app = new Hono<Env>()
 
 // Overview stats for dashboard
 app.get('/overview', requireOrgAuth, async (c) => {
-  const org = c.get('org') as { id: string } | undefined
+  const org = c.get('org')
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
@@ -16,7 +18,7 @@ app.get('/overview', requireOrgAuth, async (c) => {
 
 // Daily spend chart data
 app.get('/daily', requireOrgAuth, async (c) => {
-  const org = c.get('org') as { id: string } | undefined
+  const org = c.get('org')
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }

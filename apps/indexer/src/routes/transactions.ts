@@ -7,7 +7,9 @@ import {
   getTransactionsByOrg,
 } from '../db/queries'
 
-const app = new Hono()
+type Env = { Variables: { org: { id: string }; seller: { id: string } } }
+
+const app = new Hono<Env>()
 
 // Schema for transaction report from seller SDK
 const transactionReportSchema = z.object({
@@ -35,7 +37,7 @@ const batchReportSchema = z.object({
 // ═══════════════════════════════════════════════════
 
 app.post('/report', requireSellerAuth, async (c) => {
-  const seller = c.get('seller') as { id: string } | undefined
+  const seller = c.get('seller')
   if (!seller) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
@@ -77,7 +79,7 @@ app.post('/report', requireSellerAuth, async (c) => {
 // ═══════════════════════════════════════════════════
 
 app.get('/', requireOrgAuth, async (c) => {
-  const org = c.get('org') as { id: string } | undefined
+  const org = c.get('org')
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }

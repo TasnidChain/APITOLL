@@ -1,4 +1,6 @@
 import { Hono } from 'hono'
+
+type Env = { Variables: { org: { id: string } } }
 import { z } from 'zod'
 import { requireOrgAuth } from '../middleware/auth'
 import {
@@ -8,7 +10,7 @@ import {
   updateAgentBalance,
 } from '../db/queries'
 
-const app = new Hono()
+const app = new Hono<Env>()
 
 const createAgentSchema = z.object({
   name: z.string().min(1),
@@ -21,7 +23,7 @@ const createAgentSchema = z.object({
 
 // List agents
 app.get('/', requireOrgAuth, async (c) => {
-  const org = c.get('org') as { id: string } | undefined
+  const org = c.get('org')
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
@@ -43,7 +45,7 @@ app.get('/:id', requireOrgAuth, async (c) => {
 
 // Create agent
 app.post('/', requireOrgAuth, async (c) => {
-  const org = c.get('org') as { id: string } | undefined
+  const org = c.get('org')
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }

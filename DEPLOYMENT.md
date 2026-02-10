@@ -22,7 +22,7 @@ In Railway dashboard, add:
 ```
 STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
-EXECUTOR_PRIVATE_KEY=0x...
+FACILITATOR_PRIVATE_KEY=0x...
 ALLOWED_ORIGINS=https://YOUR_DOMAIN.com
 BASE_RPC_URL=https://base-mainnet.g.alchemy.com/v2/YOUR_KEY
 REDIS_HOST=your-redis.upstash.io
@@ -60,7 +60,7 @@ fly launch
 
 # Set secrets
 fly secrets set STRIPE_SECRET_KEY=sk_live_...
-fly secrets set EXECUTOR_PRIVATE_KEY=0x...
+fly secrets set FACILITATOR_PRIVATE_KEY=0x...
 # ... (repeat for all env vars)
 
 # Deploy
@@ -88,7 +88,7 @@ fly deploy
 - [ ] Health check responds: `curl https://YOUR_URL/health`
 - [ ] Stripe webhooks configured
 - [ ] Redis connected (check logs for connection success)
-- [ ] EXECUTOR_PRIVATE_KEY has USDC on Base (fund wallet)
+- [ ] FACILITATOR_PRIVATE_KEY has USDC on Base (fund wallet)
 - [ ] Monitoring alerts set up (Sentry/Slack)
 - [ ] Logs being captured (CloudWatch/Railway logs)
 
@@ -162,7 +162,7 @@ railway run npm run db:migrate
 - Check logs for connection errors
 
 **"USDC transfer failing"**
-- Verify EXECUTOR_PRIVATE_KEY is set
+- Verify FACILITATOR_PRIVATE_KEY is set
 - Check wallet has USDC balance on Base
 - Verify BASE_RPC_URL is working
 

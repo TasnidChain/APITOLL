@@ -8,7 +8,9 @@ import {
   upsertEndpoint,
 } from '../db/queries'
 
-const app = new Hono()
+type Env = { Variables: { org: { id: string } } }
+
+const app = new Hono<Env>()
 
 const createSellerSchema = z.object({
   name: z.string().min(1),
@@ -25,7 +27,7 @@ const upsertEndpointSchema = z.object({
 
 // List sellers
 app.get('/', requireOrgAuth, async (c) => {
-  const org = c.get('org') as { id: string } | undefined
+  const org = c.get('org')
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
@@ -35,7 +37,7 @@ app.get('/', requireOrgAuth, async (c) => {
 
 // Create seller
 app.post('/', requireOrgAuth, async (c) => {
-  const org = c.get('org') as { id: string } | undefined
+  const org = c.get('org')
   if (!org) {
     return c.json({ error: 'Unauthorized' }, 401)
   }

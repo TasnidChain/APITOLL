@@ -1,4 +1,6 @@
 import { Hono, type Context, type Next } from 'hono'
+
+type Env = { Variables: { sellerId: string } }
 import { z } from 'zod'
 import {
   createTool,
@@ -8,7 +10,7 @@ import {
   getToolById,
 } from '../db/queries'
 
-const app = new Hono()
+const app = new Hono<Env>()
 
 // Schema for tool registration
 const toolSchema = z.object({
@@ -43,7 +45,7 @@ async function requireSeller(c: Context, next: Next) {
 
 // GET /seller/tools - List seller's tools
 app.get('/seller/tools', requireSeller, async (c) => {
-  const sellerId = c.get('sellerId') as string | undefined
+  const sellerId = c.get('sellerId')
   if (!sellerId) {
     return c.json({ error: 'Missing seller ID' }, 401)
   }
@@ -53,7 +55,7 @@ app.get('/seller/tools', requireSeller, async (c) => {
 
 // POST /seller/tools - Register a new tool
 app.post('/seller/tools', requireSeller, async (c) => {
-  const sellerId = c.get('sellerId') as string | undefined
+  const sellerId = c.get('sellerId')
   if (!sellerId) {
     return c.json({ error: 'Missing seller ID' }, 401)
   }
@@ -80,7 +82,7 @@ app.post('/seller/tools', requireSeller, async (c) => {
 
 // PATCH /seller/tools/:id - Update a tool
 app.patch('/seller/tools/:id', requireSeller, async (c) => {
-  const sellerId = c.get('sellerId') as string | undefined
+  const sellerId = c.get('sellerId')
   if (!sellerId) {
     return c.json({ error: 'Missing seller ID' }, 401)
   }
@@ -104,7 +106,7 @@ app.patch('/seller/tools/:id', requireSeller, async (c) => {
 
 // DELETE /seller/tools/:id - Delete (deactivate) a tool
 app.delete('/seller/tools/:id', requireSeller, async (c) => {
-  const sellerId = c.get('sellerId') as string | undefined
+  const sellerId = c.get('sellerId')
   if (!sellerId) {
     return c.json({ error: 'Missing seller ID' }, 401)
   }

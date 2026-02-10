@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# AgentCommerce NPM Publish Script
-# Publishes all 5 packages to npm as @agentcommerce/*
+# API Toll NPM Publish Script
+# Publishes all 5 packages to npm as @apitoll/*
 
 set -e
 
 DRY_RUN=${DRY_RUN:-false}
 PACKAGES=("seller-sdk" "buyer-sdk" "shared" "langchain" "mcp-server")
 
-echo "🚀 AgentCommerce NPM Publish"
+echo "🚀 API Toll NPM Publish"
 echo "================================"
 echo "Dry run: $DRY_RUN"
 echo ""
@@ -31,7 +31,7 @@ for PACKAGE in "${PACKAGES[@]}"; do
         continue
     fi
     
-    echo "Publishing @agentcommerce/$PACKAGE..."
+    echo "Publishing @apitoll/$PACKAGE..."
     
     cd "$PACKAGE_PATH"
     
@@ -50,7 +50,7 @@ for PACKAGE in "${PACKAGES[@]}"; do
         npm publish --tag beta 2>&1 | tail -5
     fi
     
-    echo "✅ @agentcommerce/$PACKAGE published"
+    echo "✅ @apitoll/$PACKAGE published"
     echo ""
     
     cd ../..
@@ -61,5 +61,5 @@ echo "✅ All packages published!"
 echo ""
 echo "Verify on npm:"
 for PACKAGE in "${PACKAGES[@]}"; do
-    echo "  npm view @agentcommerce/$PACKAGE"
+    echo "  npm view @apitoll/$PACKAGE"
 done

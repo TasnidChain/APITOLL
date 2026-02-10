@@ -91,7 +91,7 @@ export async function discoverToolsForTask(
   // Filter by limit
   const limited = options.limit ? tools.slice(0, options.limit) : tools
 
-  return createToolsFromDiscovery(limited)
+  return createToolsFromDiscovery(limited as Parameters<typeof createToolsFromDiscovery>[0])
 }
 
 // ═══════════════════════════════════════════════════

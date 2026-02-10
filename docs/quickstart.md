@@ -59,11 +59,11 @@ npm install @apitoll/seller-sdk
 
 ```typescript
 import express from "express";
-import { createPaymentMiddleware } from "@apitoll/seller-sdk";
+import { paymentMiddleware } from "@apitoll/seller-sdk";
 
 const app = express();
 
-const paywall = createPaymentMiddleware({
+const paywall = paymentMiddleware({
   walletAddress: process.env.SELLER_WALLET!,
   endpoints: {
     "/api/search": { price: "0.005", chains: ["base"], description: "Web search" },
@@ -120,9 +120,9 @@ const agent = createAgentWallet({
 ## MCP Tool Monetization
 
 ```typescript
-import { createMCPPaymentServer } from "@apitoll/mcp-server";
+import { createPaidMCPServer } from "@apitoll/mcp-server";
 
-const server = createMCPPaymentServer({
+const server = createPaidMCPServer({
   walletAddress: process.env.SELLER_WALLET!,
   tools: {
     search: { price: "0.005", description: "Search the web" },
