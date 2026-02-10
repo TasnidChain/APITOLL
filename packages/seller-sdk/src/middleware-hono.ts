@@ -114,21 +114,33 @@ export function paymentMiddleware(options: SellerConfig): MiddlewareHandler {
   const RATE_LIMIT_MAX = 120;
 
   let redis: { incr(key: string): Promise<number>; expire(key: string, seconds: number): Promise<void>; on(event: string, listener: (err: Error) => void): void } | null = null;
-  try {
-    const Redis = require('redis');
-    redis = Redis.createClient({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      retryStrategy: (times: number) => Math.min(times * 50, 2000),
-    });
-  } catch {
-    console.warn('Redis not available for Hono middleware, using in-memory rate limiting');
-  }
+  const redisUrl = process.env.REDIS_URL
+    || (process.env.REDIS_HOST
+      ? `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT || '6379'}`
+      : null);
 
   // Circuit breaker state
   let redisFailureCount = 0;
   let circuitOpen = false;
   let circuitOpenedAt = 0;
+
+  if (redisUrl) {
+    try {
+      const Redis = require('redis');
+      redis = Redis.createClient({ url: redisUrl });
+      (redis as any).connect?.().catch(() => {
+        circuitOpen = true;
+        circuitOpenedAt = Date.now();
+      });
+    } catch {
+      console.warn('Redis not available for Hono middleware, using in-memory rate limiting');
+      circuitOpen = true;
+      circuitOpenedAt = Date.now();
+    }
+  } else {
+    circuitOpen = true;
+    circuitOpenedAt = Date.now();
+  }
   const CIRCUIT_FAILURE_THRESHOLD = 5;
   const CIRCUIT_RESET_MS = 30_000;
 

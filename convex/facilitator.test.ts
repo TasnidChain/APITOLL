@@ -96,6 +96,83 @@ describe("facilitator payments", () => {
     });
   });
 
+  // ─── Idempotency Key ──────────────────────────────────────
+  describe("idempotency key", () => {
+    it("returns existing payment when same idempotencyKey is sent twice", async () => {
+      const t = convexTest(schema, modules);
+
+      // First call with idempotency key
+      const id1 = await t.mutation(api.facilitator.upsertPayment, {
+        ...basePayment,
+        paymentId: "pay_idem_001",
+        idempotencyKey: "client-key-abc",
+      });
+
+      // Second call with SAME idempotency key but different paymentId
+      const id2 = await t.mutation(api.facilitator.upsertPayment, {
+        ...basePayment,
+        paymentId: "pay_idem_002", // different!
+        idempotencyKey: "client-key-abc",
+      });
+
+      // Should return the first record's ID (no duplicate)
+      expect(id2).toBe(id1);
+
+      // Verify only one record exists with this key
+      const payment = await t.query(api.facilitator.getByIdempotencyKey, {
+        _secret: TEST_SECRET,
+        idempotencyKey: "client-key-abc",
+      });
+      expect(payment?.paymentId).toBe("pay_idem_001");
+    });
+
+    it("creates separate payments for different idempotency keys", async () => {
+      const t = convexTest(schema, modules);
+
+      const id1 = await t.mutation(api.facilitator.upsertPayment, {
+        ...basePayment,
+        paymentId: "pay_diff_001",
+        idempotencyKey: "key-alpha",
+      });
+
+      const id2 = await t.mutation(api.facilitator.upsertPayment, {
+        ...basePayment,
+        paymentId: "pay_diff_002",
+        idempotencyKey: "key-beta",
+      });
+
+      expect(id1).not.toBe(id2);
+    });
+
+    it("allows payments without idempotency key (backward compatible)", async () => {
+      const t = convexTest(schema, modules);
+
+      const id1 = await t.mutation(api.facilitator.upsertPayment, {
+        ...basePayment,
+        paymentId: "pay_no_key_001",
+      });
+
+      const id2 = await t.mutation(api.facilitator.upsertPayment, {
+        ...basePayment,
+        paymentId: "pay_no_key_002",
+      });
+
+      // Different paymentIds → different records (no idempotency key to deduplicate)
+      expect(id1).not.toBe(id2);
+    });
+
+    it("getByIdempotencyKey returns null for non-existent key", async () => {
+      const t = convexTest(schema, modules);
+
+      const result = await t.query(api.facilitator.getByIdempotencyKey, {
+        _secret: TEST_SECRET,
+        idempotencyKey: "does-not-exist",
+      });
+
+      expect(result).toBeNull();
+    });
+  });
+
   // ─── updatePaymentStatus ────────────────────────────────
   describe("updatePaymentStatus", () => {
     it("updates status and txHash", async () => {

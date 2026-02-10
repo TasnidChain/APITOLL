@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalQuery, mutation, query } from "./_generated/server";
-import { requireAuth } from "./helpers";
+import { requireAuth, requireOrgAccess, requireSellerAccess } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Create Seller
@@ -40,7 +40,8 @@ export const listByOrg = query({
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this org
+    await requireOrgAccess(ctx, args.orgId);
     // Get sellers that belong to this org
     const sellers = await ctx.db
       .query("sellers")
@@ -61,7 +62,8 @@ export const listApiKeysByOrg = query({
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this org
+    await requireOrgAccess(ctx, args.orgId);
     const sellers = await ctx.db
       .query("sellers")
       .filter((q) => q.eq(q.field("orgId"), args.orgId))
@@ -114,7 +116,8 @@ export const get = query({
 export const getStats = query({
   args: { id: v.id("sellers") },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this seller
+    await requireSellerAccess(ctx, args.id);
     const transactions = await ctx.db
       .query("transactions")
       .withIndex("by_seller", (q) => q.eq("sellerId", args.id))

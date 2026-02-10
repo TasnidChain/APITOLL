@@ -1156,6 +1156,278 @@ http.route({
 });
 
 // ═══════════════════════════════════════════════════
+// Reputation - Agent/Wallet Score (public)
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/reputation",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const ip = getClientIP(request);
+    const limited = await checkRateLimit(ctx, `read:${ip}`, RATE_LIMITS.publicRead, request);
+    if (limited) return limited;
+
+    const url = new URL(request.url);
+    const agentId = url.searchParams.get("agent")?.slice(0, 128) ?? undefined;
+    const wallet = url.searchParams.get("wallet")?.slice(0, 64) ?? undefined;
+
+    if (!agentId && !wallet) {
+      return jsonResponse({
+        endpoint: "reputation",
+        usage: {
+          by_agent: "GET /api/reputation?agent=ResearchBot",
+          by_wallet: "GET /api/reputation?wallet=0x...",
+        },
+        tiers: {
+          "New (0-99)": "Standard fees, limited access",
+          "Active (100-299)": "Standard fees, full tool access",
+          "Trusted (300-599)": "10% fee discount, priority routing",
+          "Elite (600-1000)": "25% fee discount, escrow, priority",
+        },
+      }, 200, request);
+    }
+
+    const score = await ctx.runQuery(api.reputation.getScore, {
+      agentId,
+      walletAddress: wallet,
+    });
+
+    if (!score) {
+      return jsonResponse({ score: 0, tier: "New", message: "No activity found" }, 200, request);
+    }
+
+    return jsonResponse(score, 200, request);
+  }),
+});
+
+// ═══════════════════════════════════════════════════
+// Combined Leaderboard (reputation + evolution)
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/leaderboard",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const ip = getClientIP(request);
+    const limited = await checkRateLimit(ctx, `read:${ip}`, RATE_LIMITS.publicRead, request);
+    if (limited) return limited;
+
+    const url = new URL(request.url);
+    const limit = clampInt(url.searchParams.get("limit"), 1, 50, 20);
+
+    const leaderboard = await ctx.runQuery(api.reputation.getCombinedLeaderboard, { limit });
+
+    return jsonResponse({ leaderboard, count: leaderboard.length }, 200, request);
+  }),
+});
+
+// ═══════════════════════════════════════════════════
+// Discovery API - Tool Registration (public)
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/discover/register",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const ip = getClientIP(request);
+    const limited = await checkRateLimit(ctx, `register:${ip}`, RATE_LIMITS.signup, request);
+    if (limited) return limited;
+
+    const contentType = request.headers.get("Content-Type");
+    if (!contentType?.includes("application/json")) {
+      return errorResponse("Content-Type must be application/json", 415, request);
+    }
+
+    let body: {
+      name?: string;
+      description?: string;
+      baseUrl?: string;
+      method?: string;
+      path?: string;
+      price?: number;
+      category?: string;
+      chains?: string[];
+      walletAddress?: string;
+      referralCode?: string;
+    };
+    try {
+      body = await request.json();
+    } catch {
+      return errorResponse("Invalid JSON body", 400, request);
+    }
+
+    if (!body.name || !body.description || !body.baseUrl || !body.method || !body.path || !body.category || !body.walletAddress) {
+      return errorResponse("Missing required fields: name, description, baseUrl, method, path, category, walletAddress", 400, request);
+    }
+
+    if (typeof body.price !== "number" || body.price < 0) {
+      return errorResponse("price must be a non-negative number", 400, request);
+    }
+
+    try {
+      const result = await ctx.runMutation(api.tools.registerPublic, {
+        name: String(body.name).slice(0, 100),
+        description: String(body.description).slice(0, 1000),
+        baseUrl: String(body.baseUrl),
+        method: String(body.method).toUpperCase(),
+        path: String(body.path).slice(0, 256),
+        price: body.price,
+        category: String(body.category).slice(0, 50),
+        chains: Array.isArray(body.chains) ? body.chains.slice(0, 5) : ["base"],
+        walletAddress: String(body.walletAddress).slice(0, 64),
+        referralCode: body.referralCode ? String(body.referralCode).slice(0, 32) : undefined,
+      });
+
+      return jsonResponse(result, result.status === "already_registered" ? 200 : 201, request);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Registration failed";
+      return errorResponse(message, 400, request);
+    }
+  }),
+});
+
+// ═══════════════════════════════════════════════════
+// Discovery API - Tool Detail (by slug)
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/tools/detail",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const slug = url.searchParams.get("slug");
+    if (!slug) return errorResponse("slug query parameter required", 400, request);
+
+    const tool = await ctx.runQuery(api.tools.getBySlug, { slug: slug.slice(0, 128) });
+    if (!tool) return errorResponse("Tool not found", 404, request);
+
+    return jsonResponse({ tool }, 200, request);
+  }),
+});
+
+// ═══════════════════════════════════════════════════
+// Reviews - Submit (authenticated)
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/reviews",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const org = await authenticateOrg(ctx, request);
+    if (!org) return errorResponse("Unauthorized", 401, request);
+
+    const limited = await checkRateLimit(ctx, `review:${org._id}`, RATE_LIMITS.authWrite, request);
+    if (limited) return limited;
+
+    let body: { toolId?: string; rating?: number; comment?: string; agentId?: string };
+    try {
+      body = await request.json();
+    } catch {
+      return errorResponse("Invalid JSON body", 400, request);
+    }
+
+    if (!body.toolId || typeof body.rating !== "number") {
+      return errorResponse("toolId and rating are required", 400, request);
+    }
+
+    try {
+      const result = await ctx.runMutation(internal.toolReviews.internalSubmit, {
+        toolId: body.toolId as Id<"tools">,
+        orgId: org._id,
+        rating: body.rating,
+        comment: body.comment ? String(body.comment).slice(0, 500) : undefined,
+        agentId: body.agentId ? String(body.agentId).slice(0, 128) : undefined,
+      });
+
+      return jsonResponse(result, result.updated ? 200 : 201, request);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Review submission failed";
+      return errorResponse(message, 400, request);
+    }
+  }),
+});
+
+// ═══════════════════════════════════════════════════
+// Reviews - List by Tool (public)
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/reviews",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const toolId = url.searchParams.get("toolId");
+    if (!toolId) return errorResponse("toolId query parameter required", 400, request);
+
+    const ip = getClientIP(request);
+    const limited = await checkRateLimit(ctx, `read:${ip}`, RATE_LIMITS.publicRead, request);
+    if (limited) return limited;
+
+    const limit = clampInt(url.searchParams.get("limit"), 1, 50, 20);
+
+    const reviews = await ctx.runQuery(internal.toolReviews.internalListByTool, {
+      toolId: toolId as Id<"tools">,
+      limit,
+    });
+
+    return jsonResponse({ reviews, count: reviews.length }, 200, request);
+  }),
+});
+
+// ═══════════════════════════════════════════════════
+// Favorites - Toggle (authenticated)
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/favorites",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const org = await authenticateOrg(ctx, request);
+    if (!org) return errorResponse("Unauthorized", 401, request);
+
+    let body: { toolId?: string };
+    try {
+      body = await request.json();
+    } catch {
+      return errorResponse("Invalid JSON body", 400, request);
+    }
+
+    if (!body.toolId) return errorResponse("toolId is required", 400, request);
+
+    try {
+      const result = await ctx.runMutation(internal.toolFavorites.internalToggle, {
+        toolId: body.toolId as Id<"tools">,
+        orgId: org._id,
+      });
+
+      return jsonResponse(result, 200, request);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Toggle favorite failed";
+      return errorResponse(message, 400, request);
+    }
+  }),
+});
+
+// ═══════════════════════════════════════════════════
+// Favorites - List (authenticated)
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/favorites",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const org = await authenticateOrg(ctx, request);
+    if (!org) return errorResponse("Unauthorized", 401, request);
+
+    const favorites = await ctx.runQuery(internal.toolFavorites.internalListByOrg, {
+      orgId: org._id,
+    });
+
+    return jsonResponse({ favorites, count: favorites.length }, 200, request);
+  }),
+});
+
+// ═══════════════════════════════════════════════════
 // CORS Preflight — all API routes
 // ═══════════════════════════════════════════════════
 

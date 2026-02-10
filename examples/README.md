@@ -29,8 +29,13 @@ All seller examples use `@apitoll/seller-sdk` — add 3 lines of code to monetiz
 | **[buyer-agent](./buyer-agent/)** | ResearchBot with budget controls + spend tracking | $50/day | `npx tsx buyer-agent/research-bot.ts` |
 | **[multi-agent-swarm](./multi-agent-swarm/)** | 3 agents (researcher, analyst, scout) working together | $2-$10/day each | `npx tsx multi-agent-swarm/swarm.ts` |
 | **[openai-agents](./openai-agents/)** | GPT-4 function calling with paid x402 tools | $5/day | `OPENAI_API_KEY=sk-... npx tsx openai-agents/agent.ts` |
+| **[anthropic-claude](./anthropic-claude/)** | Anthropic Claude SDK with tool_use + x402 payments | $5/day | `ANTHROPIC_API_KEY=sk-... npx tsx anthropic-claude/agent.ts` |
 | **[vercel-ai-sdk](./vercel-ai-sdk/)** | Vercel AI SDK tool pattern with x402 payments | $10/day | `npx tsx vercel-ai-sdk/agent.ts` |
 | **[langchain-agent](./langchain-agent/)** | LangChain + CrewAI integration with paid tools | $10/day | `npx tsx langchain-agent/agent.ts` |
+| **[langgraph-agent](./langgraph-agent/)** | LangGraph stateful graph with conditional loops | $5/day | `npx tsx langgraph-agent/agent.ts` |
+| **[autogen-agents](./autogen-agents/)** | AutoGen-style multi-agent pipeline (Researcher + Analyst + Writer) | $0.50-$2/day each | `npx tsx autogen-agents/agent.ts` |
+| **[semantic-kernel](./semantic-kernel/)** | Microsoft Semantic Kernel plugin pattern with planner | $3/day | `npx tsx semantic-kernel/agent.ts` |
+| **[self-custody](./self-custody/)** | Self-custody wallets: local signing, direct broadcast, Solana | $5/day | `AGENT_PRIVATE_KEY=0x... npx tsx self-custody/agent.ts` |
 
 All buyer examples use `@apitoll/buyer-sdk` with automatic 402 handling, budget policies, and optional evolution (self-optimization).
 

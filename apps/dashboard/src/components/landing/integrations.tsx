@@ -6,8 +6,10 @@ const categories = [
     items: [
       { name: 'OpenClaw', icon: Cog, description: 'Autonomous agent payments' },
       { name: 'LangChain', icon: Bot, description: 'Native tool integration' },
+      { name: 'LangGraph', icon: Network, description: 'Stateful graph agents' },
       { name: 'CrewAI', icon: Cpu, description: 'Multi-agent payments' },
       { name: 'AutoGen', icon: Blocks, description: 'Agent wallet support' },
+      { name: 'Semantic Kernel', icon: Brain, description: 'Plugin + planner pattern' },
       { name: 'OpenAI Agents SDK', icon: Brain, description: 'Built-in tool calling' },
       { name: 'Vercel AI SDK', icon: Sparkles, description: 'Streaming + payments' },
       { name: 'LlamaIndex', icon: Layers, description: 'RAG with paid sources' },

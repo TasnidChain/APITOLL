@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
-import { requireAuth, requireAdmin } from "./helpers";
+import { requireAuth, requireAdmin, requireOrgAccess } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Create Dispute
@@ -13,10 +13,19 @@ export const create = mutation({
     reason: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this org
+    await requireOrgAccess(ctx, args.orgId);
     // Verify the transaction exists
     const transaction = await ctx.db.get(args.transactionId);
     if (!transaction) throw new Error("Transaction not found");
+
+    // SECURITY FIX: Verify the transaction belongs to this org's agent
+    if (transaction.agentId) {
+      const agent = await ctx.db.get(transaction.agentId);
+      if (!agent || String(agent.orgId) !== String(args.orgId)) {
+        throw new Error("Unauthorized: transaction does not belong to your organization");
+      }
+    }
 
     // Check if a dispute already exists for this transaction
     const existing = await ctx.db
@@ -55,7 +64,8 @@ export const listByOrg = query({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this org
+    await requireOrgAccess(ctx, args.orgId);
     let disputes;
 
     if (args.status) {

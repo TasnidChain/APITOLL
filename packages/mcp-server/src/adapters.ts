@@ -10,7 +10,7 @@ import { PaidMCPServer } from './server'
  */
 export function toExpressRouter(server: PaidMCPServer) {
   // Return a middleware function that handles MCP requests
-  return async (req: { path: string; method: string; headers: Record<string, string | undefined>; body?: { name?: string; arguments?: Record<string, unknown> } }, res: { json: (data: unknown) => void; status: (code: number) => { json: (data: unknown) => void } }, next: () => void) => {
+  return async (req: { path: string; method: string; headers: Record<string, string | undefined>; body?: { method?: string; params?: { name?: string; arguments?: Record<string, unknown> }; name?: string; arguments?: Record<string, unknown> } }, res: { json: (data: unknown) => void; status: (code: number) => { json: (data: unknown) => void }; setHeader: (name: string, value: string) => void }, next: () => void) => {
     const path = req.path
 
     // Handle tools/list
@@ -43,7 +43,8 @@ export function toExpressRouter(server: PaidMCPServer) {
 
     // Handle JSON-RPC style
     if (path === '/rpc' && req.method === 'POST') {
-      const { method, params } = req.body
+      const method = req.body?.method
+      const params = req.body?.params
 
       if (method === 'tools/list') {
         return res.json({
@@ -52,7 +53,7 @@ export function toExpressRouter(server: PaidMCPServer) {
         })
       }
 
-      if (method === 'tools/call') {
+      if (method === 'tools/call' && params?.name) {
         const paymentHeader = req.headers['x-payment']
         const result = await server.handleToolCall(
           params.name,
@@ -137,7 +138,7 @@ export function toHonoApp(server: PaidMCPServer) {
         return { tools: server.getToolDefinitions() }
       }
 
-      if (method === 'tools/call') {
+      if (method === 'tools/call' && params.name) {
         return server.handleToolCall(
           params.name,
           params.arguments || {},

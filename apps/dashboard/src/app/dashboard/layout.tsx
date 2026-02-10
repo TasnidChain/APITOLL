@@ -7,7 +7,6 @@ import {
 } from '@clerk/nextjs'
 import { Sidebar, MobileHeader } from '@/components/sidebar'
 import { ConvexClientProvider } from '@/lib/convex'
-import { PWAInstallButton } from '@/components/pwa'
 import { useClerkReady } from '@/components/clerk-provider'
 
 export default function DashboardLayout({
@@ -34,7 +33,6 @@ export default function DashboardLayout({
             <main className="flex-1 overflow-auto bg-muted/30">
               {children}
             </main>
-            <PWAInstallButton />
           </div>
         </ConvexClientProvider>
       </SignedIn>

@@ -146,18 +146,30 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
 
   // Redis is optional — if not available, falls through to in-memory rate limiting
   let redis: RedisClient | null = null;
-  try {
-    const Redis = require('redis');
-    redis = Redis.createClient({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      retryStrategy: (times: number) => Math.min(times * 50, 2000),
-    });
-    redis!.on('error', (err: Error) => {
-      console.warn('Redis connection error, using in-memory rate limiting:', err.message);
-    });
-  } catch {
-    // Redis not installed — start with circuit open to use in-memory fallback
+  const redisUrl = process.env.REDIS_URL
+    || (process.env.REDIS_HOST
+      ? `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT || '6379'}`
+      : null);
+
+  if (redisUrl) {
+    try {
+      const Redis = require('redis');
+      redis = Redis.createClient({ url: redisUrl });
+      redis!.on('error', (err: Error) => {
+        console.warn('Redis connection error, using in-memory rate limiting:', err.message);
+      });
+      // redis v4 requires explicit connect
+      (redis as any).connect?.().catch(() => {
+        circuitOpen = true;
+        circuitOpenedAt = Date.now();
+      });
+    } catch {
+      // Redis not installed — start with circuit open to use in-memory fallback
+      circuitOpen = true;
+      circuitOpenedAt = Date.now();
+    }
+  } else {
+    // No Redis configured — use in-memory fallback
     circuitOpen = true;
     circuitOpenedAt = Date.now();
   }

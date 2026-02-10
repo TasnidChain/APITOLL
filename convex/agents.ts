@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { requireAuth, requireOrgAccess } from "./helpers";
+import { requireAuth, requireOrgAccess, requireAgentAccess } from "./helpers";
 
 // ═══════════════════════════════════════════════════
 // Create Agent
@@ -53,8 +53,9 @@ export const listByOrg = query({
 export const get = query({
   args: { id: v.id("agents") },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
-    return await ctx.db.get(args.id);
+    // SECURITY FIX: Verify caller owns this agent (via org membership)
+    const { agent } = await requireAgentAccess(ctx, args.id);
+    return agent;
   },
 });
 
@@ -108,7 +109,8 @@ export const updateStatus = mutation({
     status: v.union(v.literal("active"), v.literal("paused"), v.literal("depleted")),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this agent
+    await requireAgentAccess(ctx, args.id);
     await ctx.db.patch(args.id, { status: args.status });
   },
 });
@@ -123,7 +125,8 @@ export const updatePolicies = mutation({
     policies: v.array(v.any()),
   },
   handler: async (ctx, args) => {
-    await requireAuth(ctx);
+    // SECURITY FIX: Verify caller owns this agent
+    await requireAgentAccess(ctx, args.id);
     await ctx.db.patch(args.id, { policiesJson: args.policies });
   },
 });

@@ -4,16 +4,24 @@ import schema from "./schema";
 import { api, internal } from "./_generated/api";
 import { modules } from "./test.setup";
 
+const TEST_USER = "user_test_deposits";
+
 describe("deposits", () => {
-  // Helper: create an org for deposit tests
+  // Helper: create an org for deposit tests (with clerkUserId for auth)
   async function createTestOrg(t: ReturnType<typeof convexTest>) {
     return await t.run(async (ctx) => {
       return await ctx.db.insert("organizations", {
         name: "Test Org",
         plan: "free",
         apiKey: "test-api-key-" + Math.random().toString(36).slice(2),
+        clerkUserId: TEST_USER,
       });
     });
+  }
+
+  // Helper: authenticated test context
+  function asUser(t: ReturnType<typeof convexTest>) {
+    return t.withIdentity({ subject: TEST_USER });
   }
 
   // ─── create ─────────────────────────────────────────────
@@ -139,7 +147,7 @@ describe("deposits", () => {
         chain: "base",
       });
 
-      const found = await t.query(api.deposits.getByPaymentIntent, {
+      const found = await asUser(t).query(api.deposits.getByPaymentIntent, {
         stripePaymentIntentId: "pi_unique_lookup",
       });
 
@@ -150,7 +158,7 @@ describe("deposits", () => {
     it("returns null for non-existent payment intent", async () => {
       const t = convexTest(schema, modules);
 
-      const found = await t.query(api.deposits.getByPaymentIntent, {
+      const found = await asUser(t).query(api.deposits.getByPaymentIntent, {
         stripePaymentIntentId: "pi_does_not_exist",
       });
 
@@ -196,7 +204,7 @@ describe("deposits", () => {
         await ctx.db.patch(deposit2.id, { status: "completed" });
       });
 
-      const stats = await t.query(api.deposits.getStats, { orgId });
+      const stats = await asUser(t).query(api.deposits.getStats, { orgId });
 
       expect(stats.totalDeposits).toBe(3);
       expect(stats.completedDeposits).toBe(2);
@@ -208,7 +216,7 @@ describe("deposits", () => {
       const t = convexTest(schema, modules);
       const orgId = await createTestOrg(t);
 
-      const stats = await t.query(api.deposits.getStats, { orgId });
+      const stats = await asUser(t).query(api.deposits.getStats, { orgId });
 
       expect(stats.totalDeposits).toBe(0);
       expect(stats.completedDeposits).toBe(0);

@@ -127,6 +127,12 @@ export default defineSchema({
     dailyCallCount: v.optional(v.number()),
     dailyCallDate: v.optional(v.string()), // "YYYY-MM-DD"
     createdAt: v.optional(v.number()),
+    // Auto top-up configuration
+    autoTopUpEnabled: v.optional(v.boolean()),
+    autoTopUpThreshold: v.optional(v.number()), // USDC threshold
+    autoTopUpAmount: v.optional(v.number()),     // USDC amount to top up
+    autoTopUpMaxMonthly: v.optional(v.number()), // Monthly USD cap
+    autoTopUpChain: v.optional(v.union(v.literal("base"), v.literal("solana"))),
   })
     .index("by_api_key", ["apiKey"])
     .index("by_stripe_customer", ["stripeCustomerId"])
@@ -478,6 +484,7 @@ export default defineSchema({
   // ═══════════════════════════════════════════════════
   facilitatorPayments: defineTable({
     paymentId: v.string(),
+    idempotencyKey: v.optional(v.string()), // Client-provided key to prevent duplicate payments
     originalUrl: v.string(),
     originalMethod: v.string(),
     originalHeaders: v.optional(v.any()),
@@ -501,6 +508,7 @@ export default defineSchema({
     completedAt: v.optional(v.number()),
   })
     .index("by_payment_id", ["paymentId"])
+    .index("by_idempotency_key", ["idempotencyKey"])
     .index("by_status", ["status"]),
 
   // ═══════════════════════════════════════════════════
@@ -513,6 +521,34 @@ export default defineSchema({
   })
     .index("by_key", ["key"])
     .index("by_window", ["windowStart"]),
+
+  // ═══════════════════════════════════════════════════
+  // Tool Reviews (marketplace ratings & reviews)
+  // ═══════════════════════════════════════════════════
+  toolReviews: defineTable({
+    toolId: v.id("tools"),
+    orgId: v.id("organizations"),
+    agentId: v.optional(v.string()),       // which agent left the review
+    rating: v.number(),                    // 1-5
+    comment: v.optional(v.string()),       // max 500 chars
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_tool", ["toolId"])
+    .index("by_org", ["orgId"])
+    .index("by_tool_org", ["toolId", "orgId"]),
+
+  // ═══════════════════════════════════════════════════
+  // Tool Favorites (bookmarks for agents/orgs)
+  // ═══════════════════════════════════════════════════
+  toolFavorites: defineTable({
+    toolId: v.id("tools"),
+    orgId: v.id("organizations"),
+    createdAt: v.number(),
+  })
+    .index("by_org", ["orgId"])
+    .index("by_tool", ["toolId"])
+    .index("by_tool_org", ["toolId", "orgId"]),
 
   agentEvolution: defineTable({
     agentId: v.string(),

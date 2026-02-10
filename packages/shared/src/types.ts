@@ -417,6 +417,113 @@ export interface PlatformEvent {
   data: Transaction | { agentId: string; message: string };
 }
 
+// ─── Evolution & Gossip Types ─────────────────────────────────
+
+export type MutationType =
+  | "preference_boost"
+  | "escrow_enabled"
+  | "chain_optimized"
+  | "topup_adjusted";
+
+export interface MutationEvent {
+  type: MutationType | string;
+  from?: string;
+  to?: string;
+  successRate?: number;
+  timestamp: number;
+}
+
+export interface EvolutionState {
+  mutationDepth: number;
+  generation: number;
+  fitness: number;
+  traits: string[];
+  preferApitoll?: number;
+  escrowEnabled?: boolean;
+  preferredChains?: string[];
+  autoTopUpThreshold?: number;
+}
+
+export interface GossipEvent {
+  agentId: string;
+  endpoint: string;
+  chain: SupportedChain;
+  amount: number;
+  latencyMs: number;
+  mutationTriggered: boolean;
+  createdAt: number;
+}
+
+export interface TrendingEndpoint {
+  endpoint: string;
+  host: string;
+  discoveries: number;
+  uniqueAgents: number;
+  totalVolume: number;
+  avgLatencyMs: number;
+  chains: string[];
+  mutations: number;
+  trendingScore: number;
+  firstSeen: number;
+  lastSeen: number;
+}
+
+// ─── Reputation Types ──────────────────────────────────────────
+
+export type ReputationTier = "New" | "Active" | "Trusted" | "Elite";
+
+export interface ReputationScore {
+  identifier: string;
+  score: number;
+  tier: ReputationTier;
+  benefits: {
+    feeDiscountPct: number;
+    priorityRouting: boolean;
+    escrowAccess: boolean;
+    mutationEligible: boolean;
+  };
+  activity: {
+    totalTransactions: number;
+    totalVolumeUsdc: number;
+    uniqueEndpoints: number;
+    mutations: number;
+    chains: string[];
+  };
+  evolution?: {
+    generation: number;
+    fitness: number;
+    mutationDepth: number;
+    totalMutations: number;
+  } | null;
+  nextTier?: {
+    name: ReputationTier;
+    minScore: number;
+    pointsNeeded: number;
+  } | null;
+}
+
+export interface LeaderboardEntry {
+  agentId: string;
+  combinedScore: number;
+  reputation: {
+    score: number;
+    tier: ReputationTier;
+  };
+  activity: {
+    transactions: number;
+    totalSpent: number;
+    mutations: number;
+    uniqueEndpoints: number;
+    chains: string[];
+  };
+  evolution?: {
+    generation: number;
+    fitness: number;
+    mutationDepth: number;
+  } | null;
+  lastActive: number;
+}
+
 // ─── API Response Types ─────────────────────────────────────────
 
 export interface ApiResponse<T> {

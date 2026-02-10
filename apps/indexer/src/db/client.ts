@@ -1,6 +1,12 @@
 import postgres from 'postgres'
 
-const connectionString = process.env.DATABASE_URL || 'postgres://localhost:5432/apitoll'
+const connectionString = process.env.DATABASE_URL
+if (!connectionString) {
+  throw new Error(
+    'DATABASE_URL environment variable is required. ' +
+    'Set it to your PostgreSQL connection string (e.g. postgres://user:pass@host:5432/apitoll)'
+  )
+}
 
 export const sql = postgres(connectionString, {
   max: 10,

@@ -41,11 +41,16 @@ function validateFacilitatorSecret(secret: string | undefined) {
 /**
  * Create or update a payment record.
  * Called when a new payment is initiated or when status changes.
+ *
+ * Supports idempotency keys: if `idempotencyKey` is provided and a payment
+ * with that key already exists, returns the existing payment ID without
+ * creating a duplicate. This prevents double-charges on network retries.
  */
 export const upsertPayment = mutation({
   args: {
     _secret: v.string(),
     paymentId: v.string(),
+    idempotencyKey: v.optional(v.string()),
     originalUrl: v.string(),
     originalMethod: v.string(),
     originalHeaders: v.optional(v.any()),
@@ -73,7 +78,20 @@ export const upsertPayment = mutation({
     // Strip _secret before any DB operations
     const { _secret: _, ...data } = args;
 
-    // Check if payment already exists
+    // Idempotency key check — if caller sent the same key before, return existing payment
+    if (data.idempotencyKey) {
+      const existingByKey = await ctx.db
+        .query("facilitatorPayments")
+        .withIndex("by_idempotency_key", (q) => q.eq("idempotencyKey", data.idempotencyKey))
+        .first();
+
+      if (existingByKey) {
+        // Return the original payment ID — no duplicate created
+        return existingByKey._id;
+      }
+    }
+
+    // Check if payment already exists by paymentId
     const existing = await ctx.db
       .query("facilitatorPayments")
       .withIndex("by_payment_id", (q) => q.eq("paymentId", data.paymentId))
@@ -131,6 +149,22 @@ export const updatePaymentStatus = mutation({
     if (args.completedAt !== undefined) patch.completedAt = args.completedAt;
 
     await ctx.db.patch(payment._id, patch);
+  },
+});
+
+/**
+ * Look up an existing payment by client-provided idempotency key.
+ * Returns the cached payment record so the facilitator can short-circuit
+ * duplicate requests without hitting the blockchain.
+ */
+export const getByIdempotencyKey = query({
+  args: { _secret: v.string(), idempotencyKey: v.string() },
+  handler: async (ctx, args) => {
+    validateFacilitatorSecret(args._secret);
+    return await ctx.db
+      .query("facilitatorPayments")
+      .withIndex("by_idempotency_key", (q) => q.eq("idempotencyKey", args.idempotencyKey))
+      .first();
   },
 });
 

@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useOrgId, useOrg } from '@/lib/hooks'
 import { PageLoading } from '@/components/loading'
 import { cn } from '@/lib/utils'
+import { useMutation, useQuery } from 'convex/react'
+import { api } from '../../../../../../convex/_generated/api'
 import {
   Wallet,
   CreditCard,
@@ -14,14 +16,22 @@ import {
   Shield,
   Coins,
   Info,
+  Zap,
+  Settings,
 } from 'lucide-react'
 
 const QUICK_AMOUNTS = [5, 10, 25, 50, 100]
 const COST_PER_CALL = 0.001
+const ON_RAMP_FEE_BPS = 150 // 1.5%
 
 function estimateCalls(amount: number): string {
   const calls = Math.floor(amount / COST_PER_CALL)
   return new Intl.NumberFormat('en-US').format(calls)
+}
+
+function calculateFee(amount: number): { fee: number; net: number } {
+  const fee = (amount * ON_RAMP_FEE_BPS) / 10000
+  return { fee: parseFloat(fee.toFixed(4)), net: parseFloat((amount - fee).toFixed(4)) }
 }
 
 export default function FundWalletPage() {
@@ -30,12 +40,24 @@ export default function FundWalletPage() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null)
   const [customAmount, setCustomAmount] = useState('')
   const [copiedAddress, setCopiedAddress] = useState(false)
+  const [showAutoTopUp, setShowAutoTopUp] = useState(false)
+  const [autoTopUpThreshold, setAutoTopUpThreshold] = useState('1')
+  const [autoTopUpAmount, setAutoTopUpAmount] = useState('25')
+  const [autoTopUpMaxMonthly, setAutoTopUpMaxMonthly] = useState('500')
+  const [savingAutoTopUp, setSavingAutoTopUp] = useState(false)
+
+  const autoTopUpConfig = useQuery(
+    api.deposits.getAutoTopUp,
+    orgId ? { orgId } : 'skip'
+  )
+  const setAutoTopUpMutation = useMutation(api.deposits.setAutoTopUp)
 
   if (!orgId || !org) return <PageLoading />
 
   const walletAddress = org.billingWallet ?? ''
   const hasWallet = walletAddress.length > 0
   const activeAmount = selectedAmount ?? (parseFloat(customAmount) || 0)
+  const feeBreakdown = activeAmount > 0 ? calculateFee(activeAmount) : null
 
   const handleQuickAmount = (amount: number) => {
     setSelectedAmount(amount)
@@ -55,9 +77,26 @@ export default function FundWalletPage() {
     }
   }
 
-  const coinbaseUrl = hasWallet
-    ? `https://pay.coinbase.com/buy/select-asset?appId=apitoll&addresses=${encodeURIComponent(JSON.stringify({ [walletAddress]: ['base'] }))}&assets=${encodeURIComponent(JSON.stringify(['USDC']))}`
-    : ''
+  const handleSaveAutoTopUp = async (enabled: boolean) => {
+    setSavingAutoTopUp(true)
+    try {
+      await setAutoTopUpMutation({
+        orgId,
+        enabled,
+        thresholdUSDC: parseFloat(autoTopUpThreshold) || 1,
+        topUpAmountUSDC: parseFloat(autoTopUpAmount) || 25,
+        maxMonthlyUSD: parseFloat(autoTopUpMaxMonthly) || 500,
+        chain: 'base',
+      })
+    } catch (e) {
+      console.error('Failed to save auto top-up:', e)
+    }
+    setSavingAutoTopUp(false)
+  }
+
+  // Coinbase direct buy link — works without session token / CDP keys
+  // Users buy USDC on Coinbase, then send to their org wallet
+  const coinbaseUrl = 'https://www.coinbase.com/price/usd-coin'
 
   return (
     <div className="p-8">
@@ -72,7 +111,7 @@ export default function FundWalletPage() {
               <a href="/dashboard/settings" className="font-medium text-primary hover:underline">
                 Settings
               </a>{' '}
-              before you can fund your account. This is the Base address where your USDC will be held.
+              before you can fund your account.
             </p>
           </div>
         </div>
@@ -128,17 +167,23 @@ export default function FundWalletPage() {
           <span className="text-sm text-muted-foreground">USDC</span>
         </div>
 
-        {activeAmount > 0 && (
-          <div className="mt-4 rounded-lg bg-muted/50 p-4">
-            <div className="flex items-center gap-2 text-sm">
-              <Info className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-muted-foreground">
-                ${activeAmount.toLocaleString()} USDC{' '}
-                <span className="text-foreground font-medium">
-                  ~ {estimateCalls(activeAmount)} API calls
-                </span>{' '}
-                at $0.001 avg per call
-              </span>
+        {feeBreakdown && (
+          <div className="mt-4 rounded-lg bg-muted/50 p-4 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Amount</span>
+              <span className="text-foreground font-medium">${activeAmount.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Platform fee (1.5%)</span>
+              <span className="text-muted-foreground">-${feeBreakdown.fee}</span>
+            </div>
+            <div className="border-t pt-2 flex items-center justify-between text-sm">
+              <span className="text-foreground font-medium">USDC received</span>
+              <span className="text-foreground font-semibold">${feeBreakdown.net}</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Info className="h-3.5 w-3.5 flex-shrink-0" />
+              ~ {estimateCalls(feeBreakdown.net)} API calls at $0.001 avg
             </div>
           </div>
         )}
@@ -161,25 +206,39 @@ export default function FundWalletPage() {
             <h3 className="text-lg font-semibold">Coinbase Onramp</h3>
           </div>
 
-          <p className="text-sm text-muted-foreground mb-6 flex-1">
-            Fund with credit card, debit card, or bank transfer via Coinbase
+          <p className="text-sm text-muted-foreground mb-4 flex-1">
+            Buy USDC on Coinbase, then send it to your organization wallet on Base or Solana.
           </p>
 
-          {hasWallet ? (
-            <button
-              onClick={() => window.open(coinbaseUrl, '_blank')}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              Buy USDC
-              <ExternalLink className="h-4 w-4" />
-            </button>
-          ) : (
-            <a
-              href="/dashboard/settings"
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-destructive/50 bg-destructive/5 px-4 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
-            >
-              Set wallet in Settings first
-            </a>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-500">
+              Base
+            </span>
+            <span className="rounded-full bg-purple-500/10 px-2.5 py-0.5 text-xs font-medium text-purple-500">
+              Solana
+            </span>
+            <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-500">
+              USDC
+            </span>
+          </div>
+
+          <a
+            href={coinbaseUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            Buy USDC on Coinbase
+            <ExternalLink className="h-4 w-4" />
+          </a>
+          {hasWallet && (
+            <p className="mt-2 text-xs text-muted-foreground text-center">
+              Then send USDC to{' '}
+              <button onClick={handleCopyAddress} className="font-mono text-primary hover:underline">
+                {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              </button>
+              {' '}on Base
+            </p>
           )}
         </div>
 
@@ -193,7 +252,7 @@ export default function FundWalletPage() {
           </div>
 
           <p className="text-sm text-muted-foreground mb-4 flex-1">
-            Send USDC on Base directly to your organization wallet
+            Send USDC on Base or Solana directly to your organization wallet
           </p>
 
           <div className="space-y-3">
@@ -225,6 +284,9 @@ export default function FundWalletPage() {
               <span className="rounded-full bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-500">
                 Base (Mainnet)
               </span>
+              <span className="rounded-full bg-purple-500/10 px-2.5 py-0.5 text-xs font-medium text-purple-500">
+                Solana (Mainnet)
+              </span>
               <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-500">
                 USDC
               </span>
@@ -232,48 +294,151 @@ export default function FundWalletPage() {
           </div>
         </div>
 
-        {/* Bridge from Other Chains */}
-        <div className="relative rounded-xl border bg-card p-6 flex flex-col opacity-60">
-          <div className="absolute -top-3 right-4">
-            <span className="rounded-full bg-muted px-3 py-0.5 text-xs font-medium text-muted-foreground">
-              Coming Soon
-            </span>
-          </div>
-
+        {/* Stripe Card Payment */}
+        <div className="rounded-xl border bg-card p-6 flex flex-col">
           <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-              <ArrowRightLeft className="h-5 w-5 text-muted-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/10">
+              <CreditCard className="h-5 w-5 text-violet-500" />
             </div>
-            <h3 className="text-lg font-semibold text-muted-foreground">
-              Bridge from Other Chains
-            </h3>
+            <h3 className="text-lg font-semibold">Card Payment</h3>
           </div>
 
-          <p className="text-sm text-muted-foreground mb-6 flex-1">
-            Bridge USDC from Ethereum, Polygon, or Arbitrum
+          <p className="text-sm text-muted-foreground mb-4 flex-1">
+            Pay with credit or debit card via Stripe. Funds are automatically converted to USDC.
           </p>
 
-          <button
-            disabled
-            className="flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium text-muted-foreground cursor-not-allowed"
+          <div className="space-y-2 mb-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Processing fee</span>
+              <span>1.5%</span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Settlement</span>
+              <span>~2 minutes</span>
+            </div>
+          </div>
+
+          <a
+            href={`/dashboard/deposits?amount=${activeAmount || 25}`}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium hover:bg-accent transition-colors"
           >
-            Coming Soon
-          </button>
+            Pay with Card
+            <ArrowRightLeft className="h-4 w-4" />
+          </a>
         </div>
       </div>
 
-      {/* Security Note */}
+      {/* Auto Top-Up */}
       <div className="mt-8 rounded-xl border bg-card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Zap className="h-5 w-5 text-amber-500" />
+            <div>
+              <h3 className="text-sm font-semibold">Auto Top-Up</h3>
+              <p className="text-xs text-muted-foreground">
+                Automatically fund your wallet when balance drops below a threshold
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowAutoTopUp(!showAutoTopUp)}
+            className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
+          >
+            <Settings className="h-3.5 w-3.5" />
+            {showAutoTopUp ? 'Hide' : 'Configure'}
+          </button>
+        </div>
+
+        {autoTopUpConfig && (
+          <div className="flex items-center gap-2 text-sm">
+            <span className={cn(
+              'inline-flex h-2 w-2 rounded-full',
+              autoTopUpConfig.enabled ? 'bg-emerald-500' : 'bg-muted-foreground'
+            )} />
+            <span className="text-muted-foreground">
+              {autoTopUpConfig.enabled
+                ? `Active: Top up $${autoTopUpConfig.topUpAmount} when balance < $${autoTopUpConfig.threshold} (max $${autoTopUpConfig.maxMonthly}/mo)`
+                : 'Disabled'}
+            </span>
+          </div>
+        )}
+
+        {showAutoTopUp && (
+          <div className="mt-4 border-t pt-4 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Low balance threshold ($)
+                </label>
+                <input
+                  type="number"
+                  value={autoTopUpThreshold}
+                  onChange={(e) => setAutoTopUpThreshold(e.target.value)}
+                  min="0.1"
+                  step="0.5"
+                  className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Top-up amount ($)
+                </label>
+                <input
+                  type="number"
+                  value={autoTopUpAmount}
+                  onChange={(e) => setAutoTopUpAmount(e.target.value)}
+                  min="5"
+                  step="5"
+                  className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Monthly cap ($)
+                </label>
+                <input
+                  type="number"
+                  value={autoTopUpMaxMonthly}
+                  onChange={(e) => setAutoTopUpMaxMonthly(e.target.value)}
+                  min="5"
+                  step="25"
+                  className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleSaveAutoTopUp(true)}
+                disabled={savingAutoTopUp}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {savingAutoTopUp ? 'Saving...' : 'Enable Auto Top-Up'}
+              </button>
+              {autoTopUpConfig?.enabled && (
+                <button
+                  onClick={() => handleSaveAutoTopUp(false)}
+                  disabled={savingAutoTopUp}
+                  className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50"
+                >
+                  Disable
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Security Note */}
+      <div className="mt-6 rounded-xl border bg-card p-6">
         <div className="flex items-start gap-3">
           <Shield className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
           <div>
             <h3 className="text-sm font-semibold mb-1">Security Note</h3>
             <p className="text-sm text-muted-foreground">
-              All funds are held in USDC on the Base network. USDC is a regulated stablecoin
+              Funds are held in USDC on Base and Solana networks. USDC is a regulated stablecoin
               pegged 1:1 to the US Dollar, issued by Circle. Your wallet address is unique to
-              your organization ({org.name}). Only send USDC on the Base network to this
-              address — sending other tokens or using other networks may result in permanent
-              loss of funds.
+              your organization ({org.name}). Ensure you send USDC on the correct network.
             </p>
           </div>
         </div>

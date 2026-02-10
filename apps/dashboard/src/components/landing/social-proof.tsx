@@ -30,7 +30,7 @@ const techStack = [
   { name: 'x402 Protocol', href: 'https://www.x402.org/' },
   { name: 'Convex (Real-time DB)', href: 'https://www.convex.dev/' },
   { name: 'Clerk Auth', href: 'https://clerk.com/' },
-  { name: 'Cloudflare Pages', href: 'https://pages.cloudflare.com/' },
+  { name: 'Railway (Hosting)', href: 'https://railway.app/' },
 ]
 
 export function SocialProof() {

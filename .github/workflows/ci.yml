@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [18, 20, 22]
 
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +41,12 @@ jobs:
       - name: Type check buyer-sdk
         run: npx tsc --noEmit --project packages/buyer-sdk/tsconfig.json
 
+      - name: Type check facilitator
+        run: npx tsc --noEmit --project packages/facilitator/tsconfig.json
+
+      - name: Type check Convex functions
+        run: npx convex typecheck
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -58,3 +64,69 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+  dashboard-build:
+    name: Dashboard Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build dashboard
+        run: npm run build --workspace=apps/dashboard
+        env:
+          NEXT_PUBLIC_CONVEX_URL: https://placeholder.convex.cloud
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_placeholder
+
+  package-check:
+    name: Package Integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all packages
+        run: npm run build
+
+      - name: Verify shared dist
+        run: test -f packages/shared/dist/index.js && test -f packages/shared/dist/index.d.ts
+
+      - name: Verify buyer-sdk dist
+        run: test -f packages/buyer-sdk/dist/index.js && test -f packages/buyer-sdk/dist/index.d.ts
+
+      - name: Verify seller-sdk dist
+        run: test -f packages/seller-sdk/dist/index.js && test -f packages/seller-sdk/dist/index.d.ts
+
+      - name: Verify facilitator dist
+        run: test -f packages/facilitator/dist/server.js
+
+      - name: Verify mcp-server dist
+        run: test -f packages/mcp-server/dist/index.js && test -f packages/mcp-server/dist/index.d.ts
+
+      - name: Dry-run pack (shared)
+        run: cd packages/shared && npm pack --dry-run
+
+      - name: Dry-run pack (buyer-sdk)
+        run: cd packages/buyer-sdk && npm pack --dry-run
+
+      - name: Dry-run pack (seller-sdk)
+        run: cd packages/seller-sdk && npm pack --dry-run
+
+      - name: Dry-run pack (mcp-server)
+        run: cd packages/mcp-server && npm pack --dry-run

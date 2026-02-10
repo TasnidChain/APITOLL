@@ -2,6 +2,12 @@
   "name": "apitoll",
   "description": "API Toll — the payment layer for the AI agent economy. USDC micropayments on Base via x402.",
   "private": true,
+  "homepage": "https://apitoll.com",
+  "bugs": "https://github.com/TasnidChain/APITOLL/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TasnidChain/APITOLL"
+  },
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -25,7 +31,6 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.3",
-    "@cloudflare/next-on-pages": "^1.13.16",
     "convex": "^1.10.0",
     "stripe": "^20.3.1"
   },

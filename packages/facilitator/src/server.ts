@@ -56,6 +56,7 @@ if (CONVEX_URL) {
 const upsertPaymentRef = makeFunctionReference<"mutation">("facilitator:upsertPayment");
 const updatePaymentStatusRef = makeFunctionReference<"mutation">("facilitator:updatePaymentStatus");
 const getActivePaymentsRef = makeFunctionReference<"query">("facilitator:getActivePayments");
+const getByIdempotencyKeyRef = makeFunctionReference<"query">("facilitator:getByIdempotencyKey");
 
 // Shared secret for Convex facilitator functions (defense-in-depth)
 const FACILITATOR_CONVEX_SECRET = process.env.FACILITATOR_CONVEX_SECRET || '';
@@ -74,9 +75,22 @@ function requireEnv(name: string): string {
 // Validate critical env vars at startup
 const FACILITATOR_PRIVATE_KEY = requireEnv('FACILITATOR_PRIVATE_KEY');
 const BASE_RPC_URL = process.env.BASE_RPC_URL || 'https://mainnet.base.org';
+const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+const SOLANA_PRIVATE_KEY = process.env.SOLANA_PRIVATE_KEY || ''; // Optional: enables Solana payments
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
 const API_KEYS = (process.env.FACILITATOR_API_KEYS || '').split(',').filter(Boolean);
+
+// ─── Solana Payment Module ──────────────────────────────────────
+
+import { transferSolanaUSDC, broadcastSolanaTransaction, verifySolanaTransaction } from './solana';
+
+const SOLANA_ENABLED = !!SOLANA_PRIVATE_KEY;
+if (SOLANA_ENABLED) {
+  logger.info('Solana chain enabled for USDC payments');
+} else {
+  logger.info('Solana chain disabled (no SOLANA_PRIVATE_KEY)');
+}
 
 // ─── Constants ──────────────────────────────────────────────────
 
@@ -85,6 +99,44 @@ const USDC_ABI = ['function transfer(address to, uint256 amount) returns (bool)'
 const MAX_PAYMENT_AMOUNT = 100; // $100 USDC max per single payment (safety cap)
 const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests per minute per API key
+
+// ─── Redis for Rate Limiting (optional — falls back to in-memory) ──
+let redisClient: { incr(key: string): Promise<number>; expire(key: string, seconds: number): Promise<void> } | null = null;
+let redisCircuitOpen = true;
+let redisCircuitOpenedAt = Date.now();
+let redisFailureCount = 0;
+const REDIS_CIRCUIT_FAILURE_THRESHOLD = 5;
+const REDIS_CIRCUIT_RESET_MS = 30_000;
+
+const REDIS_URL = process.env.REDIS_URL
+  || (process.env.REDIS_HOST
+    ? `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT || '6379'}`
+    : null);
+
+if (REDIS_URL) {
+  try {
+    const Redis = require('redis');
+    const client = Redis.createClient({ url: REDIS_URL });
+    client.connect?.().then(() => {
+      redisClient = client;
+      redisCircuitOpen = false;
+      logger.info('Redis connected for facilitator rate limiting');
+    }).catch((err: Error) => {
+      logger.warn({ error: err.message }, 'Redis connect failed, using in-memory rate limiting');
+    });
+    client.on?.('error', (err: Error) => {
+      logger.error({ error: err.message }, 'Redis error (facilitator)');
+      redisFailureCount++;
+      if (redisFailureCount >= REDIS_CIRCUIT_FAILURE_THRESHOLD) {
+        redisCircuitOpen = true;
+        redisCircuitOpenedAt = Date.now();
+        logger.warn('Redis circuit breaker OPEN (facilitator). Falling back to in-memory.');
+      }
+    });
+  } catch {
+    logger.warn('Redis not available for facilitator, using in-memory rate limiting');
+  }
+}
 
 // ─── Zod Schemas ────────────────────────────────────────────────
 
@@ -123,6 +175,7 @@ type JsonValue = string | number | boolean | null | undefined | JsonValue[] | { 
 
 interface PaymentRecord {
   id: string;
+  idempotencyKey?: string; // Client-provided key to prevent duplicate payments
   originalUrl: string;
   originalMethod: string;
   originalHeaders?: Record<string, string>;
@@ -163,6 +216,7 @@ async function persistPayment(payment: PaymentRecord) {
     await convexClient.mutation(upsertPaymentRef, {
       _secret: FACILITATOR_CONVEX_SECRET,
       paymentId: payment.id,
+      idempotencyKey: payment.idempotencyKey,
       originalUrl: payment.originalUrl,
       originalMethod: payment.originalMethod,
       originalHeaders: payment.originalHeaders,
@@ -282,32 +336,74 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// ─── Rate Limiting Middleware ───────────────────────────────────
+// ─── Rate Limiting Middleware (Redis-backed with in-memory fallback) ──
 
-function rateLimit(req: Request, res: Response, next: NextFunction) {
-  const key = req.headers.authorization || req.ip || 'unknown';
+function checkMemoryRateLimit(key: string): { allowed: boolean; retryAfter: number } {
   const now = Date.now();
-
   const entry = rateLimitMap.get(key);
   if (!entry || now > entry.resetAt) {
     rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return next();
+    return { allowed: true, retryAfter: 0 };
   }
-
   entry.count++;
   if (entry.count > RATE_LIMIT_MAX_REQUESTS) {
-    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-    res.setHeader('Retry-After', String(retryAfter));
-    return res.status(429).json({
-      error: 'Too many requests',
-      retry_after_seconds: retryAfter,
-    });
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
   }
-
-  next();
+  return { allowed: true, retryAfter: 0 };
 }
 
-// Cleanup rate limit entries every 5 minutes
+async function checkRedisRateLimit(key: string): Promise<{ allowed: boolean; count: number }> {
+  if (!redisClient || redisCircuitOpen) {
+    if (redisCircuitOpen && Date.now() - redisCircuitOpenedAt > REDIS_CIRCUIT_RESET_MS) {
+      redisCircuitOpen = false;
+      redisFailureCount = 0;
+    } else {
+      throw new Error('circuit_open');
+    }
+  }
+  try {
+    const windowSec = Math.ceil(RATE_LIMIT_WINDOW_MS / 1000);
+    const count = await redisClient!.incr(key);
+    if (count === 1) {
+      await redisClient!.expire(key, windowSec);
+    }
+    redisFailureCount = 0;
+    return { allowed: count <= RATE_LIMIT_MAX_REQUESTS, count };
+  } catch (e) {
+    redisFailureCount++;
+    if (redisFailureCount >= REDIS_CIRCUIT_FAILURE_THRESHOLD) {
+      redisCircuitOpen = true;
+      redisCircuitOpenedAt = Date.now();
+      logger.warn('Redis circuit breaker OPEN (facilitator). Falling back to in-memory.');
+    }
+    throw e;
+  }
+}
+
+async function rateLimit(req: Request, res: Response, next: NextFunction) {
+  const key = req.headers.authorization || req.ip || 'unknown';
+
+  try {
+    const redisKey = `fac:rl:${key}:${Math.floor(Date.now() / RATE_LIMIT_WINDOW_MS)}`;
+    const result = await checkRedisRateLimit(redisKey);
+    if (!result.allowed) {
+      const retryAfter = Math.ceil(RATE_LIMIT_WINDOW_MS / 1000);
+      res.setHeader('Retry-After', String(retryAfter));
+      return res.status(429).json({ error: 'Too many requests', retry_after_seconds: retryAfter });
+    }
+    return next();
+  } catch {
+    // Fallback to in-memory
+    const result = checkMemoryRateLimit(key);
+    if (!result.allowed) {
+      res.setHeader('Retry-After', String(result.retryAfter));
+      return res.status(429).json({ error: 'Too many requests', retry_after_seconds: result.retryAfter });
+    }
+    return next();
+  }
+}
+
+// Cleanup in-memory rate limit entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of rateLimitMap) {
@@ -459,7 +555,49 @@ app.get('/status', rateLimit, requireAuth, async (_req: Request, res: Response) 
  */
 app.post('/pay', rateLimit, requireAuth, async (req: Request, res: Response) => {
   try {
-    // Validate request body with Zod
+    // ─── Idempotency Key Check ────────────────────────────────
+    // If the client sends an Idempotency-Key header and we've seen it before,
+    // return the cached response immediately — no duplicate payment.
+    const idempotencyKey = req.headers['idempotency-key'] as string | undefined;
+
+    if (idempotencyKey) {
+      // Check in-memory first (fast path)
+      for (const payment of pendingPayments.values()) {
+        if (payment.idempotencyKey === idempotencyKey) {
+          logger.info({ idempotencyKey, paymentId: payment.id }, 'Idempotent hit (in-memory)');
+          return res.status(202).json({
+            payment_id: payment.id,
+            status: payment.status,
+            check_url: `/pay/${payment.id}`,
+            idempotent: true,
+          });
+        }
+      }
+
+      // Check Convex (covers server restarts)
+      if (convexClient) {
+        try {
+          const existing = await convexClient.query(getByIdempotencyKeyRef, {
+            _secret: FACILITATOR_CONVEX_SECRET,
+            idempotencyKey,
+          });
+          if (existing) {
+            logger.info({ idempotencyKey, paymentId: existing.paymentId }, 'Idempotent hit (Convex)');
+            return res.status(202).json({
+              payment_id: existing.paymentId,
+              status: existing.status,
+              check_url: `/pay/${existing.paymentId}`,
+              idempotent: true,
+            });
+          }
+        } catch (err: unknown) {
+          // Don't block payment if Convex lookup fails — log and continue
+          logger.warn({ idempotencyKey, error: err instanceof Error ? err.message : String(err) }, 'Idempotency check failed (Convex), proceeding');
+        }
+      }
+    }
+
+    // ─── Validate Request ─────────────────────────────────────
     const parseResult = PayRequestSchema.safeParse(req.body);
     if (!parseResult.success) {
       const errors = parseResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
@@ -479,14 +617,18 @@ app.post('/pay', rateLimit, requireAuth, async (req: Request, res: Response) => 
       });
     }
 
-    // Only Base chain supported for now
-    if (data.payment_required.chain !== 'base') {
-      return res.status(400).json({ error: 'Only Base chain is supported currently' });
+    // Chain validation
+    if (data.payment_required.chain === 'solana' && !SOLANA_ENABLED) {
+      return res.status(400).json({ error: 'Solana chain not configured on this facilitator. Set SOLANA_PRIVATE_KEY to enable.' });
+    }
+    if (!['base', 'solana'].includes(data.payment_required.chain)) {
+      return res.status(400).json({ error: 'Unsupported chain. Supported: base, solana' });
     }
 
     const paymentId = uuidv4();
     const payment: PaymentRecord = {
       id: paymentId,
+      idempotencyKey,
       originalUrl: data.original_url,
       originalMethod: data.original_method,
       originalHeaders: data.original_headers,
@@ -550,52 +692,76 @@ async function processPayment(paymentId: string, signedTx?: string) {
   const payment = pendingPayments.get(paymentId);
   if (!payment) throw new Error('Payment not found');
 
+  const chain = payment.paymentRequired.chain;
   logger.info(
-    { paymentId, amount: payment.paymentRequired.amount, to: payment.sellerAddress },
+    { paymentId, chain, amount: payment.paymentRequired.amount, to: payment.sellerAddress },
     'Processing payment'
   );
 
   try {
-    const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
-
-    if (signedTx) {
-      // Agent provided a pre-signed transaction — just broadcast it
-      logger.info({ paymentId }, 'Broadcasting pre-signed transaction');
-      const txResponse = await provider.broadcastTransaction(signedTx);
-      const receipt = await txResponse.wait(2);
-
-      if (!receipt) throw new Error('Transaction failed — no receipt');
-
-      payment.status = 'completed';
-      payment.txHash = receipt.hash;
-      payment.completedAt = Date.now();
-      logger.info({ paymentId, txHash: receipt.hash }, 'Pre-signed payment confirmed');
-      persistPaymentStatus(paymentId, 'completed', receipt.hash);
+    if (chain === 'solana') {
+      // ─── Solana Payment Flow ──────────────────────────────────
+      if (signedTx) {
+        logger.info({ paymentId }, 'Broadcasting pre-signed Solana transaction');
+        const result = await broadcastSolanaTransaction(SOLANA_RPC_URL, signedTx);
+        payment.status = 'completed';
+        payment.txHash = result.txHash;
+        payment.completedAt = Date.now();
+        logger.info({ paymentId, txHash: result.txHash, slot: result.slot }, 'Solana pre-signed payment confirmed');
+        persistPaymentStatus(paymentId, 'completed', result.txHash);
+      } else {
+        const result = await transferSolanaUSDC(
+          { rpcUrl: SOLANA_RPC_URL, privateKey: SOLANA_PRIVATE_KEY },
+          payment.sellerAddress,
+          payment.paymentRequired.amount
+        );
+        payment.status = 'completed';
+        payment.txHash = result.txHash;
+        payment.completedAt = Date.now();
+        logger.info({ paymentId, txHash: result.txHash, slot: result.slot }, 'Solana USDC payment confirmed');
+        persistPaymentStatus(paymentId, 'completed', result.txHash);
+      }
     } else {
-      // Facilitator custodial wallet pays on behalf of the agent
-      const signer = new ethers.Wallet(FACILITATOR_PRIVATE_KEY, provider);
-      const usdc = new ethers.Contract(USDC_ADDRESS_BASE, USDC_ABI, signer);
+      // ─── Base (EVM) Payment Flow ──────────────────────────────
+      const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
 
-      const amount = ethers.parseUnits(payment.paymentRequired.amount, 6);
+      if (signedTx) {
+        logger.info({ paymentId }, 'Broadcasting pre-signed EVM transaction');
+        const txResponse = await provider.broadcastTransaction(signedTx);
+        const receipt = await txResponse.wait(2);
 
-      logger.info(
-        { paymentId, to: payment.sellerAddress, amount: amount.toString() },
-        'Submitting USDC transfer from facilitator wallet'
-      );
+        if (!receipt) throw new Error('Transaction failed — no receipt');
 
-      const tx = await usdc.transfer(payment.sellerAddress, amount);
-      const receipt = await tx.wait(2); // 2 block confirmations
+        payment.status = 'completed';
+        payment.txHash = receipt.hash;
+        payment.completedAt = Date.now();
+        logger.info({ paymentId, txHash: receipt.hash }, 'Pre-signed payment confirmed');
+        persistPaymentStatus(paymentId, 'completed', receipt.hash);
+      } else {
+        const signer = new ethers.Wallet(FACILITATOR_PRIVATE_KEY, provider);
+        const usdc = new ethers.Contract(USDC_ADDRESS_BASE, USDC_ABI, signer);
 
-      if (!receipt) throw new Error('Transaction failed — no receipt');
+        const amount = ethers.parseUnits(payment.paymentRequired.amount, 6);
 
-      payment.status = 'completed';
-      payment.txHash = receipt.hash;
-      payment.completedAt = Date.now();
-      logger.info({ paymentId, txHash: receipt.hash }, 'Payment confirmed');
-      persistPaymentStatus(paymentId, 'completed', receipt.hash);
+        logger.info(
+          { paymentId, to: payment.sellerAddress, amount: amount.toString() },
+          'Submitting USDC transfer from facilitator wallet'
+        );
+
+        const tx = await usdc.transfer(payment.sellerAddress, amount);
+        const receipt = await tx.wait(2);
+
+        if (!receipt) throw new Error('Transaction failed — no receipt');
+
+        payment.status = 'completed';
+        payment.txHash = receipt.hash;
+        payment.completedAt = Date.now();
+        logger.info({ paymentId, txHash: receipt.hash }, 'Payment confirmed');
+        persistPaymentStatus(paymentId, 'completed', receipt.hash);
+      }
     }
   } catch (error: unknown) {
-    logger.error({ paymentId, error: error instanceof Error ? error.message : String(error) }, 'Payment processing error');
+    logger.error({ paymentId, chain, error: error instanceof Error ? error.message : String(error) }, 'Payment processing error');
     payment.status = 'failed';
     payment.error = 'Payment processing failed. Please try again.';
     payment.completedAt = Date.now();
@@ -738,6 +904,18 @@ app.post('/verify', rateLimit, async (req: Request, res: Response) => {
 
     // Option 2: Verify by on-chain transaction hash
     if (txHash) {
+      // Detect chain from payload or txHash format
+      const chain = (payload.chain as string) || 'base';
+      const isSolana = chain === 'solana' || (txHash.length >= 64 && !txHash.startsWith('0x'));
+
+      if (isSolana) {
+        // Solana verification
+        const requirement = requirements[0] as { payTo?: string } | undefined;
+        const result = await verifySolanaTransaction(SOLANA_RPC_URL, txHash, requirement?.payTo);
+        return res.json(result);
+      }
+
+      // Base (EVM) verification
       const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
       const receipt = await provider.getTransactionReceipt(txHash);
 
@@ -826,6 +1004,22 @@ function shutdown(signal: string) {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+
+// ─── Global Error Handlers ──────────────────────────────────────
+
+process.on('unhandledRejection', (reason) => {
+  logger.error(
+    { reason: reason instanceof Error ? reason.message : String(reason) },
+    'Unhandled promise rejection'
+  );
+  Sentry.captureException(reason);
+});
+
+process.on('uncaughtException', (error) => {
+  logger.fatal({ error: error.message, stack: error.stack }, 'Uncaught exception — shutting down');
+  Sentry.captureException(error);
+  Sentry.close(2000).then(() => process.exit(1));
+});
 
 // ─── Start Server ───────────────────────────────────────────────
 

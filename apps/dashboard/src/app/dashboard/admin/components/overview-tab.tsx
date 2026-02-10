@@ -143,7 +143,7 @@ export function OverviewTab() {
             {[
               { label: 'Basescan', url: 'https://basescan.org', icon: Globe },
               { label: 'Convex', url: 'https://dashboard.convex.dev', icon: Database },
-              { label: 'Vercel', url: 'https://vercel.com/dashboard', icon: Server },
+              { label: 'Railway', url: 'https://railway.com/project/45fcfe19-d647-4fe0-a13f-119e1ff5a34d', icon: Server },
               { label: 'GitHub', url: 'https://github.com/TasnidChain/APITOLL', icon: FileCode },
             ].map((link) => (
               <a

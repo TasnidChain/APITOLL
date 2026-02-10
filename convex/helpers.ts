@@ -58,6 +58,49 @@ export async function requireOrgAccess(
 }
 
 // ═══════════════════════════════════════════════════
+// SECURITY FIX: Require Agent Ownership
+// Verifies the authenticated user owns the agent via org membership.
+// ═══════════════════════════════════════════════════
+
+export async function requireAgentAccess(
+  ctx: QueryCtx | MutationCtx,
+  agentId: Id<"agents">
+) {
+  const identity = await requireAuth(ctx);
+  const agent = await ctx.db.get(agentId);
+  if (!agent) {
+    throw new Error("Agent not found");
+  }
+  const org = await ctx.db.get(agent.orgId);
+  if (!org || (org.clerkUserId && org.clerkUserId !== identity.subject)) {
+    throw new Error("Unauthorized: you do not own this agent");
+  }
+  return { identity, agent, org };
+}
+
+// ═══════════════════════════════════════════════════
+// SECURITY FIX: Require Seller Ownership
+// ═══════════════════════════════════════════════════
+
+export async function requireSellerAccess(
+  ctx: QueryCtx | MutationCtx,
+  sellerId: Id<"sellers">
+) {
+  const identity = await requireAuth(ctx);
+  const seller = await ctx.db.get(sellerId);
+  if (!seller) {
+    throw new Error("Seller not found");
+  }
+  if (seller.orgId) {
+    const org = await ctx.db.get(seller.orgId);
+    if (!org || (org.clerkUserId && org.clerkUserId !== identity.subject)) {
+      throw new Error("Unauthorized: you do not own this seller");
+    }
+  }
+  return { identity, seller };
+}
+
+// ═══════════════════════════════════════════════════
 // SECURITY FIX: Timing-Safe Secret Comparison (HIGH-02/03)
 // ═══════════════════════════════════════════════════
 

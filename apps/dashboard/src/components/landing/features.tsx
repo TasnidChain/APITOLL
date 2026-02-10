@@ -5,6 +5,8 @@ import {
   Code2,
   Zap,
   Lock,
+  KeyRound,
+  Brain,
 } from 'lucide-react'
 
 const features = [
@@ -33,12 +35,28 @@ const features = [
     iconBg: 'bg-emerald-500/10',
   },
   {
+    icon: KeyRound,
+    title: 'Self-Custody Wallets',
+    description:
+      'Agents hold their own keys and sign locally. Choose custodial, semi-custodial, or fully sovereign signing modes.',
+    iconColor: 'text-orange-400',
+    iconBg: 'bg-orange-500/10',
+  },
+  {
     icon: Code2,
     title: 'Developer First',
     description:
-      'Add 3 lines to monetize any API. TypeScript SDKs for Express, Hono, LangChain, and MCP tool servers.',
+      'Add 3 lines to monetize any API. TypeScript SDKs for Express, Hono, LangGraph, Semantic Kernel, and MCP.',
     iconColor: 'text-violet-400',
     iconBg: 'bg-violet-500/10',
+  },
+  {
+    icon: Brain,
+    title: 'Agent Evolution',
+    description:
+      'Self-optimizing agents boost preferences, enable escrow, and optimize chains based on transaction success rates.',
+    iconColor: 'text-pink-400',
+    iconBg: 'bg-pink-500/10',
   },
   {
     icon: Zap,
@@ -79,7 +97,7 @@ export function Features() {
         </div>
 
         {/* Feature grid */}
-        <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((feature) => (
             <div
               key={feature.title}

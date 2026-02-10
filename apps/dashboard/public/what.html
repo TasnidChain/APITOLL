@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Toll — What Is It?</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --text: #e8e8ed;
+    --text-dim: #7a7a8e;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.15);
+    --green: #22c55e;
+    --green-glow: rgba(34, 197, 94, 0.15);
+    --orange: #f59e0b;
+    --orange-glow: rgba(245, 158, 11, 0.15);
+    --red: #ef4444;
+    --purple: #a855f7;
+    --usdc: #2775ca;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  .noise {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 2rem;
+    animation: fadeIn 0.8s ease-out;
+  }
+
+  .badge .dot {
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  .hero h1 {
+    font-size: clamp(3rem, 8vw, 6.5rem);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.8s ease-out 0.1s both;
+  }
+
+  .hero h1 .highlight {
+    background: linear-gradient(135deg, var(--accent), var(--usdc));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero .subtitle {
+    font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+    color: var(--text-dim);
+    max-width: 640px;
+    font-weight: 300;
+    animation: fadeUp 0.8s ease-out 0.2s both;
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+    animation: fadeIn 1.5s ease-out 0.5s both;
+  }
+
+  .scroll-hint .arrow {
+    width: 20px; height: 20px;
+    border-right: 2px solid var(--text-dim);
+    border-bottom: 2px solid var(--text-dim);
+    transform: rotate(45deg);
+    animation: bounce 2s infinite;
+  }
+
+  /* SECTIONS */
+  section {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 6rem 2rem;
+  }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  section h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+    line-height: 1.15;
+  }
+
+  section p.lead {
+    font-size: 1.15rem;
+    color: var(--text-dim);
+    max-width: 700px;
+    font-weight: 300;
+  }
+
+  /* PROBLEM SECTION */
+  .analogy-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+
+  @media (max-width: 768px) {
+    .analogy-grid { grid-template-columns: 1fr; }
+  }
+
+  .analogy-card {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .analogy-card:hover { transform: translateY(-4px); }
+
+  .analogy-card.old {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.03), transparent);
+  }
+
+  .analogy-card.old:hover { border-color: var(--red); }
+
+  .analogy-card.new {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.03), transparent);
+  }
+
+  .analogy-card.new:hover { border-color: var(--green); }
+
+  .analogy-card .card-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+
+  .analogy-card h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.75rem; }
+
+  .analogy-card .steps {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .analogy-card .steps li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+  }
+
+  .analogy-card .steps li .num {
+    flex-shrink: 0;
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+
+  .analogy-card.old .steps li .num { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+  .analogy-card.new .steps li .num { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+
+  .card-tag {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .analogy-card.old .card-tag { background: rgba(239, 68, 68, 0.1); color: var(--red); }
+  .analogy-card.new .card-tag { background: rgba(34, 197, 94, 0.1); color: var(--green); }
+
+  /* FLOW DIAGRAM */
+  .flow-section { margin-top: 3rem; }
+
+  .flow-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    margin-top: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .flow-container::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .flow-steps {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    position: relative;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .flow-step {
+    flex: 1;
+    min-width: 180px;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    position: relative;
+  }
+
+  .flow-step .step-num {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 2;
+  }
+
+  .flow-step:nth-child(1) .step-num { background: var(--accent-glow); color: var(--accent); }
+  .flow-step:nth-child(2) .step-num { background: var(--orange-glow); color: var(--orange); }
+  .flow-step:nth-child(3) .step-num { background: rgba(39, 117, 202, 0.15); color: var(--usdc); }
+  .flow-step:nth-child(4) .step-num { background: rgba(168, 85, 247, 0.15); color: var(--purple); }
+  .flow-step:nth-child(5) .step-num { background: var(--green-glow); color: var(--green); }
+
+  .flow-step h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem; }
+
+  .flow-step p { font-size: 0.8rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+
+  .flow-step .http-code {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+  }
+
+  .flow-step:nth-child(1) .http-code { background: var(--accent-glow); color: var(--accent); }
+  .flow-step:nth-child(2) .http-code { background: var(--orange-glow); color: var(--orange); }
+  .flow-step:nth-child(3) .http-code { background: rgba(39, 117, 202, 0.15); color: var(--usdc); }
+  .flow-step:nth-child(4) .http-code { background: rgba(168, 85, 247, 0.15); color: var(--purple); }
+  .flow-step:nth-child(5) .http-code { background: var(--green-glow); color: var(--green); }
+
+  .flow-connector {
+    display: flex;
+    align-items: center;
+    color: var(--text-dim);
+    font-size: 1.2rem;
+    padding-top: 1rem;
+  }
+
+  /* SCALE SECTION */
+  .scale-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  @media (max-width: 768px) { .scale-grid { grid-template-columns: 1fr; } }
+
+  .scale-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .scale-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+
+  .scale-card .icon { font-size: 2rem; margin-bottom: 1rem; }
+  .scale-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .scale-card p { font-size: 0.9rem; color: var(--text-dim); line-height: 1.5; }
+
+  /* CODE PREVIEW */
+  .code-section { margin-top: 3rem; }
+
+  .code-tabs { display: flex; gap: 0; margin-bottom: 0; }
+
+  .code-tab {
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .code-tab.active { background: var(--surface); color: var(--text); border-color: var(--border); }
+
+  .code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0 16px 16px 16px;
+    padding: 1.5rem 2rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.8;
+    overflow-x: auto;
+    display: none;
+  }
+
+  .code-block.active { display: block; }
+
+  .code-block .comment { color: #5a5a6e; }
+  .code-block .keyword { color: var(--purple); }
+  .code-block .string { color: var(--green); }
+  .code-block .func { color: var(--accent); }
+  .code-block .prop { color: var(--orange); }
+  .code-block .num { color: var(--usdc); }
+
+  /* METAPHOR BANNER */
+  .metaphor-banner {
+    background: linear-gradient(135deg, var(--surface), rgba(59, 130, 246, 0.05));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3rem;
+    text-align: center;
+    margin-top: 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .metaphor-banner::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+  }
+
+  .metaphor-banner .emoji-row { font-size: 3rem; margin-bottom: 1.5rem; letter-spacing: 0.3em; }
+  .metaphor-banner h3 { font-size: 1.8rem; font-weight: 800; margin-bottom: 1rem; }
+  .metaphor-banner p { color: var(--text-dim); max-width: 600px; margin: 0 auto; font-size: 1.05rem; font-weight: 300; }
+
+  /* CTA */
+  .cta-section { text-align: center; padding: 6rem 2rem 8rem; }
+  .cta-section h2 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900; margin-bottom: 1rem; }
+  .cta-section p { color: var(--text-dim); font-size: 1.1rem; margin-bottom: 2rem; font-weight: 300; }
+
+  .cta-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+  .btn {
+    padding: 14px 32px;
+    border-radius: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary { background: var(--accent); color: white; border: none; }
+  .btn-primary:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(59, 130, 246, 0.3); }
+
+  .btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--text-dim); transform: translateY(-2px); }
+
+  /* PROTOCOL BAR */
+  .protocol-bar {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    padding: 2rem;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .protocol-item { text-align: center; }
+  .protocol-item .label { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 0.3rem; }
+  .protocol-item .value { font-weight: 700; font-size: 1rem; }
+
+  /* ANIMATIONS */
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: rotate(45deg) translateY(0); } 40% { transform: rotate(45deg) translateY(-6px); } 60% { transform: rotate(45deg) translateY(-3px); } }
+
+  .fade-in { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .fade-in.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="badge">
+    <span class="dot"></span>
+    open source · x402 protocol · Base L2
+  </div>
+  <h1>
+    The internet's<br>
+    <span class="highlight">toll booth</span><br>
+    for AI agents
+  </h1>
+  <p class="subtitle">
+    API Toll lets AI agents pay for API calls with USDC micropayments.
+    No API keys. No subscriptions. No humans in the loop.
+  </p>
+  <div class="scroll-hint">
+    <span>scroll to understand</span>
+    <div class="arrow"></div>
+  </div>
+</div>
+
+<!-- THE PROBLEM -->
+<section class="fade-in">
+  <div class="section-label">01 — The Problem</div>
+  <h2>APIs were built for humans.<br>Agents aren't human.</h2>
+  <p class="lead">
+    Today, if an AI agent needs to use a paid API, a human has to sign up,
+    enter a credit card, manage billing, and monitor usage. This breaks at scale.
+  </p>
+
+  <div class="analogy-grid">
+    <div class="analogy-card old">
+      <span class="card-tag">Today</span>
+      <div class="card-icon">🍽️</div>
+      <h3>The Fancy Restaurant</h3>
+      <ul class="steps">
+        <li><span class="num">1</span> Make a reservation (sign up)</li>
+        <li><span class="num">2</span> Show membership card (API key)</li>
+        <li><span class="num">3</span> Human places the order</li>
+        <li><span class="num">4</span> Get a monthly bill (subscription)</li>
+        <li><span class="num">5</span> Human manages 15 restaurants</li>
+      </ul>
+    </div>
+    <div class="analogy-card new">
+      <span class="card-tag">API Toll</span>
+      <div class="card-icon">🏪</div>
+      <h3>The Vending Machine</h3>
+      <ul class="steps">
+        <li><span class="num">1</span> Walk up to the machine</li>
+        <li><span class="num">2</span> Drop in a digital coin (USDC)</li>
+        <li><span class="num">3</span> Get the result</li>
+        <li><span class="num">4</span> Walk away</li>
+        <li><span class="num">5</span> Done. Milliseconds.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="fade-in flow-section">
+  <div class="section-label">02 — How It Works</div>
+  <h2>Five steps. Fractions of a second.</h2>
+  <p class="lead">Built on HTTP 402 — the status code reserved since 1997 for exactly this moment.</p>
+
+  <div class="flow-container">
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <h4>Agent Requests</h4>
+        <p>Calls a paid API endpoint</p>
+        <span class="http-code">GET /api/data</span>
+      </div>
+      <div class="flow-connector">→</div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <h4>402 Response</h4>
+        <p>Server says "pay me"</p>
+        <span class="http-code">HTTP 402</span>
+      </div>
+      <div class="flow-connector">→</div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <h4>Agent Pays</h4>
+        <p>USDC proof in header</p>
+        <span class="http-code">X-PAYMENT: ...</span>
+      </div>
+      <div class="flow-connector">→</div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <h4>Verified</h4>
+        <p>Onchain settlement</p>
+        <span class="http-code">Base L2</span>
+      </div>
+      <div class="flow-connector">→</div>
+      <div class="flow-step">
+        <div class="step-num">5</div>
+        <h4>Fulfilled</h4>
+        <p>Data returned</p>
+        <span class="http-code">HTTP 200 ✓</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NOW SCALE IT -->
+<section class="fade-in">
+  <div class="section-label">03 — Now Scale It</div>
+  <h2>One agent is cool.<br>A thousand is an economy.</h2>
+  <p class="lead">
+    Imagine agent teams — each one paying for specialized services autonomously.
+    That's not a feature. That's a new economic layer for the internet.
+  </p>
+
+  <div class="scale-grid">
+    <div class="scale-card">
+      <div class="icon">🔍</div>
+      <h3>Research Agent</h3>
+      <p>Pays $0.002 per web scrape. Calls 500 sources. Total cost: $1. No subscription needed.</p>
+    </div>
+    <div class="scale-card">
+      <div class="icon">🌐</div>
+      <h3>Translation Agent</h3>
+      <p>Charges $0.001 per paragraph. Serves 10,000 agents daily. Earns passively.</p>
+    </div>
+    <div class="scale-card">
+      <div class="icon">🖼️</div>
+      <h3>Image Analysis Agent</h3>
+      <p>$0.005 per image. Other agents call it as a tool. Fully autonomous commerce.</p>
+    </div>
+  </div>
+
+  <div class="metaphor-banner">
+    <div class="emoji-row">🤖 💰 🤖 💰 🤖</div>
+    <h3>Agents paying agents.<br>That's the future.</h3>
+    <p>API Toll is the payment rail that makes it possible. Open source. Open protocol. Open economy.</p>
+  </div>
+</section>
+
+<!-- CODE -->
+<section class="fade-in code-section">
+  <div class="section-label">04 — Developer Experience</div>
+  <h2>5 lines to monetize. 3 lines to pay.</h2>
+
+  <div class="code-tabs">
+    <div class="code-tab active" onclick="showTab('seller')">seller SDK</div>
+    <div class="code-tab" onclick="showTab('buyer')">buyer SDK</div>
+  </div>
+
+  <div class="code-block active" id="seller">
+    <span class="comment">// Monetize any API endpoint</span><br>
+    <span class="keyword">import</span> { <span class="func">createTollgate</span> } <span class="keyword">from</span> <span class="string">'@apitoll/seller'</span>;<br><br>
+    <span class="comment">// That's it. One line to add a toll.</span><br>
+    app.<span class="func">use</span>(<span class="string">'/api/translate'</span>, <span class="func">createTollgate</span>({<br>
+    &nbsp;&nbsp;<span class="prop">price</span>: <span class="string">'0.001'</span>,&nbsp;&nbsp;&nbsp;<span class="comment">// $0.001 per request</span><br>
+    &nbsp;&nbsp;<span class="prop">currency</span>: <span class="string">'USDC'</span>,<br>
+    &nbsp;&nbsp;<span class="prop">network</span>: <span class="string">'base'</span><br>
+    }));<br><br>
+    <span class="comment">// Agents pay automatically. You earn automatically.</span>
+  </div>
+
+  <div class="code-block" id="buyer">
+    <span class="comment">// Give your agent a wallet and let it pay</span><br>
+    <span class="keyword">import</span> { <span class="func">createAgent</span> } <span class="keyword">from</span> <span class="string">'@apitoll/buyer'</span>;<br><br>
+    <span class="keyword">const</span> agent = <span class="func">createAgent</span>({ <span class="prop">wallet</span>: agentWallet });<br><br>
+    <span class="comment">// Fetch like normal — payment handled on 402</span><br>
+    <span class="keyword">const</span> data = <span class="keyword">await</span> agent.<span class="func">fetch</span>(<br>
+    &nbsp;&nbsp;<span class="string">'https://api.example.com/translate'</span><br>
+    );<br><br>
+    <span class="comment">// Agent sees 402 → pays USDC → gets data ✓</span>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section fade-in">
+  <h2>Build the agent economy.</h2>
+  <p>API Toll is open source. Star the repo. Ship a tollgate. Join the movement.</p>
+  <div class="cta-buttons">
+    <a href="https://github.com/TasnidChain/Apitoll" class="btn btn-primary">⭐ Star on GitHub</a>
+    <a href="https://www.x402.org/" class="btn btn-secondary">Learn x402 →</a>
+  </div>
+</div>
+
+<!-- PROTOCOL BAR -->
+<div class="protocol-bar">
+  <div class="protocol-item">
+    <div class="label">Protocol</div>
+    <div class="value">x402</div>
+  </div>
+  <div class="protocol-item">
+    <div class="label">Currency</div>
+    <div class="value">USDC</div>
+  </div>
+  <div class="protocol-item">
+    <div class="label">Chain</div>
+    <div class="value">Base L2</div>
+  </div>
+  <div class="protocol-item">
+    <div class="label">License</div>
+    <div class="value">MIT</div>
+  </div>
+  <div class="protocol-item">
+    <div class="label">Status</div>
+    <div class="value" style="color: var(--green);">● Live</div>
+  </div>
+</div>
+
+<script>
+  function showTab(tab) {
+    document.querySelectorAll('.code-block').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(tab).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

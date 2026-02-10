@@ -196,7 +196,7 @@ describe('Facilitator Server', () => {
       expect(res.status).toBe(400);
     });
 
-    it('rejects unsupported chain', async () => {
+    it('rejects solana when SOLANA_PRIVATE_KEY is not set', async () => {
       const res = await request(app)
         .post('/pay')
         .set('Authorization', `Bearer ${TEST_API_KEY}`)
@@ -211,7 +211,24 @@ describe('Facilitator Server', () => {
           })
         );
       expect(res.status).toBe(400);
-      expect(res.body.error).toContain('Only Base chain');
+      expect(res.body.error).toContain('Solana chain not configured');
+    });
+
+    it('rejects unsupported chain', async () => {
+      const res = await request(app)
+        .post('/pay')
+        .set('Authorization', `Bearer ${TEST_API_KEY}`)
+        .send(
+          makePayRequest({
+            payment_required: {
+              amount: '0.005',
+              currency: 'USDC',
+              recipient: VALID_RECIPIENT,
+              chain: 'ethereum' as any,
+            },
+          })
+        );
+      expect(res.status).toBe(400);
     });
 
     it('accepts numeric amount and coerces to string', async () => {

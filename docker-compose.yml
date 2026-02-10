@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  # ─── Facilitator (payment relay) ──────────────────────────────────
+  facilitator:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - FACILITATOR_PRIVATE_KEY=${FACILITATOR_PRIVATE_KEY}
+      - FACILITATOR_API_KEYS=${FACILITATOR_API_KEYS:-}
+      - BASE_RPC_URL=${BASE_RPC_URL:-https://mainnet.base.org}
+      - SOLANA_PRIVATE_KEY=${SOLANA_PRIVATE_KEY:-}
+      - SOLANA_RPC_URL=${SOLANA_RPC_URL:-https://api.mainnet-beta.solana.com}
+      - CONVEX_URL=${CONVEX_URL:-}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  # ─── Seller API (75 paid endpoints) ──────────────────────────────
+  seller-api:
+    build:
+      context: .
+      dockerfile: apps/seller-api/Dockerfile
+    ports:
+      - "4402:4402"
+    environment:
+      - NODE_ENV=development
+      - PORT=4402
+      - SELLER_WALLET=${SELLER_WALLET}
+      - FACILITATOR_URL=http://facilitator:3000
+      - BASE_URL=${BASE_URL:-http://localhost:4402}
+      - CONVEX_URL=${CONVEX_URL:-}
+      - REDIS_URL=${REDIS_URL:-}
+    depends_on:
+      facilitator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4402/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  # ─── Redis (optional — rate limiting & caching) ───────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  redis-data:

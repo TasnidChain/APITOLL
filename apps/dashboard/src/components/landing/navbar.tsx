@@ -14,6 +14,7 @@ import { useClerkReady } from '@/components/clerk-provider'
 import { ApiTollLogo } from '@/components/logo'
 
 const links = [
+  { label: 'What Is It?', href: '/what' },
   { label: 'Features', href: '#features' },
   { label: 'How It Works', href: '#how-it-works' },
   { label: 'Pricing', href: '#pricing' },

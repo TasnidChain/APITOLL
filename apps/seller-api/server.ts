@@ -1,7 +1,10 @@
 import "dotenv/config";
 import express from "express";
 import { paymentMiddleware } from "@apitoll/seller-sdk";
-import { BASE_USDC_ADDRESS } from "@apitoll/shared";
+import { BASE_USDC_ADDRESS, createLogger } from "@apitoll/shared";
+import { rateLimit } from "./rate-limit";
+
+const log = createLogger("seller-api");
 
 // ═══════════════════════════════════════════════════
 // Route Imports
@@ -75,6 +78,16 @@ import emailRouter from "./routes/email";
 import pdfExtractRouter from "./routes/pdf-extract";
 import financeRouter from "./routes/finance";
 
+// Tier 3 APIs (agent productivity tools)
+import nlpRouter from "./routes/nlp";
+import transformRouter from "./routes/transform";
+import datetimeRouter from "./routes/datetime";
+import securityRouter from "./routes/security";
+import mathRouter from "./routes/math";
+
+// API Documentation (OpenAPI 3.0.3 + Swagger UI)
+import openapiRouter from "./openapi";
+
 const app = express();
 app.use(express.json({ limit: "25mb" })); // PDF base64 uploads can be large
 
@@ -91,14 +104,33 @@ app.use((_req, res, next) => {
 });
 
 // ═══════════════════════════════════════════════════
+// Rate Limiting
+// ═══════════════════════════════════════════════════
+
+// Global: 200 requests per minute per IP
+app.use(rateLimit({ windowMs: 60_000, max: 200, keyPrefix: "global", message: "Rate limit exceeded — max 200 req/min" }));
+
+// Stricter limit on free endpoints to prevent abuse
+app.use("/health", rateLimit({ windowMs: 60_000, max: 30, keyPrefix: "health" }));
+app.use("/api/tools", rateLimit({ windowMs: 60_000, max: 30, keyPrefix: "tools" }));
+
+// ═══════════════════════════════════════════════════
 // Configuration
 // ═══════════════════════════════════════════════════
 const USDC_ADDRESS = process.env.USDC_ADDRESS || BASE_USDC_ADDRESS;
 const BASE_RPC_URL = process.env.BASE_RPC_URL || "https://mainnet.base.org";
 const NETWORK_ID = process.env.NETWORK_ID || "eip155:8453";
 const PORT = parseInt(process.env.PORT || "4402", 10);
+
 const FACILITATOR_URL = process.env.FACILITATOR_URL || "http://localhost:3000";
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+
+if (!process.env.FACILITATOR_URL) {
+  log.warn("FACILITATOR_URL not set — defaulting to http://localhost:3000 (development only)");
+}
+if (!process.env.BASE_URL) {
+  log.warn("BASE_URL not set — defaulting to http://localhost:" + PORT + " (development only)");
+}
 
 // ═══════════════════════════════════════════════════
 // x402 Payment Middleware — protects all paid endpoints
@@ -429,6 +461,91 @@ app.use(
         chains: ["base"],
         description: "Currency conversion with live rates",
       },
+
+      // ─── Tier 3: NLP & Text Intelligence ─────────────
+      "POST /api/entities": {
+        price: "0.002",
+        chains: ["base"],
+        description: "Named entity extraction (emails, URLs, dates, crypto addresses, etc)",
+      },
+      "POST /api/similarity": {
+        price: "0.002",
+        chains: ["base"],
+        description: "Text similarity scoring (Jaccard + cosine)",
+      },
+
+      // ─── Tier 3: Data Transformation ──────────────────
+      "POST /api/transform/csv": {
+        price: "0.002",
+        chains: ["base"],
+        description: "CSV to JSON conversion with header detection",
+      },
+      "POST /api/transform/json-to-csv": {
+        price: "0.002",
+        chains: ["base"],
+        description: "JSON array to CSV conversion",
+      },
+      "POST /api/transform/xml": {
+        price: "0.002",
+        chains: ["base"],
+        description: "XML to JSON conversion",
+      },
+      "POST /api/transform/yaml": {
+        price: "0.002",
+        chains: ["base"],
+        description: "YAML to JSON conversion",
+      },
+
+      // ─── Tier 3: Date & Time ──────────────────────────
+      "GET /api/datetime/between": {
+        price: "0.001",
+        chains: ["base"],
+        description: "Calculate duration between two dates",
+      },
+      "GET /api/datetime/business-days": {
+        price: "0.001",
+        chains: ["base"],
+        description: "Business days calculator (count or add)",
+      },
+      "GET /api/datetime/unix": {
+        price: "0.001",
+        chains: ["base"],
+        description: "Unix timestamp converter (to/from ISO dates)",
+      },
+
+      // ─── Tier 3: Security & Recon ─────────────────────
+      "GET /api/security/headers": {
+        price: "0.003",
+        chains: ["base"],
+        description: "Security headers audit with grade (A+ to F)",
+      },
+      "GET /api/security/techstack": {
+        price: "0.005",
+        chains: ["base"],
+        description: "Technology stack detection for any URL",
+      },
+      "GET /api/security/uptime": {
+        price: "0.001",
+        chains: ["base"],
+        description: "URL uptime/health check with response time",
+      },
+
+      // ─── Tier 3: Math & Calculation ───────────────────
+      "POST /api/math/eval": {
+        price: "0.001",
+        chains: ["base"],
+        description: "Safe math expression evaluator (sqrt, trig, etc)",
+      },
+      "GET /api/math/convert": {
+        price: "0.001",
+        chains: ["base"],
+        description: "Unit converter (length, weight, temp, data, time, speed)",
+      },
+      "POST /api/math/stats": {
+        price: "0.002",
+        chains: ["base"],
+        description: "Statistical analysis (mean, median, std dev, percentiles)",
+      },
     },
     chainConfigs: {
       base: {
@@ -484,6 +601,16 @@ app.use(
         { name: "Stock History", url: `${BASE_URL}/api/finance/history`, price: "0.005", description: "Historical OHLCV candles.", method: "GET" },
         { name: "Forex Rates", url: `${BASE_URL}/api/finance/forex`, price: "0.001", description: "150+ currency exchange rates.", method: "GET" },
         { name: "Currency Convert", url: `${BASE_URL}/api/finance/convert`, price: "0.001", description: "Currency conversion.", method: "GET" },
+        // Tier 3
+        { name: "Entity Extraction", url: `${BASE_URL}/api/entities`, price: "0.002", description: "Named entity extraction from text.", method: "POST" },
+        { name: "Text Similarity", url: `${BASE_URL}/api/similarity`, price: "0.002", description: "Compare text similarity.", method: "POST" },
+        { name: "CSV to JSON", url: `${BASE_URL}/api/transform/csv`, price: "0.002", description: "Convert CSV to JSON.", method: "POST" },
+        { name: "Security Audit", url: `${BASE_URL}/api/security/headers`, price: "0.003", description: "Security headers audit.", method: "GET" },
+        { name: "Tech Detection", url: `${BASE_URL}/api/security/techstack`, price: "0.005", description: "Detect website technologies.", method: "GET" },
+        { name: "Uptime Check", url: `${BASE_URL}/api/security/uptime`, price: "0.001", description: "URL health/uptime check.", method: "GET" },
+        { name: "Math Eval", url: `${BASE_URL}/api/math/eval`, price: "0.001", description: "Evaluate math expressions.", method: "POST" },
+        { name: "Unit Convert", url: `${BASE_URL}/api/math/convert`, price: "0.001", description: "Unit conversion.", method: "GET" },
+        { name: "Statistics", url: `${BASE_URL}/api/math/stats`, price: "0.002", description: "Statistical analysis.", method: "POST" },
       ],
     },
   })
@@ -560,21 +687,84 @@ app.use(emailRouter);
 app.use(pdfExtractRouter);
 app.use(financeRouter);
 
+// Tier 3 APIs (agent productivity tools)
+app.use(nlpRouter);
+app.use(transformRouter);
+app.use(datetimeRouter);
+app.use(securityRouter);
+app.use(mathRouter);
+
+// ═══════════════════════════════════════════════════
+// API Documentation (free — no payment required)
+// ═══════════════════════════════════════════════════
+app.use(openapiRouter);
+
 // ═══════════════════════════════════════════════════
 // Free Endpoints (no payment required)
 // ═══════════════════════════════════════════════════
 
-// Root route — redirect browsers to dashboard, agents get JSON
+// Root route — show landing for browsers, JSON for agents
 app.get("/", (req, res) => {
   const accept = req.headers.accept || "";
   if (accept.includes("text/html")) {
-    return res.redirect(302, "https://apitoll.com/dashboard/sellers");
+    return res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Toll — Pay-Per-Call API for AI Agents</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'JetBrains Mono', monospace; background: #0a0a0f; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+    .container { max-width: 720px; padding: 48px 32px; text-align: center; }
+    .logo { font-size: 14px; letter-spacing: 4px; text-transform: uppercase; color: #818cf8; margin-bottom: 24px; }
+    h1 { font-size: 36px; font-weight: 700; margin-bottom: 12px; background: linear-gradient(135deg, #818cf8, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .tagline { font-size: 16px; color: #94a3b8; margin-bottom: 40px; }
+    .stats { display: flex; gap: 32px; justify-content: center; margin-bottom: 40px; }
+    .stat { text-align: center; }
+    .stat-num { font-size: 32px; font-weight: 700; color: #818cf8; }
+    .stat-label { font-size: 12px; color: #64748b; margin-top: 4px; }
+    .links { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 32px; }
+    .links a { display: inline-block; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: all .2s; }
+    .primary { background: #6366f1; color: white; }
+    .primary:hover { background: #818cf8; }
+    .secondary { border: 1px solid #334155; color: #94a3b8; }
+    .secondary:hover { border-color: #818cf8; color: #818cf8; }
+    .endpoint { font-size: 13px; color: #64748b; margin-top: 32px; }
+    .endpoint code { background: #1e1e2e; padding: 2px 8px; border-radius: 4px; color: #818cf8; }
+    .protocol { display: inline-block; margin-top: 24px; padding: 6px 16px; border-radius: 999px; font-size: 11px; letter-spacing: 2px; border: 1px solid #334155; color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">⚡ API TOLL</div>
+    <h1>Pay-Per-Call APIs for AI Agents</h1>
+    <p class="tagline">60+ endpoints. USDC micropayments on Base. One HTTP header.</p>
+    <div class="stats">
+      <div class="stat"><div class="stat-num">60+</div><div class="stat-label">Endpoints</div></div>
+      <div class="stat"><div class="stat-num">x402</div><div class="stat-label">Protocol</div></div>
+      <div class="stat"><div class="stat-num">USDC</div><div class="stat-label">On Base L2</div></div>
+    </div>
+    <div class="links">
+      <a href="/api/docs" class="primary">📖 API Docs</a>
+      <a href="/api/tools" class="secondary">🔧 Browse Tools</a>
+      <a href="/health" class="secondary">💚 Health Check</a>
+      <a href="https://apitoll.com" class="secondary">🏠 Dashboard</a>
+      <a href="https://apitoll.com/what" class="secondary">❓ What Is It?</a>
+    </div>
+    <p class="endpoint">Try it: <code>curl https://api.apitoll.com/api/joke</code></p>
+    <div class="protocol">x402 PAYMENT REQUIRED</div>
+  </div>
+</body>
+</html>`);
   }
   res.json({
     service: "apitoll-seller-api",
     protocol: "x402",
     description: "API Toll seller API — pay-per-call tools for AI agents on Base using USDC.",
-    docs: "https://github.com/TasnidChain/APITOLL",
+    docs: "https://api.apitoll.com/api/docs",
+    openapi: "https://api.apitoll.com/api/openapi.json",
     dashboard: "https://apitoll.com/dashboard",
     health: "https://api.apitoll.com/health",
     tools: "https://api.apitoll.com/api/tools",
@@ -587,7 +777,7 @@ app.get("/health", (_req, res) => {
     status: "ok",
     service: "apitoll-tools",
     seller: process.env.SELLER_WALLET ? `${process.env.SELLER_WALLET.slice(0, 6)}...${process.env.SELLER_WALLET.slice(-4)}` : null,
-    endpoints: 60,
+    endpoints: 75,
     categories: {
       original: ["joke", "search", "scrape", "crypto/price", "crypto/trending", "news", "reputation/agent", "reputation/trending", "geocode", "geocode/reverse"],
       dataLookup: ["weather", "ip", "timezone", "currency", "country", "company", "whois", "dns", "domain", "holidays"],
@@ -596,6 +786,11 @@ app.get("/health", (_req, res) => {
       computeDev: ["hash", "jwt/decode", "regex", "cron", "diff", "json/validate", "base64", "uuid", "markdown"],
       mediaVisual: ["qr", "placeholder", "color", "favicon", "avatar"],
       blockchain: ["ens"],
+      nlp: ["entities", "similarity"],
+      transform: ["transform/csv", "transform/json-to-csv", "transform/xml", "transform/yaml"],
+      datetime: ["datetime/between", "datetime/business-days", "datetime/unix"],
+      security: ["security/headers", "security/techstack", "security/uptime"],
+      math: ["math/eval", "math/convert", "math/stats"],
     },
   });
 });
@@ -605,7 +800,7 @@ app.get("/api/tools", (_req, res) => {
   res.json({
     platform: "apitoll",
     protocol: "x402",
-    totalEndpoints: 60,
+    totalEndpoints: 75,
     tools: [
       // ── Original ──────────────────────────────────
       { endpoint: "GET /api/joke", price: "$0.001 USDC", description: "Random programming joke", category: "original" },
@@ -689,6 +884,31 @@ app.get("/api/tools", (_req, res) => {
       { endpoint: "GET /api/finance/history?symbol=...", price: "$0.005 USDC", description: "Historical OHLCV candles", category: "finance" },
       { endpoint: "GET /api/finance/forex?base=...", price: "$0.001 USDC", description: "150+ currency exchange rates", category: "finance" },
       { endpoint: "GET /api/finance/convert?from=...&to=...", price: "$0.001 USDC", description: "Currency conversion", category: "finance" },
+
+      // ── NLP & Text Intelligence ─────────────────────
+      { endpoint: "POST /api/entities", price: "$0.002 USDC", description: "Named entity extraction (emails, URLs, dates, crypto)", category: "nlp" },
+      { endpoint: "POST /api/similarity", price: "$0.002 USDC", description: "Text similarity scoring (Jaccard + cosine)", category: "nlp" },
+
+      // ── Data Transformation ─────────────────────────
+      { endpoint: "POST /api/transform/csv", price: "$0.002 USDC", description: "CSV to JSON conversion", category: "transform" },
+      { endpoint: "POST /api/transform/json-to-csv", price: "$0.002 USDC", description: "JSON array to CSV", category: "transform" },
+      { endpoint: "POST /api/transform/xml", price: "$0.002 USDC", description: "XML to JSON conversion", category: "transform" },
+      { endpoint: "POST /api/transform/yaml", price: "$0.002 USDC", description: "YAML to JSON conversion", category: "transform" },
+
+      // ── Date & Time ─────────────────────────────────
+      { endpoint: "GET /api/datetime/between?from=...&to=...", price: "$0.001 USDC", description: "Duration between dates", category: "datetime" },
+      { endpoint: "GET /api/datetime/business-days?from=...&to=...", price: "$0.001 USDC", description: "Business days calculator", category: "datetime" },
+      { endpoint: "GET /api/datetime/unix?timestamp=...", price: "$0.001 USDC", description: "Unix timestamp converter", category: "datetime" },
+
+      // ── Security & Recon ────────────────────────────
+      { endpoint: "GET /api/security/headers?url=...", price: "$0.003 USDC", description: "Security headers audit (A+ to F grade)", category: "security" },
+      { endpoint: "GET /api/security/techstack?url=...", price: "$0.005 USDC", description: "Technology stack detection", category: "security" },
+      { endpoint: "GET /api/security/uptime?url=...", price: "$0.001 USDC", description: "URL uptime check with response time", category: "security" },
+
+      // ── Math & Calculation ──────────────────────────
+      { endpoint: "POST /api/math/eval", price: "$0.001 USDC", description: "Math expression evaluator", category: "math" },
+      { endpoint: "GET /api/math/convert?value=...&from=...&to=...", price: "$0.001 USDC", description: "Unit converter (length, weight, temp, etc)", category: "math" },
+      { endpoint: "POST /api/math/stats", price: "$0.002 USDC", description: "Statistical analysis (mean, median, std dev)", category: "math" },
     ],
     chain: "base",
     protocol_version: "x402-v1",
@@ -699,36 +919,61 @@ app.get("/api/tools", (_req, res) => {
 // Start Server
 // ═══════════════════════════════════════════════════
 if (!process.env.SELLER_WALLET) {
-  console.error("ERROR: SELLER_WALLET environment variable required");
-  console.error("Usage: SELLER_WALLET=0x... npx tsx server.ts");
+  log.error("SELLER_WALLET environment variable required. Usage: SELLER_WALLET=0x... npx tsx server.ts");
   process.exit(1);
 }
 
-app.listen(PORT, () => {
-  console.log(`\n${"=".repeat(60)}`);
-  console.log(`  API Toll — 60 Paid API Endpoints`);
-  console.log(`  Running on http://localhost:${PORT}`);
-  console.log(`${"=".repeat(60)}`);
-  console.log(`\n  Paid Endpoints (x402 USDC on Base): 60`);
-  console.log(`  ────────────────────────────────────────`);
-  console.log(`  Original (10)    : joke, search, scrape, crypto, news, reputation, geocode`);
-  console.log(`  Data & Lookup (10): weather, ip, timezone, currency, country, company, whois, dns, domain, holidays`);
-  console.log(`  Text (7)         : sentiment, summarize, keywords, readability, language, translate, profanity`);
-  console.log(`  Web & URL (7)    : meta, screenshot, links, sitemap, robots, headers, ssl`);
-  console.log(`  Compute (9)      : hash, jwt/decode, regex, cron, diff, json/validate, base64, uuid, markdown`);
-  console.log(`  Media (5)        : qr, placeholder, color, favicon, avatar`);
-  console.log(`  Blockchain (1)   : ens`);
-  console.log(`  Enrichment (3)   : enrich/domain, enrich/github, enrich/wiki`);
-  console.log(`  Email (2)        : email/send, email/validate`);
-  console.log(`  Documents (2)    : extract/pdf, extract/text`);
-  console.log(`  Finance (4)      : finance/quote, finance/history, finance/forex, finance/convert`);
-  console.log(`\n  Free Endpoints:`);
-  console.log(`  ────────────────────────────────────────`);
-  console.log(`  GET  /health`);
-  console.log(`  GET  /api/tools`);
-  console.log(`\n  Seller wallet:  ${process.env.SELLER_WALLET}`);
-  console.log(`  Facilitator:    ${FACILITATOR_URL}`);
-  console.log(`\n  Ready to receive payments.\n`);
+const server = app.listen(PORT, () => {
+  log.info("API Toll seller-api started", {
+    port: PORT,
+    paidEndpoints: 75,
+    freeEndpoints: ["GET /health", "GET /api/tools"],
+    sellerWallet: process.env.SELLER_WALLET,
+    facilitatorUrl: FACILITATOR_URL,
+  });
+});
+
+// ═══════════════════════════════════════════════════
+// Graceful Shutdown
+// ═══════════════════════════════════════════════════
+
+const SHUTDOWN_TIMEOUT_MS = 15_000; // 15s for in-flight requests to finish
+
+function gracefulShutdown(signal: string) {
+  log.info(`Shutting down gracefully…`, { signal });
+
+  server.close(() => {
+    log.info("All connections drained. Exiting.");
+    process.exit(0);
+  });
+
+  // Force exit if connections don't drain in time
+  setTimeout(() => {
+    log.error("Forced exit — shutdown timeout exceeded.");
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS).unref();
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
+// ═══════════════════════════════════════════════════
+// Global Error Handlers
+// ═══════════════════════════════════════════════════
+
+process.on("unhandledRejection", (reason) => {
+  log.error("Unhandled promise rejection", {
+    reason: reason instanceof Error ? reason.message : String(reason),
+    stack: reason instanceof Error ? reason.stack : undefined,
+  });
+});
+
+process.on("uncaughtException", (error) => {
+  log.error("Uncaught exception — shutting down", {
+    error: error.message,
+    stack: error.stack,
+  });
+  process.exit(1);
 });
 
 export default app;

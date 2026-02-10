@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { PWAServiceWorker } from '@/components/pwa'
 import { ClerkClientProvider } from '@/components/clerk-provider'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -9,12 +8,6 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'API Toll - Payment Infrastructure for AI Agents',
   description: 'Enable AI agents to autonomously pay for API calls with USDC micropayments. Built on the x402 protocol.',
-  manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'API Toll',
-  },
   icons: {
     icon: [
       { url: '/icons/icon-96x96.svg', type: 'image/svg+xml' },
@@ -56,7 +49,6 @@ export default function RootLayout({
         <ClerkClientProvider>
           {children}
         </ClerkClientProvider>
-        <PWAServiceWorker />
       </body>
     </html>
   )

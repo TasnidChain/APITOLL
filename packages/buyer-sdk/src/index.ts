@@ -9,8 +9,23 @@ export {
   type PaymentSigner,
 } from "./agent-wallet";
 
-// Signers
+// Signers — custodial (facilitator holds keys)
 export { createFacilitatorSigner } from "./signers/evm-signer";
+
+// Signers — self-custody (agent holds keys)
+export {
+  createLocalEVMSigner,
+  createDirectEVMSigner,
+  type LocalEVMSignerConfig,
+  type DirectEVMSignerConfig,
+} from "./signers/local-evm-signer";
+
+export {
+  createLocalSolanaSigner,
+  createDirectSolanaSigner,
+  type LocalSolanaSignerConfig,
+  type DirectSolanaSignerConfig,
+} from "./signers/local-solana-signer";
 
 // Policy engine
 export {

@@ -3,15 +3,29 @@
   "version": "0.1.0-beta.3",
   "description": "x402 payment client for AI agents. Auto-handles 402 responses with budget controls, spend tracking, and self-optimization.",
   "license": "MIT",
+  "type": "module",
   "main": "dist/index.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist", "README.md"],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "sideEffects": false,
   "engines": {
     "node": ">=18"
   },
+  "homepage": "https://apitoll.com",
+  "bugs": "https://github.com/TasnidChain/APITOLL/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/TasnidChain/APITOLL"
+    "url": "https://github.com/TasnidChain/APITOLL",
+    "directory": "packages/buyer-sdk"
   },
   "publishConfig": {
     "access": "public"
@@ -24,6 +38,16 @@
   "keywords": ["x402", "agent", "micropayments", "usdc", "budget", "spend-management", "evolution", "self-optimization"],
   "dependencies": {
     "@apitoll/shared": "0.1.0-beta.3"
+  },
+  "peerDependencies": {
+    "ethers": ">=6.0.0",
+    "@solana/web3.js": ">=1.90.0",
+    "@solana/spl-token": ">=0.4.0"
+  },
+  "peerDependenciesMeta": {
+    "ethers": { "optional": true },
+    "@solana/web3.js": { "optional": true },
+    "@solana/spl-token": { "optional": true }
   },
   "devDependencies": {
     "typescript": "^5.4.0",

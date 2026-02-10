@@ -12,9 +12,12 @@
   "engines": {
     "node": ">=18"
   },
+  "homepage": "https://apitoll.com",
+  "bugs": "https://github.com/TasnidChain/APITOLL/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/TasnidChain/APITOLL"
+    "url": "https://github.com/TasnidChain/APITOLL",
+    "directory": "packages/facilitator"
   },
   "publishConfig": {
     "access": "public"
@@ -36,6 +39,8 @@
   "dependencies": {
     "@apitoll/shared": "0.1.0-beta.3",
     "@sentry/node": "^10.38.0",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
     "convex": "^1.17.0",
     "dotenv": "^16.3.1",
     "ethers": "^6.10.0",
