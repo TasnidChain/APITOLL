@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery, query } from "./_generated/server";
 import { requireAdmin } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Record Platform Revenue (from transaction fees)
-// ═══════════════════════════════════════════════════
 
 export const record = internalMutation({
   args: {
@@ -27,9 +25,7 @@ export const record = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Revenue Overview
-// ═══════════════════════════════════════════════════
 
 export const getOverview = query({
   handler: async (ctx) => {
@@ -69,9 +65,7 @@ export const getOverview = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Daily Revenue Stats (for charts)
-// ═══════════════════════════════════════════════════
 
 export const getDailyRevenue = query({
   args: { days: v.optional(v.number()) },

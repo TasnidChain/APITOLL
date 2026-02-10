@@ -1,28 +1,9 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { timingSafeEqual } from "./helpers";
 
-// ═══════════════════════════════════════════════════
-// Facilitator Payment Persistence
-//
-// SECURITY: These mutations are called by the external facilitator server
-// (pay.apitoll.com) via ConvexHttpClient, which cannot invoke internalMutation.
-// Defense-in-depth: every mutation validates a shared secret (FACILITATOR_CONVEX_SECRET)
-// that only the facilitator server knows. Set this env var in both Convex and the
-// facilitator service.
-// ═══════════════════════════════════════════════════
-
-/**
- * Timing-safe string comparison without Node.js crypto module.
- * Works in Convex's V8 runtime (no Buffer/crypto available).
- */
-function timingSafeStringEqual(a: string, b: string): boolean {
-  const maxLen = Math.max(a.length, b.length);
-  let result = a.length ^ b.length;
-  for (let i = 0; i < maxLen; i++) {
-    result |= (a.charCodeAt(i % a.length) || 0) ^ (b.charCodeAt(i % b.length) || 0);
-  }
-  return result === 0;
-}
+// Called by the external facilitator server (pay.apitoll.com) via ConvexHttpClient.
+// Every mutation validates FACILITATOR_CONVEX_SECRET for defense-in-depth.
 
 function validateFacilitatorSecret(secret: string | undefined) {
   const expected = process.env.FACILITATOR_CONVEX_SECRET;
@@ -32,8 +13,7 @@ function validateFacilitatorSecret(secret: string | undefined) {
   if (!secret) {
     throw new Error("Invalid facilitator secret");
   }
-  // SECURITY FIX: Timing-safe comparison (HIGH-03)
-  if (!timingSafeStringEqual(secret, expected)) {
+  if (!timingSafeEqual(secret, expected)) {
     throw new Error("Invalid facilitator secret");
   }
 }

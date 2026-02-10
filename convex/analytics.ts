@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { internalQuery, query } from "./_generated/server";
 import { requireAuth } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Overview Stats (for Dashboard)
-// ═══════════════════════════════════════════════════
 
 export const getOverview = query({
   args: {
@@ -58,9 +56,7 @@ export const getOverview = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Daily Stats (for Charts)
-// ═══════════════════════════════════════════════════
 
 export const getDailyStats = query({
   args: {
@@ -108,9 +104,7 @@ export const getDailyStats = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Spend by Chain
-// ═══════════════════════════════════════════════════
 
 export const getSpendByChain = query({
   handler: async (ctx) => {
@@ -133,9 +127,7 @@ export const getSpendByChain = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Top Endpoints
-// ═══════════════════════════════════════════════════
 
 export const getTopEndpoints = query({
   args: {
@@ -174,10 +166,8 @@ export const getTopEndpoints = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // INTERNAL versions — called from httpActions in http.ts
 // (httpActions authenticate via org API key, not Clerk)
-// ═══════════════════════════════════════════════════
 
 export const internalGetOverview = internalQuery({
   args: { orgId: v.optional(v.id("organizations")) },

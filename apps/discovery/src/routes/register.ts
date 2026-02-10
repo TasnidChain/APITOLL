@@ -39,9 +39,7 @@ async function requireSeller(c: Context, next: Next) {
   await next()
 }
 
-// ═══════════════════════════════════════════════════
 // Seller Tool Management
-// ═══════════════════════════════════════════════════
 
 // GET /seller/tools - List seller's tools
 app.get('/seller/tools', requireSeller, async (c) => {

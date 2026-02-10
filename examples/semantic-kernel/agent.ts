@@ -22,7 +22,6 @@ import { createAgentWallet, createFacilitatorSigner, type AgentWallet } from "@a
 const FACILITATOR_URL = process.env.FACILITATOR_URL || "https://pay.apitoll.com";
 const SELLER_API = process.env.SELLER_API_URL || "http://localhost:4402";
 
-// ─── Wallet ───────────────────────────────────────────────────
 
 function createSigner() {
   return process.env.FACILITATOR_API_KEY
@@ -44,7 +43,6 @@ const wallet = createAgentWallet({
   },
 });
 
-// ─── Plugin System (Semantic Kernel pattern) ──────────────────
 
 interface KernelFunctionMetadata {
   name: string;
@@ -74,7 +72,6 @@ function createPaidFunction(
   };
 }
 
-// ─── Weather Plugin ───────────────────────────────────────────
 
 const weatherPlugin: KernelPlugin = {
   name: "WeatherPlugin",
@@ -119,7 +116,6 @@ const weatherPlugin: KernelPlugin = {
   ],
 };
 
-// ─── Data Analysis Plugin ─────────────────────────────────────
 
 const dataPlugin: KernelPlugin = {
   name: "DataAnalysisPlugin",
@@ -185,7 +181,6 @@ const dataPlugin: KernelPlugin = {
   ],
 };
 
-// ─── Search Plugin ────────────────────────────────────────────
 
 const searchPlugin: KernelPlugin = {
   name: "SearchPlugin",
@@ -211,7 +206,6 @@ const searchPlugin: KernelPlugin = {
   ],
 };
 
-// ─── Kernel (Semantic Kernel pattern) ─────────────────────────
 
 class Kernel {
   private plugins: Map<string, KernelPlugin> = new Map();
@@ -250,7 +244,6 @@ class Kernel {
   }
 }
 
-// ─── Planner (simulates Semantic Kernel's planner) ────────────
 
 interface Plan {
   goal: string;
@@ -295,7 +288,6 @@ function createPlan(goal: string): Plan {
   return { goal, steps };
 }
 
-// ─── Main ─────────────────────────────────────────────────────
 
 async function main() {
   console.log("Semantic Kernel-style Agent + x402 Payments");

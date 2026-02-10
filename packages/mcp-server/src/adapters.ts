@@ -1,8 +1,6 @@
 import { PaidMCPServer } from './server'
 
-// ═══════════════════════════════════════════════════
 // Express Adapter
-// ═══════════════════════════════════════════════════
 
 /**
  * Create an Express router for the MCP server
@@ -99,9 +97,7 @@ export function toExpressRouter(server: PaidMCPServer) {
   }
 }
 
-// ═══════════════════════════════════════════════════
 // Hono Adapter
-// ═══════════════════════════════════════════════════
 
 /**
  * Create Hono routes for the MCP server
@@ -151,9 +147,7 @@ export function toHonoApp(server: PaidMCPServer) {
   }
 }
 
-// ═══════════════════════════════════════════════════
 // Stdio Adapter (for Claude Desktop)
-// ═══════════════════════════════════════════════════
 
 /**
  * Run the MCP server over stdio (for Claude Desktop integration)

@@ -1,10 +1,7 @@
 import { Id } from '../../../../convex/_generated/dataModel'
 
-// ═══════════════════════════════════════════════════
 // Dashboard Types — derived from Convex schema
-// ═══════════════════════════════════════════════════
 
-// ─── Webhook Types ──────────────────────────────────
 
 export interface Webhook {
   _id: Id<'webhooks'>
@@ -47,7 +44,6 @@ export interface WebhookStats {
   failing: number
 }
 
-// ─── Policy Types ───────────────────────────────────
 
 export interface BudgetRules {
   dailyLimit?: number
@@ -77,7 +73,6 @@ export interface Policy {
   isActive: boolean
 }
 
-// ─── Alert Rule Types ───────────────────────────────
 
 export type AlertRuleType =
   | 'budget_threshold'
@@ -105,7 +100,6 @@ export interface AlertRule {
   lastTriggered?: number
 }
 
-// ─── Organization Types ─────────────────────────────
 
 export type PlanTier = 'free' | 'pro' | 'enterprise'
 
@@ -126,7 +120,6 @@ export interface Organization {
   createdAt?: number
 }
 
-// ─── Agent Types ────────────────────────────────────
 
 export type AgentStatus = 'active' | 'paused' | 'depleted'
 
@@ -149,7 +142,6 @@ export interface PolicyConfig {
   rateLimit?: RateLimitRules
 }
 
-// ─── Transaction Types ──────────────────────────────
 
 export type TransactionStatus = 'pending' | 'settled' | 'failed' | 'refunded'
 
@@ -177,7 +169,6 @@ export interface Transaction {
   feeBps?: number
 }
 
-// ─── Tool Types ─────────────────────────────────────
 
 export type ListingTier = 'free' | 'featured' | 'verified' | 'premium'
 
@@ -208,7 +199,6 @@ export interface Tool {
   boostScore?: number
 }
 
-// ─── Dispute Types ──────────────────────────────────
 
 export type DisputeStatus = 'open' | 'under_review' | 'resolved' | 'rejected'
 export type DisputeResolution = 'refunded' | 'partial_refund' | 'denied'

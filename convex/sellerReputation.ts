@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 
-// ═══════════════════════════════════════════════════
 // Seller Trust Tiers
-// ═══════════════════════════════════════════════════
 
 const SELLER_TIERS = [
   { name: "verified" as const, minScore: 700, badge: "green", featuredEligible: true },
@@ -25,9 +23,7 @@ function getNextSellerTier(score: number) {
   return idx > 0 ? SELLER_TIERS[idx - 1] : null;
 }
 
-// ═══════════════════════════════════════════════════
 // Calculate Score for a Single Seller
-// ═══════════════════════════════════════════════════
 
 export const calculateScore = internalMutation({
   args: { sellerId: v.id("sellers") },
@@ -165,9 +161,7 @@ export const calculateScore = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Recalculate All Seller Scores (cron)
-// ═══════════════════════════════════════════════════
 
 export const recalculateAllScores = internalMutation({
   args: {},
@@ -249,9 +243,7 @@ export const recalculateAllScores = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Public Queries
-// ═══════════════════════════════════════════════════
 
 export const getSellerScore = query({
   args: { sellerId: v.id("sellers") },

@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, query } from "./_generated/server";
 
 // Save/update evolution state for an agent
-// SECURITY: internalMutation — only callable from Convex httpActions, not from browser/external clients
+// internalMutation — only callable from Convex httpActions, not from browser/external clients
 export const saveState = internalMutation({
   args: {
     agentId: v.string(),

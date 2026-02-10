@@ -3,9 +3,7 @@ import { getToolBySlug, searchTools, Tool } from '../db/queries'
 
 const app = new Hono()
 
-// ═══════════════════════════════════════════════════
 // MCP Tool Format Helpers
-// ═══════════════════════════════════════════════════
 
 interface MCPTool {
   name: string
@@ -63,9 +61,7 @@ function toolToMCP(tool: Tool): MCPTool {
   }
 }
 
-// ═══════════════════════════════════════════════════
 // OpenAPI Spec Generator
-// ═══════════════════════════════════════════════════
 
 interface OpenAPISpec {
   openapi: string
@@ -140,9 +136,7 @@ function toolToOpenAPI(tool: Tool): OpenAPISpec {
   }
 }
 
-// ═══════════════════════════════════════════════════
 // MCP Endpoints
-// ═══════════════════════════════════════════════════
 
 // GET /mcp/tools - List all tools in MCP format
 app.get('/mcp/tools', async (c) => {
@@ -189,9 +183,7 @@ app.get('/openapi/tools/:slug', async (c) => {
   return c.json(toolToOpenAPI(tool))
 })
 
-// ═══════════════════════════════════════════════════
 // Agent Tool Discovery
-// ═══════════════════════════════════════════════════
 
 // POST /mcp/discover - AI-friendly discovery endpoint
 // Agents can describe what they need, get matching tools

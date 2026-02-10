@@ -14,9 +14,7 @@ interface DiscoveryRecommendation {
   tool: DiscoveredToolData
 }
 
-// ═══════════════════════════════════════════════════
 // Discovery API Integration
-// ═══════════════════════════════════════════════════
 
 const DEFAULT_DISCOVERY_URL = process.env.APITOLL_DISCOVERY_URL || 'https://apitoll.com'
 
@@ -94,9 +92,7 @@ export async function discoverToolsForTask(
   return createToolsFromDiscovery(limited as Parameters<typeof createToolsFromDiscovery>[0])
 }
 
-// ═══════════════════════════════════════════════════
 // Auto-Discover Agent
-// ═══════════════════════════════════════════════════
 
 /**
  * Create an agent that automatically discovers and uses paid tools

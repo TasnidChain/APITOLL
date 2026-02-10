@@ -25,7 +25,6 @@ import {
 } from "./utils";
 import type { BudgetPolicy } from "./types";
 
-// ─── USDC Conversion ────────────────────────────────────────────
 
 describe("usdcToSmallestUnit", () => {
   it("converts whole numbers", () => {
@@ -68,7 +67,6 @@ describe("usdcFromSmallestUnit", () => {
   });
 });
 
-// ─── Route Matching ─────────────────────────────────────────────
 
 describe("matchRoute", () => {
   it("matches exact routes", () => {
@@ -101,7 +99,6 @@ describe("matchRoute", () => {
   });
 });
 
-// ─── Budget Policy ──────────────────────────────────────────────
 
 describe("checkBudgetPolicy", () => {
   const policy: BudgetPolicy = {
@@ -201,7 +198,6 @@ describe("findBudgetPolicy", () => {
   });
 });
 
-// ─── Vendor ACL ─────────────────────────────────────────────────
 
 describe("isVendorAllowed", () => {
   it("allows all when no ACL policies exist", () => {
@@ -243,7 +239,6 @@ describe("isVendorAllowed", () => {
   });
 });
 
-// ─── Fee Calculation ────────────────────────────────────────────
 
 describe("calculateFeeBreakdown", () => {
   it("calculates 3% fee (300 bps)", () => {
@@ -307,7 +302,6 @@ describe("getPlatformWallet", () => {
   });
 });
 
-// ─── Utility Functions ──────────────────────────────────────────
 
 describe("generateId", () => {
   it("generates unique IDs", () => {
@@ -431,7 +425,6 @@ describe("checkPlanLimit", () => {
   });
 });
 
-// ─── Address Validation ─────────────────────────────────────────
 
 describe("isValidEvmAddress", () => {
   it("accepts valid lowercase address", () => {
@@ -489,7 +482,6 @@ describe("isValidSolanaAddress", () => {
   });
 });
 
-// ─── Payment Amount Validation ──────────────────────────────────
 
 describe("isValidPaymentAmount", () => {
   it("accepts valid whole number", () => {
@@ -522,7 +514,6 @@ describe("isValidPaymentAmount", () => {
   });
 });
 
-// ─── Nonce Validation ───────────────────────────────────────────
 
 describe("isValidNonce", () => {
   it("accepts valid 32-byte hex nonce", () => {
@@ -547,7 +538,6 @@ describe("isValidNonce", () => {
   });
 });
 
-// ─── Nonce Tracker (Replay Protection) ──────────────────────────
 
 describe("NonceTracker", () => {
   it("accepts new nonces", () => {
@@ -609,7 +599,6 @@ describe("NonceTracker", () => {
   });
 });
 
-// ─── HMAC Webhook Signing ───────────────────────────────────────
 
 describe("computeHmacSignature", () => {
   it("produces consistent signatures for same input", async () => {

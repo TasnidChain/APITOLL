@@ -7,7 +7,6 @@
 import dns from "dns/promises";
 import net from "net";
 
-// ─── Private/Reserved IP Ranges ───────────────────────────
 function isPrivateIP(ip: string): boolean {
   // Normalize IPv6-mapped IPv4 (e.g., ::ffff:127.0.0.1 → 127.0.0.1)
   let normalizedIP = ip;
@@ -57,7 +56,6 @@ function isPrivateIP(ip: string): boolean {
   return false;
 }
 
-// ─── Hostname Validation ───────────────────────────────────
 function isBlockedHostname(hostname: string): boolean {
   const lower = hostname.toLowerCase().replace(/^\[|\]$/g, "");
 
@@ -89,7 +87,6 @@ function isBlockedHostname(hostname: string): boolean {
   return false;
 }
 
-// ─── DNS Resolution with SSRF Check ───────────────────────
 async function resolveAndCheck(hostname: string): Promise<void> {
   // If hostname is already an IP, check directly
   const cleanHost = hostname.replace(/^\[|\]$/g, "");
@@ -124,7 +121,6 @@ async function resolveAndCheck(hostname: string): Promise<void> {
   }
 }
 
-// ─── Main safeFetch Function ───────────────────────────────
 export interface SafeFetchOptions extends Omit<RequestInit, "signal"> {
   timeoutMs?: number;
   maxRedirects?: number;
@@ -204,7 +200,6 @@ export async function safeFetch(
   }
 }
 
-// ─── Domain-Only Validation (for SSL, DNS routes) ─────────
 export function validateDomain(domain: string): string {
   // Clean protocol and path
   const cleaned = domain.replace(/^https?:\/\//, "").split("/")[0].split(":")[0].toLowerCase();
@@ -220,7 +215,6 @@ export function validateDomain(domain: string): string {
   return cleaned;
 }
 
-// ─── Validate Domain with DNS Resolution ──────────────────
 export async function validateDomainWithDNS(domain: string): Promise<string> {
   const cleaned = validateDomain(domain);
   await resolveAndCheck(cleaned);

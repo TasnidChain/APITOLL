@@ -38,7 +38,6 @@ interface ToolDef {
 }
 
 const TOOLS: ToolDef[] = [
-  // ── Original (10) ────────────────────────────
   { name: "Programming Jokes", description: "Random programming and developer jokes. A fun micro-tool for AI agents to lighten conversations.", method: "GET", path: "/api/joke", price: 0.001, category: "data" },
   { name: "Web Search", description: "Search the web with structured JSON results — titles, snippets, URLs. Powered by DuckDuckGo + Brave Search.", method: "GET", path: "/api/search", price: 0.003, category: "data" },
   { name: "URL Scraper", description: "Convert any URL to clean Markdown content. Extracts article text, metadata, author info. Ideal for AI agents reading web pages.", method: "POST", path: "/api/scrape", price: 0.002, category: "data" },
@@ -50,7 +49,6 @@ const TOOLS: ToolDef[] = [
   { name: "Geocoding", description: "Forward geocoding — convert any address or place name to latitude/longitude coordinates. Powered by OpenStreetMap.", method: "GET", path: "/api/geocode", price: 0.001, category: "data" },
   { name: "Reverse Geocode", description: "Reverse geocoding — convert latitude/longitude coordinates to a human-readable address. Street, city, country, postal code.", method: "GET", path: "/api/geocode/reverse", price: 0.001, category: "data" },
 
-  // ── Data & Lookup (11) ───────────────────────
   { name: "Weather", description: "Current weather by city or coordinates. Temperature, humidity, wind speed, conditions. Powered by Open-Meteo.", method: "GET", path: "/api/weather", price: 0.001, category: "data" },
   { name: "IP Geolocation", description: "IP address geolocation lookup — country, region, city, ISP, coordinates. Works with IPv4 and IPv6.", method: "GET", path: "/api/ip", price: 0.001, category: "data" },
   { name: "Timezone", description: "Timezone info by coordinates or zone name. Current time, UTC offset, DST status.", method: "GET", path: "/api/timezone", price: 0.001, category: "data" },
@@ -62,7 +60,6 @@ const TOOLS: ToolDef[] = [
   { name: "Domain Profile", description: "Full domain profile — DNS + WHOIS combined in one call. Complete domain intelligence.", method: "GET", path: "/api/domain", price: 0.003, category: "data" },
   { name: "Public Holidays", description: "Public holidays by country and year. Powered by Nager.Date API.", method: "GET", path: "/api/holidays", price: 0.001, category: "data" },
 
-  // ── Text Processing (7) ──────────────────────
   { name: "Sentiment Analysis", description: "Sentiment analysis with AFINN lexicon scoring. Returns score, comparative, positive/negative tokens.", method: "POST", path: "/api/sentiment", price: 0.002, category: "ai" },
   { name: "Text Summarizer", description: "Extractive text summarization — condense long text into key sentences. Configurable length.", method: "POST", path: "/api/summarize", price: 0.003, category: "ai" },
   { name: "Keyword Extraction", description: "Keyword and keyphrase extraction from text using frequency-based analysis.", method: "POST", path: "/api/keywords", price: 0.002, category: "ai" },
@@ -71,7 +68,6 @@ const TOOLS: ToolDef[] = [
   { name: "Text Translation", description: "Text translation between 30+ languages. Powered by LibreTranslate.", method: "POST", path: "/api/translate", price: 0.003, category: "ai" },
   { name: "Profanity Filter", description: "Profanity detection and filtering. Returns clean text with offensive words masked.", method: "POST", path: "/api/profanity", price: 0.001, category: "ai" },
 
-  // ── Web & URL Utilities (7) ──────────────────
   { name: "URL Meta Tags", description: "Extract OpenGraph, Twitter Card, and standard meta tags from any URL.", method: "GET", path: "/api/meta", price: 0.002, category: "data" },
   { name: "Screenshot", description: "Capture a screenshot of any URL. Returns image URL via free screenshot service.", method: "GET", path: "/api/screenshot", price: 0.01, category: "data" },
   { name: "Link Extractor", description: "Extract all links from a URL — internal, external, with anchor text and status.", method: "GET", path: "/api/links", price: 0.002, category: "data" },
@@ -80,7 +76,6 @@ const TOOLS: ToolDef[] = [
   { name: "HTTP Headers", description: "HTTP response headers analysis — security headers check, server info, caching directives.", method: "GET", path: "/api/headers", price: 0.001, category: "data" },
   { name: "SSL Certificate", description: "SSL/TLS certificate info — issuer, expiry, protocol version, cipher suite.", method: "GET", path: "/api/ssl", price: 0.002, category: "data" },
 
-  // ── Compute & Dev Tools (9) ──────────────────
   { name: "Hash Generator", description: "Hash generation — MD5, SHA1, SHA256, SHA512. Compute secure hashes for any input string.", method: "POST", path: "/api/hash", price: 0.001, category: "compute" },
   { name: "JWT Decoder", description: "JWT token decode — extract header and payload without verification. Debug auth tokens.", method: "POST", path: "/api/jwt/decode", price: 0.001, category: "compute" },
   { name: "Regex Tester", description: "Regex test, match, and replace operations. Full JavaScript regex support with flags.", method: "POST", path: "/api/regex", price: 0.002, category: "compute" },
@@ -91,56 +86,45 @@ const TOOLS: ToolDef[] = [
   { name: "UUID Generator", description: "UUID generation — v4 (random) and v7 (timestamp-sortable). Generate 1 or multiple UUIDs.", method: "POST", path: "/api/uuid", price: 0.001, category: "compute" },
   { name: "Markdown to HTML", description: "Markdown to HTML conversion with word count, heading extraction, and reading time stats.", method: "POST", path: "/api/markdown", price: 0.002, category: "compute" },
 
-  // ── Media & Visual (5) ───────────────────────
   { name: "QR Code Generator", description: "QR code generation — returns SVG or data URL. Encode any text, URL, or data.", method: "GET", path: "/api/qr", price: 0.002, category: "data" },
   { name: "Placeholder Image", description: "Placeholder image generation — SVG with custom width, height, and colors.", method: "GET", path: "/api/placeholder", price: 0.001, category: "data" },
   { name: "Color Info", description: "Color information — hex to RGB, HSL, named color, contrast ratios against black/white.", method: "GET", path: "/api/color", price: 0.001, category: "data" },
   { name: "Favicon Extractor", description: "Extract favicon from any domain. Returns the best available icon URL.", method: "GET", path: "/api/favicon", price: 0.001, category: "data" },
   { name: "Avatar Generator", description: "Deterministic identicon avatar from any string. Unique visual identity for usernames.", method: "GET", path: "/api/avatar", price: 0.001, category: "data" },
 
-  // ── Blockchain (1) ───────────────────────────
   { name: "ENS Resolver", description: "ENS name resolution — resolve .eth names to Ethereum addresses and reverse lookup.", method: "GET", path: "/api/ens", price: 0.002, category: "finance" },
 
-  // ── Data Enrichment (3) ──────────────────────
   { name: "Domain Enrichment", description: "Domain/company enrichment — tech stack detection, social links, DNS records combined.", method: "GET", path: "/api/enrich/domain", price: 0.02, category: "data" },
   { name: "GitHub Profile", description: "GitHub user profile enrichment — bio, stats, top repos by stars, contribution data.", method: "GET", path: "/api/enrich/github", price: 0.01, category: "data" },
   { name: "Wikipedia Summary", description: "Wikipedia summary for any topic. Returns extract, thumbnail, page URL.", method: "GET", path: "/api/enrich/wiki", price: 0.005, category: "data" },
 
-  // ── Email (2) ────────────────────────────────
   { name: "Send Email", description: "Send email via Resend or SMTP. Supports HTML body, up to 10 recipients per call.", method: "POST", path: "/api/email/send", price: 0.003, category: "communication" },
   { name: "Email Validator", description: "Validate email addresses — syntax check, MX record verification, disposable domain detection.", method: "POST", path: "/api/email/validate", price: 0.002, category: "communication" },
 
-  // ── Document Extraction (2) ──────────────────
   { name: "PDF Extractor", description: "Extract text from PDF documents — URL or base64 input, up to 100 pages.", method: "POST", path: "/api/extract/pdf", price: 0.01, category: "data" },
   { name: "Text Extractor", description: "Extract clean text from HTML content or any URL. Strips tags, scripts, styles.", method: "POST", path: "/api/extract/text", price: 0.002, category: "data" },
 
-  // ── Finance (4) ──────────────────────────────
   { name: "Stock Quote", description: "Real-time stock quote — price, change, volume, market cap. Multi-symbol supported.", method: "GET", path: "/api/finance/quote", price: 0.002, category: "finance" },
   { name: "Price History", description: "Historical OHLCV candles — 1 month to 5 year range. Daily candlestick data for any ticker.", method: "GET", path: "/api/finance/history", price: 0.005, category: "finance" },
   { name: "Forex Rates", description: "150+ currency exchange rates — real-time forex data from multiple sources.", method: "GET", path: "/api/finance/forex", price: 0.001, category: "finance" },
   { name: "Currency Converter", description: "Currency conversion with live rates — specify amount, from/to currencies.", method: "GET", path: "/api/finance/convert", price: 0.001, category: "finance" },
 
-  // ── NLP & Text Intelligence (2) ──────────────
   { name: "Entity Extraction", description: "Named entity extraction — emails, URLs, dates, phone numbers, crypto addresses, and more.", method: "POST", path: "/api/entities", price: 0.002, category: "ai" },
   { name: "Text Similarity", description: "Text similarity scoring — Jaccard and cosine similarity between two text inputs.", method: "POST", path: "/api/similarity", price: 0.002, category: "ai" },
 
-  // ── Data Transformation (4) ──────────────────
   { name: "CSV to JSON", description: "CSV to JSON conversion with automatic header detection and type inference.", method: "POST", path: "/api/transform/csv", price: 0.002, category: "compute" },
   { name: "JSON to CSV", description: "JSON array to CSV conversion — flatten objects into tabular format.", method: "POST", path: "/api/transform/json-to-csv", price: 0.002, category: "compute" },
   { name: "XML to JSON", description: "XML to JSON conversion — parse XML documents into structured JSON.", method: "POST", path: "/api/transform/xml", price: 0.002, category: "compute" },
   { name: "YAML to JSON", description: "YAML to JSON conversion — parse YAML documents into JSON format.", method: "POST", path: "/api/transform/yaml", price: 0.002, category: "compute" },
 
-  // ── Date & Time (3) ──────────────────────────
   { name: "Date Duration", description: "Calculate duration between two dates — days, weeks, months, years, hours, minutes.", method: "GET", path: "/api/datetime/between", price: 0.001, category: "compute" },
   { name: "Business Days", description: "Business days calculator — count business days or add N business days to a date.", method: "GET", path: "/api/datetime/business-days", price: 0.001, category: "compute" },
   { name: "Unix Timestamp", description: "Unix timestamp converter — convert to/from ISO dates, milliseconds, human-readable.", method: "GET", path: "/api/datetime/unix", price: 0.001, category: "compute" },
 
-  // ── Security & Recon (3) ─────────────────────
   { name: "Security Audit", description: "Security headers audit with A+ to F grade. Checks CSP, HSTS, X-Frame-Options, and more.", method: "GET", path: "/api/security/headers", price: 0.003, category: "data" },
   { name: "Tech Stack Detect", description: "Technology stack detection — frameworks, CMS, analytics, CDN, hosting for any URL.", method: "GET", path: "/api/security/techstack", price: 0.005, category: "data" },
   { name: "Uptime Check", description: "URL uptime/health check — response time, status code, SSL validity, redirect chain.", method: "GET", path: "/api/security/uptime", price: 0.001, category: "data" },
 
-  // ── Math & Calculation (3) ───────────────────
   { name: "Math Evaluator", description: "Safe math expression evaluator — supports sqrt, trig, log, constants (pi, e), and more.", method: "POST", path: "/api/math/eval", price: 0.001, category: "compute" },
   { name: "Unit Converter", description: "Unit converter — length, weight, temperature, data, time, speed. 100+ unit combinations.", method: "GET", path: "/api/math/convert", price: 0.001, category: "compute" },
   { name: "Statistics", description: "Statistical analysis — mean, median, mode, std deviation, variance, percentiles, quartiles.", method: "POST", path: "/api/math/stats", price: 0.002, category: "compute" },

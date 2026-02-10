@@ -1,4 +1,3 @@
-// ─── Environment Validation & Health Checks ──────────────────────
 
 /**
  * Validates required environment variables at startup.

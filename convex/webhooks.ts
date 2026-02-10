@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireAuth, requireOrgAccess } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Valid Webhook Events
-// ═══════════════════════════════════════════════════
 
 const VALID_EVENTS = [
   "payment.completed",
@@ -34,9 +32,7 @@ function validateEvents(events: string[]) {
   }
 }
 
-// ═══════════════════════════════════════════════════
 // Generate Signing Secret
-// ═══════════════════════════════════════════════════
 
 function generateSecret(): string {
   const bytes = new Uint8Array(32);
@@ -47,9 +43,7 @@ function generateSecret(): string {
   return "whsec_" + hex;
 }
 
-// ═══════════════════════════════════════════════════
 // Create Webhook
-// ═══════════════════════════════════════════════════
 
 export const create = mutation({
   args: {
@@ -59,7 +53,7 @@ export const create = mutation({
     events: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.orgId);
 
     if (args.sellerId) {
@@ -104,29 +98,25 @@ export const create = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Webhooks by Org
-// ═══════════════════════════════════════════════════
 
 export const listByOrg = query({
   args: {
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.orgId);
     const webhooks = await ctx.db
       .query("webhooks")
       .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
       .collect();
-    // SECURITY: Strip signing secrets — never expose to frontend
+    // Strip signing secrets — never expose to frontend
     return webhooks.map(({ secret: _secret, ...safe }) => safe);
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Single Webhook
-// ═══════════════════════════════════════════════════
 
 export const get = query({
   args: {
@@ -135,17 +125,15 @@ export const get = query({
   handler: async (ctx, args) => {
     const webhook = await ctx.db.get(args.id);
     if (!webhook) throw new Error("Webhook not found");
-    // SECURITY FIX: Verify caller owns the webhook's organization
+    // Verify caller owns the webhook's organization
     await requireOrgAccess(ctx, webhook.orgId);
-    // SECURITY: Strip signing secret — never expose to frontend
+    // Strip signing secret — never expose to frontend
     const { secret: _secret, ...safe } = webhook;
     return safe;
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Update Webhook
-// ═══════════════════════════════════════════════════
 
 export const update = mutation({
   args: {
@@ -157,7 +145,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const webhook = await ctx.db.get(args.id);
     if (!webhook) throw new Error("Webhook not found");
-    // SECURITY FIX: Verify caller owns the webhook's organization
+    // Verify caller owns the webhook's organization
     await requireOrgAccess(ctx, webhook.orgId);
 
     const update: { url?: string; events?: string[]; isActive?: boolean; failureCount?: number } = {};
@@ -199,9 +187,7 @@ export const update = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Rotate Webhook Secret
-// ═══════════════════════════════════════════════════
 
 export const rotateSecret = mutation({
   args: {
@@ -210,7 +196,7 @@ export const rotateSecret = mutation({
   handler: async (ctx, args) => {
     const webhook = await ctx.db.get(args.id);
     if (!webhook) throw new Error("Webhook not found");
-    // SECURITY FIX: Verify caller owns the webhook's organization
+    // Verify caller owns the webhook's organization
     await requireOrgAccess(ctx, webhook.orgId);
 
     const secret = generateSecret();
@@ -220,9 +206,7 @@ export const rotateSecret = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Remove Webhook
-// ═══════════════════════════════════════════════════
 
 export const remove = mutation({
   args: {
@@ -231,7 +215,7 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const webhook = await ctx.db.get(args.id);
     if (!webhook) throw new Error("Webhook not found");
-    // SECURITY FIX: Verify caller owns the webhook's organization
+    // Verify caller owns the webhook's organization
     await requireOrgAccess(ctx, webhook.orgId);
 
     // Delete associated deliveries
@@ -248,9 +232,7 @@ export const remove = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Create Test Delivery
-// ═══════════════════════════════════════════════════
 
 export const createTestDelivery = mutation({
   args: {
@@ -259,7 +241,7 @@ export const createTestDelivery = mutation({
   handler: async (ctx, args) => {
     const webhook = await ctx.db.get(args.webhookId);
     if (!webhook) throw new Error("Webhook not found");
-    // SECURITY FIX: Verify caller owns the webhook's organization
+    // Verify caller owns the webhook's organization
     await requireOrgAccess(ctx, webhook.orgId);
 
     const payload = JSON.stringify({
@@ -289,9 +271,7 @@ export const createTestDelivery = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Deliveries for a Webhook
-// ═══════════════════════════════════════════════════
 
 export const listDeliveries = query({
   args: {
@@ -308,16 +288,14 @@ export const listDeliveries = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Webhook Stats for Org
-// ═══════════════════════════════════════════════════
 
 export const getStats = query({
   args: {
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.orgId);
     const webhooks = await ctx.db
       .query("webhooks")

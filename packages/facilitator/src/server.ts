@@ -14,7 +14,6 @@ import {
 import { ConvexHttpClient } from 'convex/browser';
 import { makeFunctionReference } from 'convex/server';
 
-// ─── Sentry Error Monitoring ──────────────────────────────────────
 // Must be initialized before any other middleware/handlers
 if (process.env.SENTRY_DSN && process.env.NODE_ENV !== 'test') {
   Sentry.init({
@@ -61,7 +60,6 @@ const getByIdempotencyKeyRef = makeFunctionReference<"query">("facilitator:getBy
 // Shared secret for Convex facilitator functions (defense-in-depth)
 const FACILITATOR_CONVEX_SECRET = process.env.FACILITATOR_CONVEX_SECRET || '';
 
-// ─── Environment Validation ─────────────────────────────────────
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -81,7 +79,6 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
 const API_KEYS = (process.env.FACILITATOR_API_KEYS || '').split(',').filter(Boolean);
 
-// ─── Solana Payment Module ──────────────────────────────────────
 
 import { transferSolanaUSDC, broadcastSolanaTransaction, verifySolanaTransaction } from './solana';
 
@@ -92,7 +89,6 @@ if (SOLANA_ENABLED) {
   logger.info('Solana chain disabled (no SOLANA_PRIVATE_KEY)');
 }
 
-// ─── Constants ──────────────────────────────────────────────────
 
 const USDC_ADDRESS_BASE = process.env.USDC_ADDRESS || BASE_USDC_ADDRESS;
 const USDC_ABI = ['function transfer(address to, uint256 amount) returns (bool)'];
@@ -138,7 +134,6 @@ if (REDIS_URL) {
   }
 }
 
-// ─── Zod Schemas ────────────────────────────────────────────────
 
 const PaymentRequirementSchema = z.object({
   amount: z.union([z.string(), z.number()]).transform((v) => String(v)),
@@ -163,7 +158,6 @@ const PayRequestSchema = z.object({
   signed_tx: z.string().optional(),
 });
 
-// ─── Types ──────────────────────────────────────────────────────
 
 /** Express Request with an attached API key (set by requireAuth middleware). */
 interface AuthenticatedRequest extends Request {
@@ -191,7 +185,6 @@ interface PaymentRecord {
   error?: string;
 }
 
-// ─── In-Memory Stores (backed by Convex for persistence) ────────
 
 const pendingPayments = new Map<string, PaymentRecord>();
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -300,12 +293,10 @@ async function recoverPaymentsFromConvex() {
   }
 }
 
-// ─── Express App ────────────────────────────────────────────────
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
 
-// ─── Security Headers Middleware ────────────────────────────────
 
 app.use((_req: Request, res: Response, next: NextFunction) => {
   for (const [header, value] of Object.entries(SECURITY_HEADERS)) {
@@ -314,7 +305,6 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// ─── CORS Middleware ────────────────────────────────────────────
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   const origin = req.headers.origin || null;
@@ -411,7 +401,6 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-// ─── API Key Auth Middleware ────────────────────────────────────
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -437,7 +426,6 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-// ─── Root Route (no auth required) ──────────────────────────────
 
 app.get('/', (req: Request, res: Response) => {
   const accept = req.headers.accept || '';
@@ -461,7 +449,6 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
-// ─── Health Check (no auth required) ────────────────────────────
 
 app.get('/health', (_req: Request, res: Response) => {
   res.json({
@@ -471,7 +458,6 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
-// ─── Status / Monitoring (auth required) ────────────────────────
 
 /**
  * Detailed facilitator status including wallet balance.
@@ -540,7 +526,6 @@ app.get('/status', rateLimit, requireAuth, async (_req: Request, res: Response) 
   }
 });
 
-// ─── POST /pay — Initiate Payment ──────────────────────────────
 
 /**
  * Initiates a USDC payment on behalf of the agent.
@@ -555,7 +540,6 @@ app.get('/status', rateLimit, requireAuth, async (_req: Request, res: Response) 
  */
 app.post('/pay', rateLimit, requireAuth, async (req: Request, res: Response) => {
   try {
-    // ─── Idempotency Key Check ────────────────────────────────
     // If the client sends an Idempotency-Key header and we've seen it before,
     // return the cached response immediately — no duplicate payment.
     const idempotencyKey = req.headers['idempotency-key'] as string | undefined;
@@ -597,7 +581,6 @@ app.post('/pay', rateLimit, requireAuth, async (req: Request, res: Response) => 
       }
     }
 
-    // ─── Validate Request ─────────────────────────────────────
     const parseResult = PayRequestSchema.safeParse(req.body);
     if (!parseResult.success) {
       const errors = parseResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
@@ -666,7 +649,6 @@ app.post('/pay', rateLimit, requireAuth, async (req: Request, res: Response) => 
   }
 });
 
-// ─── GET /pay/:paymentId — Check Status ─────────────────────────
 
 app.get('/pay/:paymentId', rateLimit, requireAuth, (req: Request, res: Response) => {
   const { paymentId } = req.params;
@@ -686,7 +668,6 @@ app.get('/pay/:paymentId', rateLimit, requireAuth, (req: Request, res: Response)
   });
 });
 
-// ─── Payment Processing ─────────────────────────────────────────
 
 async function processPayment(paymentId: string, signedTx?: string) {
   const payment = pendingPayments.get(paymentId);
@@ -700,7 +681,6 @@ async function processPayment(paymentId: string, signedTx?: string) {
 
   try {
     if (chain === 'solana') {
-      // ─── Solana Payment Flow ──────────────────────────────────
       if (signedTx) {
         logger.info({ paymentId }, 'Broadcasting pre-signed Solana transaction');
         const result = await broadcastSolanaTransaction(SOLANA_RPC_URL, signedTx);
@@ -722,7 +702,6 @@ async function processPayment(paymentId: string, signedTx?: string) {
         persistPaymentStatus(paymentId, 'completed', result.txHash);
       }
     } else {
-      // ─── Base (EVM) Payment Flow ──────────────────────────────
       const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
 
       if (signedTx) {
@@ -770,7 +749,6 @@ async function processPayment(paymentId: string, signedTx?: string) {
   }
 }
 
-// ─── POST /forward/:paymentId — Forward to Seller ───────────────
 
 /**
  * After payment completes, forward the original request to the seller
@@ -856,7 +834,6 @@ app.post('/forward/:paymentId', rateLimit, requireAuth, async (req: Request, res
   }
 });
 
-// ─── POST /verify — Verify Payment ──────────────────────────────
 
 /**
  * Verify a payment from an X-PAYMENT header.
@@ -966,7 +943,6 @@ app.post('/verify', rateLimit, async (req: Request, res: Response) => {
   }
 });
 
-// ─── 404 Handler ────────────────────────────────────────────────
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found' });
@@ -975,14 +951,12 @@ app.use((_req: Request, res: Response) => {
 // ─── Sentry Error Handler (must be before custom error handler) ──
 Sentry.setupExpressErrorHandler(app);
 
-// ─── Error Handler ──────────────────────────────────────────────
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   logger.error({ error: err.message }, 'Unhandled error');
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// ─── Graceful Shutdown ──────────────────────────────────────────
 
 let server: ReturnType<typeof app.listen>;
 
@@ -1005,7 +979,6 @@ function shutdown(signal: string) {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
-// ─── Global Error Handlers ──────────────────────────────────────
 
 process.on('unhandledRejection', (reason) => {
   logger.error(
@@ -1021,7 +994,6 @@ process.on('uncaughtException', (error) => {
   Sentry.close(2000).then(() => process.exit(1));
 });
 
-// ─── Start Server ───────────────────────────────────────────────
 
 // Only start listening when run directly (not when imported by tests)
 if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {

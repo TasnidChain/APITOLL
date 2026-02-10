@@ -24,9 +24,7 @@ import { ActivityTab } from './components/activity-tab'
 import { PlatformTab } from './components/platform-tab'
 import { HealthTab } from './components/health-tab'
 
-// ═══════════════════════════════════════════════════
 // Constants
-// ═══════════════════════════════════════════════════
 
 const ADMIN_USER_ID = process.env.NEXT_PUBLIC_ADMIN_USER_ID || ''
 
@@ -42,9 +40,7 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id']
 
-// ═══════════════════════════════════════════════════
 // Access Denied
-// ═══════════════════════════════════════════════════
 
 function AccessDenied() {
   return (
@@ -58,9 +54,7 @@ function AccessDenied() {
   )
 }
 
-// ═══════════════════════════════════════════════════
 // Main Admin Page
-// ═══════════════════════════════════════════════════
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabId>('overview')

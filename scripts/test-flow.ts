@@ -50,7 +50,6 @@ async function main() {
   let totalTests = 0;
   let passedTests = 0;
 
-  // ─── Test 1: Facilitator Health ──────────────────────────────
   totalTests++;
   console.log(`${STEP_WAIT} Test 1: Checking facilitator health...`);
   try {
@@ -69,7 +68,6 @@ async function main() {
     process.exit(1);
   }
 
-  // ─── Test 2: Seller Health ──────────────────────────────────
   totalTests++;
   console.log(`\n${STEP_WAIT} Test 2: Checking seller API health...`);
   try {
@@ -88,7 +86,6 @@ async function main() {
     process.exit(1);
   }
 
-  // ─── Test 3: Call Paid Endpoint → Get 402 ──────────────────
   totalTests++;
   console.log(`\n${STEP_WAIT} Test 3: Calling paid endpoint (expecting 402)...`);
   try {
@@ -118,7 +115,6 @@ async function main() {
     console.log(`${STEP_FAIL} Request failed: ${errMsg(e)}`);
   }
 
-  // ─── Test 4: Facilitator Status (with auth) ────────────────
   totalTests++;
   console.log(`\n${STEP_WAIT} Test 4: Checking facilitator status (authenticated)...`);
   try {
@@ -155,7 +151,6 @@ async function main() {
     console.log(`${STEP_FAIL} Status check failed: ${errMsg(e)}`);
   }
 
-  // ─── Test 5: Verify Endpoint ───────────────────────────────
   totalTests++;
   console.log(`\n${STEP_WAIT} Test 5: Testing /verify endpoint...`);
   try {
@@ -183,7 +178,6 @@ async function main() {
     console.log(`${STEP_FAIL} /verify failed: ${errMsg(e)}`);
   }
 
-  // ─── Summary ───────────────────────────────────────────────
 
   console.log(`\n${"═".repeat(60)}`);
   console.log(`\n  Results: ${passedTests}/${totalTests} tests passed\n`);

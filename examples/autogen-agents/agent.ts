@@ -20,7 +20,6 @@ import { createAgentWallet, createFacilitatorSigner, type AgentWallet } from "@a
 const FACILITATOR_URL = process.env.FACILITATOR_URL || "https://pay.apitoll.com";
 const SELLER_API = process.env.SELLER_API_URL || "http://localhost:4402";
 
-// ─── Create specialized agent wallets ──────────────────────────
 
 function createSigner() {
   return process.env.FACILITATOR_API_KEY
@@ -73,7 +72,6 @@ const writer = createAgentWallet({
   },
 });
 
-// ─── Agent tool functions ──────────────────────────────────────
 
 async function callTool(
   wallet: AgentWallet,
@@ -139,7 +137,6 @@ async function summarize(text: string) {
   });
 }
 
-// ─── Multi-Agent Coordinator ────────────────────────────────────
 
 interface TaskResult {
   agent: string;
@@ -241,7 +238,6 @@ class Coordinator {
   }
 }
 
-// ─── Run ────────────────────────────────────────────────────────
 
 async function main() {
   console.log("AutoGen-style Multi-Agent Pipeline + x402 Payments");

@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireAdmin } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Seed Default Categories
-// ═══════════════════════════════════════════════════
 
 export const seed = mutation({
   handler: async (ctx) => {
@@ -38,9 +36,7 @@ export const seed = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Categories
-// ═══════════════════════════════════════════════════
 
 export const list = query({
   handler: async (ctx) => {
@@ -66,9 +62,7 @@ export const list = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Category
-// ═══════════════════════════════════════════════════
 
 export const get = query({
   args: { slug: v.string() },

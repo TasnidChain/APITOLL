@@ -20,7 +20,6 @@ describe("billing", () => {
     });
   }
 
-  // ─── priceIdToPlan (pure function) ──────────────────────
   describe("priceIdToPlan", () => {
     it("maps pro price IDs to 'pro'", () => {
       expect(priceIdToPlan("price_pro_monthly")).toBe("pro");
@@ -38,7 +37,6 @@ describe("billing", () => {
     });
   });
 
-  // ─── incrementUsage ─────────────────────────────────────
   describe("incrementUsage", () => {
     it("allows usage within free plan limit (1000/day)", async () => {
       const t = convexTest(schema, modules);
@@ -111,7 +109,6 @@ describe("billing", () => {
     });
   });
 
-  // ─── checkAgentLimit ────────────────────────────────────
   describe("checkAgentLimit", () => {
     it("allows first agent on free plan", async () => {
       const t = convexTest(schema, modules);
@@ -174,7 +171,6 @@ describe("billing", () => {
     });
   });
 
-  // ─── checkSellerLimit ───────────────────────────────────
   describe("checkSellerLimit", () => {
     it("allows up to 2 sellers on free plan", async () => {
       const t = convexTest(schema, modules);
@@ -209,7 +205,6 @@ describe("billing", () => {
     });
   });
 
-  // ─── activateSubscription ───────────────────────────────
   describe("activateSubscription", () => {
     it("updates org to pro plan with subscription details", async () => {
       const t = convexTest(schema, modules);
@@ -234,7 +229,6 @@ describe("billing", () => {
     });
   });
 
-  // ─── cancelSubscription ─────────────────────────────────
   describe("cancelSubscription", () => {
     it("downgrades org to free plan and clears subscription", async () => {
       const t = convexTest(schema, modules);
@@ -262,7 +256,6 @@ describe("billing", () => {
     });
   });
 
-  // ─── getByStripeCustomer ────────────────────────────────
   describe("getByStripeCustomer", () => {
     it("finds org by Stripe customer ID", async () => {
       const t = convexTest(schema, modules);

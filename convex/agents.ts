@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { requireAuth, requireOrgAccess, requireAgentAccess } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Create Agent
-// ═══════════════════════════════════════════════════
 
 export const create = mutation({
   args: {
@@ -29,9 +27,7 @@ export const create = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Agents by Org
-// ═══════════════════════════════════════════════════
 
 export const listByOrg = query({
   args: {
@@ -46,22 +42,18 @@ export const listByOrg = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Agent
-// ═══════════════════════════════════════════════════
 
 export const get = query({
   args: { id: v.id("agents") },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this agent (via org membership)
+    // Verify caller owns this agent (via org membership)
     const { agent } = await requireAgentAccess(ctx, args.id);
     return agent;
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get by Wallet Address
-// ═══════════════════════════════════════════════════
 
 export const getByWallet = query({
   args: { walletAddress: v.string() },
@@ -74,11 +66,9 @@ export const getByWallet = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Update Balance
-// ═══════════════════════════════════════════════════
 
-// SECURITY FIX: Changed from mutation to internalMutation (CRITICAL-03)
+// Changed from mutation to internalMutation (CRITICAL-03)
 // Balance should only be modified by payment system, not directly by users
 export const updateBalance = internalMutation({
   args: {
@@ -99,9 +89,7 @@ export const updateBalance = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Update Status
-// ═══════════════════════════════════════════════════
 
 export const updateStatus = mutation({
   args: {
@@ -109,15 +97,13 @@ export const updateStatus = mutation({
     status: v.union(v.literal("active"), v.literal("paused"), v.literal("depleted")),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this agent
+    // Verify caller owns this agent
     await requireAgentAccess(ctx, args.id);
     await ctx.db.patch(args.id, { status: args.status });
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Update Policies
-// ═══════════════════════════════════════════════════
 
 export const updatePolicies = mutation({
   args: {
@@ -125,7 +111,7 @@ export const updatePolicies = mutation({
     policies: v.array(v.any()),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this agent
+    // Verify caller owns this agent
     await requireAgentAccess(ctx, args.id);
     await ctx.db.patch(args.id, { policiesJson: args.policies });
   },

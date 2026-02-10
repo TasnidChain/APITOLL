@@ -8,7 +8,6 @@ function formatPayment(ctx: ReturnType<typeof getX402Context>) {
   return { txHash: ctx.receipt.txHash, amount: ctx.receipt.amount, chain: ctx.receipt.chain };
 }
 
-// ─── CSV to JSON ─────────────────────────────────────────────
 
 router.post("/api/transform/csv", (req: Request, res: Response) => {
   const { csv, delimiter = ",", hasHeaders = true } = req.body || {};
@@ -78,7 +77,6 @@ router.post("/api/transform/csv", (req: Request, res: Response) => {
   }
 });
 
-// ─── JSON to CSV ─────────────────────────────────────────────
 
 router.post("/api/transform/json-to-csv", (req: Request, res: Response) => {
   const { data, delimiter = "," } = req.body || {};
@@ -115,7 +113,6 @@ router.post("/api/transform/json-to-csv", (req: Request, res: Response) => {
   });
 });
 
-// ─── XML to JSON (lightweight parser) ────────────────────────
 
 function parseSimpleXml(xml: string): any {
   // Remove XML declaration and comments
@@ -185,7 +182,6 @@ router.post("/api/transform/xml", (req: Request, res: Response) => {
   }
 });
 
-// ─── YAML to JSON (lightweight parser) ───────────────────────
 
 function parseSimpleYaml(yaml: string): any {
   const lines = yaml.split(/\r?\n/);

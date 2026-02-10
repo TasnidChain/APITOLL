@@ -8,7 +8,6 @@ function formatPayment(ctx: ReturnType<typeof getX402Context>) {
   return { txHash: ctx.receipt.txHash, amount: ctx.receipt.amount, chain: ctx.receipt.chain };
 }
 
-// ─── Time Between Dates ──────────────────────────────────────
 
 router.get("/api/datetime/between", (req: Request, res: Response) => {
   const { from, to } = req.query;
@@ -67,7 +66,6 @@ router.get("/api/datetime/between", (req: Request, res: Response) => {
   });
 });
 
-// ─── Business Days Calculator ────────────────────────────────
 
 router.get("/api/datetime/business-days", (req: Request, res: Response) => {
   const { from, to, add } = req.query;
@@ -137,7 +135,6 @@ router.get("/api/datetime/business-days", (req: Request, res: Response) => {
   });
 });
 
-// ─── Unix Timestamp Converter ────────────────────────────────
 
 router.get("/api/datetime/unix", (req: Request, res: Response) => {
   const { timestamp, date } = req.query;

@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
       tip: "Enable evolution in buyer-sdk: createAgentWallet({ evolution: true })",
     });
   } catch {
-    // SECURITY FIX: Don't leak internal error details
+    // Don't leak internal error details
     return NextResponse.json({ error: "Failed to retrieve evolution state" }, { status: 500 });
   }
 }
@@ -237,7 +237,7 @@ export async function POST(req: NextRequest) {
       network_mutations: networkMutations,
     });
   } catch {
-    // SECURITY FIX: Don't leak internal error details
+    // Don't leak internal error details
     return NextResponse.json({ error: "Failed to save evolution state" }, { status: 500 });
   }
 }

@@ -278,9 +278,7 @@ export default function DisputesPage() {
   )
 }
 
-// ═══════════════════════════════════════════════════
 // Escrow Tab
-// ═══════════════════════════════════════════════════
 
 const escrowStatusConfig = {
   held: { icon: Lock, color: 'bg-amber-500/10 text-amber-500', label: 'Held' },

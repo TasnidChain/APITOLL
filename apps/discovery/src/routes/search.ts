@@ -25,9 +25,7 @@ const searchSchema = z.object({
   offset: z.coerce.number().min(0).optional(),
 })
 
-// ═══════════════════════════════════════════════════
 // Search Tools
-// ═══════════════════════════════════════════════════
 
 // GET /tools - Search and list tools
 app.get('/tools', async (c) => {
@@ -80,9 +78,7 @@ app.get('/tools/:slug', async (c) => {
   return c.json({ tool })
 })
 
-// ═══════════════════════════════════════════════════
 // Categories
-// ═══════════════════════════════════════════════════
 
 // GET /categories - List all categories
 app.get('/categories', async (c) => {
@@ -98,9 +94,7 @@ app.get('/categories/:id/tools', async (c) => {
   return c.json({ tools, category: id })
 })
 
-// ═══════════════════════════════════════════════════
 // Tags
-// ═══════════════════════════════════════════════════
 
 // GET /tags - Get popular tags
 app.get('/tags', async (c) => {

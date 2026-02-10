@@ -17,7 +17,6 @@ import { PolicyEngine } from "./policy-engine";
 import { APITOLLMutator } from "./mutator";
 import { DEFAULT_CHAIN_CONFIGS } from "@apitoll/shared";
 
-// ─── Test Helpers ──────────────────────────────────────────────────
 
 const SELLER_WALLET = "0xSeller1234567890abcdef1234567890abcdef";
 const USDC_ADDRESS = DEFAULT_CHAIN_CONFIGS.base.usdcAddress;
@@ -51,7 +50,6 @@ function create200Response(data: Record<string, unknown>) {
   });
 }
 
-// ─── Tests ──────────────────────────────────────────────────────────
 
 describe("E2E: Full x402 Payment Flow", () => {
   const mockFetch = vi.fn();

@@ -8,9 +8,7 @@ import { Router } from "express";
 
 const router = Router();
 
-// ═══════════════════════════════════════════════════
 // Endpoint definitions — single source of truth
-// ═══════════════════════════════════════════════════
 // Keep in sync with server.ts paymentMiddleware config
 
 interface EndpointDef {
@@ -34,7 +32,6 @@ interface EndpointDef {
 }
 
 const ENDPOINTS: EndpointDef[] = [
-  // ── Original ──────────────────────────────────
   { method: "get", path: "/api/joke", price: "0.001", description: "Get a random programming joke", category: "Original" },
   { method: "get", path: "/api/search", price: "0.003", description: "Web search — structured results with title, snippet, URL", category: "Original", params: [{ name: "q", in: "query", description: "Search query", required: true, schema: { type: "string", example: "machine learning" } }] },
   { method: "post", path: "/api/scrape", price: "0.002", description: "Convert any URL to clean Markdown content", category: "Original", requestBody: { description: "URL to scrape", properties: { url: { type: "string", description: "URL to convert", example: "https://example.com" } }, required: ["url"] } },
@@ -46,7 +43,6 @@ const ENDPOINTS: EndpointDef[] = [
   { method: "get", path: "/api/geocode", price: "0.001", description: "Forward geocoding — address to coordinates", category: "Original", params: [{ name: "q", in: "query", description: "Address or place name", required: true, schema: { type: "string", example: "San Francisco" } }] },
   { method: "get", path: "/api/geocode/reverse", price: "0.001", description: "Reverse geocoding — coordinates to address", category: "Original", params: [{ name: "lat", in: "query", description: "Latitude", required: true, schema: { type: "string", example: "37.7749" } }, { name: "lon", in: "query", description: "Longitude", required: true, schema: { type: "string", example: "-122.4194" } }] },
 
-  // ── Data & Lookup ─────────────────────────────
   { method: "get", path: "/api/weather", price: "0.001", description: "Current weather by city or coordinates (Open-Meteo)", category: "Data & Lookup", params: [{ name: "city", in: "query", description: "City name", required: false, schema: { type: "string", example: "London" } }, { name: "lat", in: "query", description: "Latitude (alt to city)", required: false, schema: { type: "string" } }, { name: "lon", in: "query", description: "Longitude (alt to city)", required: false, schema: { type: "string" } }] },
   { method: "get", path: "/api/ip", price: "0.001", description: "IP geolocation lookup (ip-api.com)", category: "Data & Lookup", params: [{ name: "ip", in: "query", description: "IP address to look up", required: false, schema: { type: "string", example: "8.8.8.8" } }] },
   { method: "get", path: "/api/timezone", price: "0.001", description: "Timezone info by coordinates or zone name", category: "Data & Lookup", params: [{ name: "lat", in: "query", description: "Latitude", required: false, schema: { type: "string" } }, { name: "lon", in: "query", description: "Longitude", required: false, schema: { type: "string" } }] },
@@ -58,7 +54,6 @@ const ENDPOINTS: EndpointDef[] = [
   { method: "get", path: "/api/domain", price: "0.003", description: "Full domain profile — DNS + WHOIS combined", category: "Data & Lookup", params: [{ name: "domain", in: "query", description: "Domain name", required: true, schema: { type: "string", example: "example.com" } }] },
   { method: "get", path: "/api/holidays", price: "0.001", description: "Public holidays by country and year (Nager.Date)", category: "Data & Lookup", params: [{ name: "country", in: "query", description: "ISO 3166-1 alpha-2 country code", required: true, schema: { type: "string", example: "US" } }, { name: "year", in: "query", description: "Year", required: false, schema: { type: "string", example: "2025" } }] },
 
-  // ── Text Processing ───────────────────────────
   { method: "post", path: "/api/sentiment", price: "0.002", description: "Sentiment analysis with AFINN lexicon scoring", category: "Text Processing", requestBody: { description: "Text to analyze", properties: { text: { type: "string", description: "Text content", example: "I love this product!" } }, required: ["text"] } },
   { method: "post", path: "/api/summarize", price: "0.003", description: "Extractive text summarization", category: "Text Processing", requestBody: { description: "Text to summarize", properties: { text: { type: "string", description: "Text content" }, sentences: { type: "number", description: "Number of summary sentences", example: 3 } }, required: ["text"] } },
   { method: "post", path: "/api/keywords", price: "0.002", description: "Keyword/keyphrase extraction (frequency-based)", category: "Text Processing", requestBody: { description: "Text to extract keywords from", properties: { text: { type: "string", description: "Text content" } }, required: ["text"] } },
@@ -67,7 +62,6 @@ const ENDPOINTS: EndpointDef[] = [
   { method: "post", path: "/api/translate", price: "0.003", description: "Text translation (LibreTranslate)", category: "Text Processing", requestBody: { description: "Translation request", properties: { text: { type: "string", description: "Text to translate" }, source: { type: "string", description: "Source language code", example: "en" }, target: { type: "string", description: "Target language code", example: "es" } }, required: ["text", "target"] } },
   { method: "post", path: "/api/profanity", price: "0.001", description: "Profanity detection and filtering", category: "Text Processing", requestBody: { description: "Text to check", properties: { text: { type: "string", description: "Text content" } }, required: ["text"] } },
 
-  // ── Web & URL Utilities ───────────────────────
   { method: "get", path: "/api/meta", price: "0.002", description: "URL meta tag extraction (OpenGraph, Twitter Cards)", category: "Web & URL", params: [{ name: "url", in: "query", description: "URL to extract meta from", required: true, schema: { type: "string", example: "https://github.com" } }] },
   { method: "get", path: "/api/screenshot", price: "0.01", description: "URL screenshot via free screenshot service", category: "Web & URL", params: [{ name: "url", in: "query", description: "URL to screenshot", required: true, schema: { type: "string" } }] },
   { method: "get", path: "/api/links", price: "0.002", description: "Extract all links from a URL", category: "Web & URL", params: [{ name: "url", in: "query", description: "URL to extract links from", required: true, schema: { type: "string" } }] },
@@ -76,7 +70,6 @@ const ENDPOINTS: EndpointDef[] = [
   { method: "get", path: "/api/headers", price: "0.001", description: "HTTP response headers + security header analysis", category: "Web & URL", params: [{ name: "url", in: "query", description: "URL to check headers", required: true, schema: { type: "string" } }] },
   { method: "get", path: "/api/ssl", price: "0.002", description: "SSL/TLS certificate info for any domain", category: "Web & URL", params: [{ name: "domain", in: "query", description: "Domain to check SSL", required: true, schema: { type: "string", example: "github.com" } }] },
 
-  // ── Compute & Dev Tools ───────────────────────
   { method: "post", path: "/api/hash", price: "0.001", description: "Hash generation (MD5, SHA1, SHA256, SHA512)", category: "Compute & Dev", requestBody: { description: "Data to hash", properties: { data: { type: "string", description: "Input string" }, algorithm: { type: "string", description: "Hash algorithm", example: "sha256" } }, required: ["data"] } },
   { method: "post", path: "/api/jwt/decode", price: "0.001", description: "JWT token decode (header + payload, no verification)", category: "Compute & Dev", requestBody: { description: "JWT to decode", properties: { token: { type: "string", description: "JWT token string" } }, required: ["token"] } },
   { method: "post", path: "/api/regex", price: "0.002", description: "Regex test, match, and replace", category: "Compute & Dev", requestBody: { description: "Regex operation", properties: { pattern: { type: "string", description: "Regular expression" }, text: { type: "string", description: "Text to test against" }, flags: { type: "string", description: "Regex flags", example: "gi" } }, required: ["pattern", "text"] } },
@@ -87,64 +80,51 @@ const ENDPOINTS: EndpointDef[] = [
   { method: "post", path: "/api/uuid", price: "0.001", description: "UUID generation (v4 random, v7 timestamp-sortable)", category: "Compute & Dev", requestBody: { description: "UUID options", properties: { version: { type: "string", description: "UUID version: 'v4' or 'v7'", example: "v4" }, count: { type: "number", description: "Number of UUIDs", example: 1 } } } },
   { method: "post", path: "/api/markdown", price: "0.002", description: "Markdown to HTML conversion with stats", category: "Compute & Dev", requestBody: { description: "Markdown content", properties: { markdown: { type: "string", description: "Markdown source" } }, required: ["markdown"] } },
 
-  // ── Media & Visual ────────────────────────────
   { method: "get", path: "/api/qr", price: "0.002", description: "QR code generation (SVG or data URL)", category: "Media & Visual", params: [{ name: "data", in: "query", description: "Data to encode", required: true, schema: { type: "string", example: "https://apitoll.com" } }] },
   { method: "get", path: "/api/placeholder", price: "0.001", description: "Placeholder image generation (SVG)", category: "Media & Visual", params: [{ name: "width", in: "query", description: "Width in pixels", required: false, schema: { type: "string", example: "400" } }, { name: "height", in: "query", description: "Height in pixels", required: false, schema: { type: "string", example: "300" } }] },
   { method: "get", path: "/api/color", price: "0.001", description: "Color info — hex to RGB, HSL, name, contrast ratios", category: "Media & Visual", params: [{ name: "hex", in: "query", description: "Hex color code", required: true, schema: { type: "string", example: "FF5733" } }] },
   { method: "get", path: "/api/favicon", price: "0.001", description: "Favicon extraction from any domain", category: "Media & Visual", params: [{ name: "domain", in: "query", description: "Domain to extract favicon from", required: true, schema: { type: "string", example: "github.com" } }] },
   { method: "get", path: "/api/avatar", price: "0.001", description: "Deterministic identicon avatar from any string", category: "Media & Visual", params: [{ name: "input", in: "query", description: "Seed string for avatar", required: true, schema: { type: "string", example: "alice" } }] },
 
-  // ── Blockchain ────────────────────────────────
   { method: "get", path: "/api/ens", price: "0.002", description: "ENS name resolution (name ↔ address)", category: "Blockchain", params: [{ name: "name", in: "query", description: "ENS name or Ethereum address", required: true, schema: { type: "string", example: "vitalik.eth" } }] },
 
-  // ── Data Enrichment ───────────────────────────
   { method: "get", path: "/api/enrich/domain", price: "0.020", description: "Domain/company enrichment — tech stack, social links, DNS", category: "Enrichment", params: [{ name: "domain", in: "query", description: "Domain to enrich", required: true, schema: { type: "string", example: "stripe.com" } }] },
   { method: "get", path: "/api/enrich/github", price: "0.010", description: "GitHub user profile + top repos by stars", category: "Enrichment", params: [{ name: "username", in: "query", description: "GitHub username", required: true, schema: { type: "string", example: "torvalds" } }] },
   { method: "get", path: "/api/enrich/wiki", price: "0.005", description: "Wikipedia summary for any topic", category: "Enrichment", params: [{ name: "q", in: "query", description: "Search query", required: true, schema: { type: "string", example: "Ethereum" } }] },
 
-  // ── Email ─────────────────────────────────────
   { method: "post", path: "/api/email/send", price: "0.003", description: "Send email via Resend or SMTP (max 10 recipients)", category: "Email", requestBody: { description: "Email to send", properties: { to: { type: "string", description: "Recipient email" }, subject: { type: "string", description: "Email subject" }, body: { type: "string", description: "Email body (text or HTML)" } }, required: ["to", "subject", "body"] } },
   { method: "post", path: "/api/email/validate", price: "0.002", description: "Validate email addresses with MX record check", category: "Email", requestBody: { description: "Email to validate", properties: { email: { type: "string", description: "Email address to validate" } }, required: ["email"] } },
 
-  // ── Document Extraction ───────────────────────
   { method: "post", path: "/api/extract/pdf", price: "0.010", description: "Extract text from PDF (URL or base64, up to 100 pages)", category: "Documents", requestBody: { description: "PDF source", properties: { url: { type: "string", description: "URL of PDF" }, base64: { type: "string", description: "Base64-encoded PDF (alternative to URL)" } } } },
   { method: "post", path: "/api/extract/text", price: "0.002", description: "Extract clean text from HTML content or URL", category: "Documents", requestBody: { description: "HTML source", properties: { url: { type: "string", description: "URL to extract text from" }, html: { type: "string", description: "Raw HTML (alternative to URL)" } } } },
 
-  // ── Finance ───────────────────────────────────
   { method: "get", path: "/api/finance/quote", price: "0.002", description: "Real-time stock quote (multi-symbol supported)", category: "Finance", params: [{ name: "symbol", in: "query", description: "Stock ticker symbol(s)", required: true, schema: { type: "string", example: "AAPL,MSFT" } }] },
   { method: "get", path: "/api/finance/history", price: "0.005", description: "Historical OHLCV candles (1m to 5y range)", category: "Finance", params: [{ name: "symbol", in: "query", description: "Stock ticker", required: true, schema: { type: "string", example: "AAPL" } }, { name: "range", in: "query", description: "Time range (1m, 3m, 6m, 1y, 5y)", required: false, schema: { type: "string", example: "3m" } }] },
   { method: "get", path: "/api/finance/forex", price: "0.001", description: "150+ currency exchange rates", category: "Finance", params: [{ name: "base", in: "query", description: "Base currency", required: false, schema: { type: "string", example: "USD" } }] },
   { method: "get", path: "/api/finance/convert", price: "0.001", description: "Currency conversion with live rates", category: "Finance", params: [{ name: "from", in: "query", description: "Source currency", required: true, schema: { type: "string", example: "USD" } }, { name: "to", in: "query", description: "Target currency", required: true, schema: { type: "string", example: "EUR" } }, { name: "amount", in: "query", description: "Amount to convert", required: false, schema: { type: "string", example: "100" } }] },
 
-  // ── NLP & Text Intelligence ───────────────────
   { method: "post", path: "/api/entities", price: "0.002", description: "Named entity extraction (emails, URLs, dates, crypto addresses, etc)", category: "NLP", requestBody: { description: "Text for entity extraction", properties: { text: { type: "string", description: "Text content" } }, required: ["text"] } },
   { method: "post", path: "/api/similarity", price: "0.002", description: "Text similarity scoring (Jaccard + cosine)", category: "NLP", requestBody: { description: "Two texts to compare", properties: { a: { type: "string", description: "First text" }, b: { type: "string", description: "Second text" } }, required: ["a", "b"] } },
 
-  // ── Data Transformation ───────────────────────
   { method: "post", path: "/api/transform/csv", price: "0.002", description: "CSV to JSON conversion with header detection", category: "Transform", requestBody: { description: "CSV data", properties: { csv: { type: "string", description: "CSV content" } }, required: ["csv"] } },
   { method: "post", path: "/api/transform/json-to-csv", price: "0.002", description: "JSON array to CSV conversion", category: "Transform", requestBody: { description: "JSON data", properties: { data: { type: "array", description: "Array of objects" } }, required: ["data"] } },
   { method: "post", path: "/api/transform/xml", price: "0.002", description: "XML to JSON conversion", category: "Transform", requestBody: { description: "XML data", properties: { xml: { type: "string", description: "XML content" } }, required: ["xml"] } },
   { method: "post", path: "/api/transform/yaml", price: "0.002", description: "YAML to JSON conversion", category: "Transform", requestBody: { description: "YAML data", properties: { yaml: { type: "string", description: "YAML content" } }, required: ["yaml"] } },
 
-  // ── Date & Time ───────────────────────────────
   { method: "get", path: "/api/datetime/between", price: "0.001", description: "Calculate duration between two dates", category: "Date & Time", params: [{ name: "from", in: "query", description: "Start date (ISO 8601)", required: true, schema: { type: "string", example: "2024-01-01" } }, { name: "to", in: "query", description: "End date (ISO 8601)", required: true, schema: { type: "string", example: "2024-12-31" } }] },
   { method: "get", path: "/api/datetime/business-days", price: "0.001", description: "Business days calculator (count or add)", category: "Date & Time", params: [{ name: "from", in: "query", description: "Start date", required: true, schema: { type: "string", example: "2024-01-01" } }, { name: "to", in: "query", description: "End date (for counting)", required: false, schema: { type: "string" } }] },
   { method: "get", path: "/api/datetime/unix", price: "0.001", description: "Unix timestamp converter (to/from ISO dates)", category: "Date & Time", params: [{ name: "timestamp", in: "query", description: "Unix timestamp (seconds)", required: false, schema: { type: "string", example: "1704067200" } }] },
 
-  // ── Security & Recon ──────────────────────────
   { method: "get", path: "/api/security/headers", price: "0.003", description: "Security headers audit with grade (A+ to F)", category: "Security", params: [{ name: "url", in: "query", description: "URL to audit", required: true, schema: { type: "string", example: "https://github.com" } }] },
   { method: "get", path: "/api/security/techstack", price: "0.005", description: "Technology stack detection for any URL", category: "Security", params: [{ name: "url", in: "query", description: "URL to detect tech", required: true, schema: { type: "string", example: "https://vercel.com" } }] },
   { method: "get", path: "/api/security/uptime", price: "0.001", description: "URL uptime/health check with response time", category: "Security", params: [{ name: "url", in: "query", description: "URL to check", required: true, schema: { type: "string", example: "https://api.apitoll.com" } }] },
 
-  // ── Math & Calculation ────────────────────────
   { method: "post", path: "/api/math/eval", price: "0.001", description: "Safe math expression evaluator (sqrt, trig, etc)", category: "Math", requestBody: { description: "Math expression", properties: { expression: { type: "string", description: "Math expression to evaluate", example: "sqrt(144) + 3^2" } }, required: ["expression"] } },
   { method: "get", path: "/api/math/convert", price: "0.001", description: "Unit converter (length, weight, temp, data, time, speed)", category: "Math", params: [{ name: "value", in: "query", description: "Numeric value", required: true, schema: { type: "string", example: "100" } }, { name: "from", in: "query", description: "Source unit", required: true, schema: { type: "string", example: "km" } }, { name: "to", in: "query", description: "Target unit", required: true, schema: { type: "string", example: "mi" } }] },
   { method: "post", path: "/api/math/stats", price: "0.002", description: "Statistical analysis (mean, median, std dev, percentiles)", category: "Math", requestBody: { description: "Numeric data", properties: { data: { type: "array", description: "Array of numbers" } }, required: ["data"] } },
 ];
 
-// ═══════════════════════════════════════════════════
 // Build OpenAPI 3.0.3 Spec
-// ═══════════════════════════════════════════════════
 
 function buildSpec(): object {
   const categories = [...new Set(ENDPOINTS.map((e) => e.category))];
@@ -273,9 +253,7 @@ function buildSpec(): object {
   };
 }
 
-// ═══════════════════════════════════════════════════
 // Routes
-// ═══════════════════════════════════════════════════
 
 // Raw OpenAPI JSON
 router.get("/api/openapi.json", (_req, res) => {

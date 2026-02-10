@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireAuth, requireOrgAccess } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Alert threshold validator (must match schema.ts)
-// ═══════════════════════════════════════════════════
 
 const alertThresholdValidator = v.object({
   percentage: v.optional(v.number()),
@@ -13,9 +11,7 @@ const alertThresholdValidator = v.object({
   windowMinutes: v.optional(v.number()),
 });
 
-// ═══════════════════════════════════════════════════
 // Create Alert Rule
-// ═══════════════════════════════════════════════════
 
 export const create = mutation({
   args: {
@@ -32,7 +28,7 @@ export const create = mutation({
     webhookUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.orgId);
 
     const id = await ctx.db.insert("alertRules", {
@@ -48,16 +44,14 @@ export const create = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Alert Rules by Org
-// ═══════════════════════════════════════════════════
 
 export const listByOrg = query({
   args: {
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.orgId);
     return await ctx.db
       .query("alertRules")
@@ -66,9 +60,7 @@ export const listByOrg = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Update Alert Rule
-// ═══════════════════════════════════════════════════
 
 export const update = mutation({
   args: {
@@ -80,7 +72,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const rule = await ctx.db.get(args.id);
     if (!rule) throw new Error("Alert rule not found");
-    // SECURITY FIX: Verify caller owns the alert rule's organization
+    // Verify caller owns the alert rule's organization
     await requireOrgAccess(ctx, rule.orgId);
 
     const update: {
@@ -96,9 +88,7 @@ export const update = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Toggle Alert Rule
-// ═══════════════════════════════════════════════════
 
 export const toggleActive = mutation({
   args: {
@@ -107,15 +97,13 @@ export const toggleActive = mutation({
   handler: async (ctx, args) => {
     const rule = await ctx.db.get(args.id);
     if (!rule) throw new Error("Alert rule not found");
-    // SECURITY FIX: Verify caller owns the alert rule's organization
+    // Verify caller owns the alert rule's organization
     await requireOrgAccess(ctx, rule.orgId);
     await ctx.db.patch(args.id, { isActive: !rule.isActive });
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Delete Alert Rule
-// ═══════════════════════════════════════════════════
 
 export const remove = mutation({
   args: {
@@ -124,7 +112,7 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const rule = await ctx.db.get(args.id);
     if (!rule) throw new Error("Alert rule not found");
-    // SECURITY FIX: Verify caller owns the alert rule's organization
+    // Verify caller owns the alert rule's organization
     await requireOrgAccess(ctx, rule.orgId);
     await ctx.db.delete(args.id);
   },

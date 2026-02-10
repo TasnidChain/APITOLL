@@ -7,9 +7,7 @@ import {
   SupportedChain,
 } from './types'
 
-// ═══════════════════════════════════════════════════
 // Payment Requirement Builder
-// ═══════════════════════════════════════════════════
 
 export function buildPaymentRequirements(
   toolName: string,
@@ -36,9 +34,7 @@ export function buildPaymentRequirements(
   })
 }
 
-// ═══════════════════════════════════════════════════
 // Payment Verification
-// ═══════════════════════════════════════════════════
 
 export async function verifyPayment(
   paymentHeader: string,
@@ -103,9 +99,7 @@ function parsePaymentHeader(header: string): PaymentHeader | null {
   }
 }
 
-// ═══════════════════════════════════════════════════
 // Payment Error Response
-// ═══════════════════════════════════════════════════
 
 export function createPaymentRequiredResponse(
   requirements: PaymentRequirement[]
@@ -128,9 +122,7 @@ export function createPaymentRequiredResponse(
   }
 }
 
-// ═══════════════════════════════════════════════════
 // Payment Receipt
-// ═══════════════════════════════════════════════════
 
 export function createPaymentReceipt(
   result: VerificationResult,

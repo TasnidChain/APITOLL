@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 
-// ─── Mock Environment Variables ─────────────────────────────────
 // Must be set BEFORE importing the server module
 
 // Mock ethers to avoid real blockchain calls
@@ -42,7 +41,6 @@ vi.mock('pino', () => ({
   }),
 }));
 
-// ─── Test Setup ──────────────────────────────────────────────────
 
 // Set env vars before import
 process.env.FACILITATOR_PRIVATE_KEY = '0x' + 'a'.repeat(64);
@@ -71,7 +69,6 @@ function makePayRequest(overrides: Record<string, unknown> = {}) {
   };
 }
 
-// ─── Tests ──────────────────────────────────────────────────────
 
 describe('Facilitator Server', () => {
   let app: express.Express;

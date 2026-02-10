@@ -4,9 +4,7 @@ import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { requireAuth, requireOrgAccess } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Audit Logging Helper
-// ═══════════════════════════════════════════════════
 
 async function logPolicyAudit(
   ctx: MutationCtx,
@@ -32,9 +30,7 @@ async function logPolicyAudit(
   });
 }
 
-// ═══════════════════════════════════════════════════
 // Shared policy rule validators (must match schema.ts)
-// ═══════════════════════════════════════════════════
 
 const budgetRulesValidator = v.object({
   dailyLimit: v.optional(v.number()),
@@ -52,9 +48,7 @@ const rateLimitRulesValidator = v.object({
   maxRequestsPerHour: v.optional(v.number()),
 });
 
-// ═══════════════════════════════════════════════════
 // Create Policy
-// ═══════════════════════════════════════════════════
 
 export const create = mutation({
   args: {
@@ -68,7 +62,7 @@ export const create = mutation({
     rulesJson: v.union(budgetRulesValidator, vendorAclRulesValidator, rateLimitRulesValidator),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     const { identity } = await requireOrgAccess(ctx, args.orgId);
 
     // If agent-specific, ensure agent exists and belongs to org
@@ -100,16 +94,14 @@ export const create = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Policies by Org
-// ═══════════════════════════════════════════════════
 
 export const listByOrg = query({
   args: {
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.orgId);
     return await ctx.db
       .query("policies")
@@ -118,9 +110,7 @@ export const listByOrg = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Policies by Agent
-// ═══════════════════════════════════════════════════
 
 export const listByAgent = query({
   args: {
@@ -135,9 +125,7 @@ export const listByAgent = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Update Policy Rules
-// ═══════════════════════════════════════════════════
 
 export const update = mutation({
   args: {
@@ -148,7 +136,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const policy = await ctx.db.get(args.id);
     if (!policy) throw new Error("Policy not found");
-    // SECURITY FIX: Verify caller owns the policy's organization
+    // Verify caller owns the policy's organization
     const { identity } = await requireOrgAccess(ctx, policy.orgId);
 
     const previousRules = JSON.stringify(policy.rulesJson);
@@ -173,9 +161,7 @@ export const update = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Toggle Policy Active/Inactive
-// ═══════════════════════════════════════════════════
 
 export const toggleActive = mutation({
   args: {
@@ -184,7 +170,7 @@ export const toggleActive = mutation({
   handler: async (ctx, args) => {
     const policy = await ctx.db.get(args.id);
     if (!policy) throw new Error("Policy not found");
-    // SECURITY FIX: Verify caller owns the policy's organization
+    // Verify caller owns the policy's organization
     const { identity } = await requireOrgAccess(ctx, policy.orgId);
     await ctx.db.patch(args.id, { isActive: !policy.isActive });
 
@@ -199,9 +185,7 @@ export const toggleActive = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Delete Policy
-// ═══════════════════════════════════════════════════
 
 export const remove = mutation({
   args: {
@@ -210,7 +194,7 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const policy = await ctx.db.get(args.id);
     if (!policy) throw new Error("Policy not found");
-    // SECURITY FIX: Verify caller owns the policy's organization
+    // Verify caller owns the policy's organization
     const { identity } = await requireOrgAccess(ctx, policy.orgId);
 
     // Audit log BEFORE deletion
@@ -227,9 +211,7 @@ export const remove = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Policy Audit Log
-// ═══════════════════════════════════════════════════
 
 export const getAuditLog = query({
   args: {

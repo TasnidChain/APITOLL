@@ -17,7 +17,7 @@ function checkRateLimit(key: string): boolean {
   return entry.count <= RATE_LIMIT_MAX;
 }
 
-// SECURITY FIX: Comprehensive SSRF protection with DNS resolution
+// Comprehensive SSRF protection with DNS resolution
 function isPrivateIP(ip: string): boolean {
   // IPv4 private ranges
   if (/^127\./.test(ip)) return true;
@@ -88,22 +88,22 @@ export async function POST(req: NextRequest) {
 
     const hostname = parsedUrl.hostname.replace(/^\[|\]$/g, "");
 
-    // SECURITY FIX: Enhanced SSRF protection
+    // Enhanced SSRF protection
     if (isBlockedHostname(hostname)) {
       return NextResponse.json({ error: "Cannot proxy to internal/local addresses" }, { status: 400 });
     }
 
-    // SECURITY FIX: DNS resolution check to prevent DNS rebinding
+    // DNS resolution check to prevent DNS rebinding
     await resolveAndCheckDNS(hostname);
 
     const fetchHeaders: Record<string, string> = { "User-Agent": "APIToll-Playground/1.0", Accept: "application/json", ...customHeaders };
-    // SECURITY FIX: Strip sensitive headers
+    // Strip sensitive headers
     delete fetchHeaders["cookie"];
     delete fetchHeaders["Cookie"];
     delete fetchHeaders["authorization"];
     delete fetchHeaders["Authorization"];
 
-    // SECURITY FIX: Disable redirects to prevent redirect-based SSRF
+    // Disable redirects to prevent redirect-based SSRF
     const fetchOptions: RequestInit = { method, headers: fetchHeaders, signal: AbortSignal.timeout(15_000), redirect: "manual" };
     if (requestBody && !["GET", "HEAD"].includes(method)) {
       fetchOptions.body = typeof requestBody === "string" ? requestBody : JSON.stringify(requestBody);
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
     const response = await fetch(url, fetchOptions);
     const latencyMs = Date.now() - startTime;
 
-    // SECURITY FIX: If redirect, validate target before following
+    // If redirect, validate target before following
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get("location");
       return NextResponse.json({
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
     if (err.name === "TimeoutError" || err.name === "AbortError") {
       return NextResponse.json({ status: 0, statusText: "Timeout", headers: {}, body: { error: "Request timed out after 15 seconds" }, latencyMs: 15000 });
     }
-    // SECURITY FIX: Don't leak internal error details
+    // Don't leak internal error details
     const isSafe = err.message.includes("Cannot proxy") || err.message.includes("Only HTTP");
     return NextResponse.json({ status: 0, statusText: "Error", headers: {}, body: { error: isSafe ? err.message : "Failed to proxy request" }, latencyMs: 0 });
   }

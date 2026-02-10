@@ -5,7 +5,6 @@ import { api, internal } from "./_generated/api";
 import { modules } from "./test.setup";
 
 describe("transactions", () => {
-  // ─── create ─────────────────────────────────────────────
   describe("create", () => {
     it("inserts a single transaction and returns its ID", async () => {
       const t = convexTest(schema, modules);
@@ -61,7 +60,6 @@ describe("transactions", () => {
     });
   });
 
-  // ─── createBatch ────────────────────────────────────────
   describe("createBatch", () => {
     it("batch inserts multiple transactions", async () => {
       const t = convexTest(schema, modules);
@@ -142,7 +140,6 @@ describe("transactions", () => {
     });
   });
 
-  // ─── updateStatus ───────────────────────────────────────
   describe("updateStatus", () => {
     it("updates transaction status and txHash", async () => {
       const t = convexTest(schema, modules);
@@ -198,7 +195,6 @@ describe("transactions", () => {
     });
   });
 
-  // ─── list ───────────────────────────────────────────────
   describe("list", () => {
     it("returns transactions ordered by creation time descending", async () => {
       const t = convexTest(schema, modules);
@@ -303,7 +299,6 @@ describe("transactions", () => {
     });
   });
 
-  // ─── getByAgent ─────────────────────────────────────────
   describe("getByAgent", () => {
     it("returns transactions for a specific agent address", async () => {
       const t = convexTest(schema, modules);

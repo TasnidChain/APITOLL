@@ -8,7 +8,6 @@ function formatPayment(ctx: ReturnType<typeof getX402Context>) {
   return { txHash: ctx.receipt.txHash, amount: ctx.receipt.amount, chain: ctx.receipt.chain };
 }
 
-// ─── Math Expression Evaluator (safe, no eval) ──────────────
 
 function evaluate(expr: string): number {
   // Tokenize
@@ -159,7 +158,6 @@ router.post("/api/math/eval", (req: Request, res: Response) => {
   }
 });
 
-// ─── Unit Converter ──────────────────────────────────────────
 
 const CONVERSIONS: Record<string, Record<string, number>> = {
   // Length (base: meters)
@@ -247,7 +245,6 @@ router.get("/api/math/convert", (req: Request, res: Response) => {
   });
 });
 
-// ─── Statistics Calculator ───────────────────────────────────
 
 router.post("/api/math/stats", (req: Request, res: Response) => {
   const { numbers } = req.body || {};

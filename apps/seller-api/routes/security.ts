@@ -9,7 +9,6 @@ function formatPayment(ctx: ReturnType<typeof getX402Context>) {
   return { txHash: ctx.receipt.txHash, amount: ctx.receipt.amount, chain: ctx.receipt.chain };
 }
 
-// ─── Security Headers Analysis ───────────────────────────────
 
 const SECURITY_HEADERS = [
   { name: "Strict-Transport-Security", severity: "high", description: "HSTS — enforces HTTPS connections" },
@@ -81,7 +80,6 @@ router.get("/api/security/headers", async (req: Request, res: Response) => {
   }
 });
 
-// ─── Technology Detection ────────────────────────────────────
 
 const TECH_SIGNATURES: [string, string, RegExp][] = [
   ["framework", "React", /react[.-]dom|__next|__NEXT_DATA__/i],
@@ -162,7 +160,6 @@ router.get("/api/security/techstack", async (req: Request, res: Response) => {
   }
 });
 
-// ─── Uptime/Health Check ─────────────────────────────────────
 
 router.get("/api/security/uptime", async (req: Request, res: Response) => {
   const url = (req.query.url as string || "").trim();

@@ -12,7 +12,6 @@ function formatPayment(ctx: ReturnType<typeof getX402Context>) {
   return { txHash: ctx.receipt.txHash, amount: ctx.receipt.amount, chain: ctx.receipt.chain };
 }
 
-// ─── Domain/Company Enrichment ──────────────────────────────────
 
 interface DomainInfo {
   domain: string;
@@ -143,7 +142,6 @@ async function fetchDnsRecords(domain: string): Promise<{ type: string; value: s
   }
 }
 
-// ─── GitHub User/Org Enrichment ─────────────────────────────────
 
 interface GitHubProfile {
   login: string;
@@ -210,7 +208,6 @@ async function enrichGitHub(username: string): Promise<GitHubProfile | null> {
   };
 }
 
-// ─── Wikipedia Summary ──────────────────────────────────────────
 
 interface WikiSummary {
   title: string;

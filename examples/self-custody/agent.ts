@@ -28,7 +28,6 @@ import {
 const FACILITATOR_URL = process.env.FACILITATOR_URL || "https://pay.apitoll.com";
 const SELLER_API = process.env.SELLER_API_URL || "http://localhost:4402";
 
-// ─── Helper to make a paid API call ───────────────────────────
 
 async function testPaidCall(
   label: string,
@@ -54,14 +53,12 @@ async function testPaidCall(
   console.log(`  [${label}] Spent: $${spend.today.toFixed(6)} USDC (${spend.transactionCount} txs)`);
 }
 
-// ─── Mock signer for demo mode ────────────────────────────────
 
 function createMockSigner(): PaymentSigner {
   return async () =>
     Buffer.from(JSON.stringify({ mock: true, selfCustody: false })).toString("base64");
 }
 
-// ─── Main ─────────────────────────────────────────────────────
 
 async function main() {
   console.log("Self-Custody Wallet Examples");
@@ -71,7 +68,6 @@ async function main() {
   const solanaKey = process.env.SOLANA_PRIVATE_KEY;
   const apiKey = process.env.FACILITATOR_API_KEY;
 
-  // ── Mode 1: Custodial (facilitator signs) ──────────────────
 
   console.log("Mode 1: Custodial (facilitator holds keys)");
   console.log("---");
@@ -94,7 +90,6 @@ async function main() {
 
   await testPaidCall("Custodial", custodialAgent);
 
-  // ── Mode 2: Self-Custody via facilitator relay ─────────────
 
   console.log("\n\nMode 2: Self-Custody + Facilitator Relay");
   console.log("---");
@@ -124,7 +119,6 @@ async function main() {
     console.log("  [Skipped] Set AGENT_PRIVATE_KEY to test self-custody EVM mode");
   }
 
-  // ── Mode 3: Direct broadcast (fully decentralized) ─────────
 
   console.log("\n\nMode 3: Direct Broadcast (no facilitator)");
   console.log("---");
@@ -153,7 +147,6 @@ async function main() {
     console.log("  [Skipped] Set AGENT_PRIVATE_KEY to test direct EVM broadcast");
   }
 
-  // ── Solana self-custody ────────────────────────────────────
 
   console.log("\n\nSolana Self-Custody Modes");
   console.log("---");
@@ -196,7 +189,6 @@ async function main() {
     console.log("  [Skipped] Set SOLANA_PRIVATE_KEY to test Solana self-custody");
   }
 
-  // ── Summary ────────────────────────────────────────────────
 
   console.log(`\n${"=".repeat(50)}`);
   console.log("SIGNER COMPARISON");

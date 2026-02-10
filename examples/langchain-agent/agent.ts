@@ -12,9 +12,7 @@ import {
   createAutoDiscoverAgent,
 } from '@apitoll/langchain'
 
-// ═══════════════════════════════════════════════════
 // Wallet Configuration
-// ═══════════════════════════════════════════════════
 
 const walletConfig = {
   name: 'ResearchAgent',
@@ -35,9 +33,7 @@ const walletConfig = {
   },
 }
 
-// ═══════════════════════════════════════════════════
 // Example 1: Manual Tool Setup
-// ═══════════════════════════════════════════════════
 
 async function manualToolExample() {
   console.log('\n📦 Example 1: Manual Tool Setup\n')
@@ -99,9 +95,7 @@ async function manualToolExample() {
   console.log(executor.getSpendingSummary())
 }
 
-// ═══════════════════════════════════════════════════
 // Example 2: Auto-Discover Tools
-// ═══════════════════════════════════════════════════
 
 async function autoDiscoverExample() {
   console.log('\n🔍 Example 2: Auto-Discover Tools\n')
@@ -139,9 +133,7 @@ async function autoDiscoverExample() {
   }
 }
 
-// ═══════════════════════════════════════════════════
 // Example 3: LangChain Integration
-// ═══════════════════════════════════════════════════
 
 async function langchainIntegrationExample() {
   console.log('\n🦜 Example 3: LangChain Integration\n')
@@ -181,9 +173,7 @@ const result = await paidExecutor.executeTool(toolName, args);
 `)
 }
 
-// ═══════════════════════════════════════════════════
 // Run Examples
-// ═══════════════════════════════════════════════════
 
 async function main() {
   console.log('╔═══════════════════════════════════════════════════╗')

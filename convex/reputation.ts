@@ -1,9 +1,7 @@
 import { v } from "convex/values";
 import { internalQuery, query } from "./_generated/server";
 
-// ═══════════════════════════════════════════════════
 // Reputation Tiers
-// ═══════════════════════════════════════════════════
 
 const TIERS = [
   { name: "Elite" as const, minScore: 600, discount: 25, priority: true, escrow: true },
@@ -22,9 +20,7 @@ function getNextTier(score: number) {
   return idx > 0 ? TIERS[idx - 1] : null;
 }
 
-// ═══════════════════════════════════════════════════
 // Calculate Reputation Score for an Agent
-// ═══════════════════════════════════════════════════
 
 export const getScore = query({
   args: {
@@ -128,9 +124,7 @@ export const getScore = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Batch Reputation (for leaderboard enrichment)
-// ═══════════════════════════════════════════════════
 
 export const getBatchScores = internalQuery({
   args: {
@@ -168,9 +162,7 @@ export const getBatchScores = internalQuery({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Combined Leaderboard (gossip + evolution + reputation)
-// ═══════════════════════════════════════════════════
 
 export const getCombinedLeaderboard = query({
   args: { limit: v.optional(v.number()) },

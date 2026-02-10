@@ -2,15 +2,13 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery, query } from "./_generated/server";
 import { requireAuth } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Stripe Subscription Management
 //
-// SECURITY: All billing mutations are internalMutation.
+// All billing mutations are internalMutation.
 // They are called from:
 //   1. convex/http.ts Stripe webhook handler (ctx.runMutation)
 //   2. convex/http.ts signup handler (ctx.runMutation)
 // NOT directly callable from browser or external ConvexHttpClient.
-// ═══════════════════════════════════════════════════
 
 /**
  * Create or update Stripe customer for an organization.
@@ -137,9 +135,7 @@ export const internalGetBillingSummary = internalQuery({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Plan Enforcement
-// ═══════════════════════════════════════════════════
 
 // Plan limits (mirrored from shared types — kept in sync)
 const PLAN_LIMITS = {
@@ -225,9 +221,7 @@ export const checkSellerLimit = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Stripe Price IDs (configure via env or constants)
-// ═══════════════════════════════════════════════════
 
 export const STRIPE_PRICES = {
   pro_monthly: "price_pro_monthly",       // $49/mo

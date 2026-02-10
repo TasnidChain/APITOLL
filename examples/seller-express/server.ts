@@ -14,7 +14,6 @@ import { paymentMiddleware, getPaymentReceipt } from "@apitoll/seller-sdk";
 const app = express();
 app.use(express.json());
 
-// ─── Add x402 payment middleware ────────────────────────────────
 // This is the only integration step. Everything else is your normal API.
 
 app.use(
@@ -53,7 +52,6 @@ app.use(
   })
 );
 
-// ─── Your normal API routes (unchanged) ─────────────────────────
 
 app.get("/api/forecast", (req, res) => {
   const city = req.query.city || "New York";
@@ -97,7 +95,6 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", version: "1.0.0" });
 });
 
-// ─── Start server ───────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

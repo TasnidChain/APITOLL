@@ -1,6 +1,5 @@
 import type { SupportedChain } from "@apitoll/shared";
 
-// ─── Types ──────────────────────────────────────────────────────
 
 export interface MutatorConfig {
   /** Minimum reputation score to allow mutations (0-1, default 0.5) */
@@ -59,7 +58,6 @@ interface TxResult {
   endpoint?: string;
 }
 
-// ─── Mutator ────────────────────────────────────────────────────
 
 /**
  * APITOLLMutator — Lightweight evolution engine for AI agents.
@@ -344,7 +342,6 @@ export class APITOLLMutator {
   }
 }
 
-// ─── Factory ────────────────────────────────────────────────────
 
 /**
  * Create a new mutator instance.

@@ -13,7 +13,6 @@ import {
   getPlatformWallet,
 } from "@apitoll/shared";
 
-// ─── Payment Requirement Builder ────────────────────────────────
 
 /**
  * Build the PaymentRequired response body for a given endpoint config.
@@ -75,7 +74,6 @@ export function encodePaymentRequired(requirements: PaymentRequirement[]): strin
   return Buffer.from(JSON.stringify(requirements)).toString("base64");
 }
 
-// ─── Payment Verification ───────────────────────────────────────
 
 export interface VerifyPaymentOptions {
   /** The X-PAYMENT header value from the client */
@@ -182,7 +180,6 @@ function detectChainFromNetwork(network: string): SupportedChain {
   return "base"; // default fallback
 }
 
-// ─── Route Matching ─────────────────────────────────────────────
 
 /**
  * Find the matching endpoint config for a given request.

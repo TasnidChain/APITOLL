@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { requireAuth, requireOrgAccess } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Create Deposit (Stripe → USDC on-ramp)
-// ═══════════════════════════════════════════════════
 
 const ON_RAMP_FEE_BPS = 150; // 1.5% on-ramp fee
 
@@ -40,9 +38,7 @@ export const create = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Update Deposit Status (internal only — called from http.ts Stripe webhook)
-// ═══════════════════════════════════════════════════
 
 export const updateStatus = internalMutation({
   args: {
@@ -81,9 +77,7 @@ export const updateStatus = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Public Create Deposit (from dashboard — requires Clerk auth)
-// ═══════════════════════════════════════════════════
 
 export const createDeposit = mutation({
   args: {
@@ -95,10 +89,10 @@ export const createDeposit = mutation({
     chain: v.union(v.literal("base"), v.literal("solana")),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.orgId);
 
-    // SECURITY FIX: Validate fiatAmount range
+    // Validate fiatAmount range
     if (args.fiatAmount <= 0 || args.fiatAmount > 10000) {
       throw new Error("fiatAmount must be between $0.01 and $10,000");
     }
@@ -125,9 +119,7 @@ export const createDeposit = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Deposits by Org
-// ═══════════════════════════════════════════════════
 
 export const listByOrg = query({
   args: {
@@ -135,7 +127,7 @@ export const listByOrg = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.orgId);
     return await ctx.db
       .query("deposits")
@@ -145,14 +137,12 @@ export const listByOrg = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Deposit by Stripe PI
-// ═══════════════════════════════════════════════════
 
 export const getByPaymentIntent = query({
   args: { stripePaymentIntentId: v.string() },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Require auth to look up deposits
+    // Require auth to look up deposits
     await requireAuth(ctx);
     return await ctx.db
       .query("deposits")
@@ -163,14 +153,12 @@ export const getByPaymentIntent = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Deposit Stats
-// ═══════════════════════════════════════════════════
 
 export const getStats = query({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.orgId);
     const deposits = await ctx.db
       .query("deposits")
@@ -192,9 +180,7 @@ export const getStats = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Auto Top-Up Configuration
-// ═══════════════════════════════════════════════════
 
 export const setAutoTopUp = mutation({
   args: {
@@ -252,25 +238,23 @@ export const getAutoTopUp = query({
     if (!org) return null;
 
     return {
-      enabled: (org as any).autoTopUpEnabled ?? false,
-      threshold: (org as any).autoTopUpThreshold ?? 1.0,
-      topUpAmount: (org as any).autoTopUpAmount ?? 25.0,
-      maxMonthly: (org as any).autoTopUpMaxMonthly ?? 500.0,
-      chain: (org as any).autoTopUpChain ?? "base",
+      enabled: org.autoTopUpEnabled ?? false,
+      threshold: org.autoTopUpThreshold ?? 1.0,
+      topUpAmount: org.autoTopUpAmount ?? 25.0,
+      maxMonthly: org.autoTopUpMaxMonthly ?? 500.0,
+      chain: org.autoTopUpChain ?? "base",
     };
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Internal: Check Auto Top-Up (called from HTTP payment flow)
-// ═══════════════════════════════════════════════════
 
 export const checkAutoTopUp = internalQuery({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
     const org = await ctx.db.get(args.orgId);
     if (!org) return null;
-    if (!(org as any).autoTopUpEnabled) return null;
+    if (!org.autoTopUpEnabled) return null;
 
     // Check monthly spend
     const monthStart = new Date();
@@ -287,10 +271,10 @@ export const checkAutoTopUp = internalQuery({
       .filter((d) => d.status === "completed" || d.status === "processing")
       .reduce((sum, d) => sum + d.fiatAmount, 0);
 
-    const maxMonthly = (org as any).autoTopUpMaxMonthly ?? 500;
-    const topUpAmount = (org as any).autoTopUpAmount ?? 25;
-    const threshold = (org as any).autoTopUpThreshold ?? 1.0;
-    const chain = (org as any).autoTopUpChain ?? "base";
+    const maxMonthly = org.autoTopUpMaxMonthly ?? 500;
+    const topUpAmount = org.autoTopUpAmount ?? 25;
+    const threshold = org.autoTopUpThreshold ?? 1.0;
+    const chain = org.autoTopUpChain ?? "base";
 
     if (monthlySpent + topUpAmount > maxMonthly) {
       return null; // Monthly cap reached
@@ -301,16 +285,14 @@ export const checkAutoTopUp = internalQuery({
       topUpAmount,
       threshold,
       chain,
-      walletAddress: (org as any).billingWallet ?? "",
+      walletAddress: org.billingWallet ?? "",
       monthlySpent,
       monthlyRemaining: maxMonthly - monthlySpent,
     };
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Deposit Stats by Chain
-// ═══════════════════════════════════════════════════
 
 export const getStatsByChain = query({
   args: { orgId: v.id("organizations") },

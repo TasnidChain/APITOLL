@@ -22,7 +22,6 @@ import { createAgentWallet, createFacilitatorSigner } from "@apitoll/buyer-sdk";
 
 const API_BASE = "https://api.apitoll.com";
 
-// ─── Helpers ─────────────────────────────────────────────
 
 function header(title: string) {
   console.log(`\n${"─".repeat(50)}`);
@@ -34,7 +33,6 @@ function indent(line: string) {
   console.log(`   ${line}`);
 }
 
-// ─── Step 1: Create an agent wallet ──────────────────────
 
 const agent = createAgentWallet({
   name: "LiveDemoAgent",
@@ -62,7 +60,6 @@ const agent = createAgentWallet({
   },
 });
 
-// ─── Full demo with payments ─────────────────────────────
 
 async function demo() {
   console.log("\n╔══════════════════════════════════════════════════╗");
@@ -269,7 +266,6 @@ async function demo() {
   console.log("\n  Every API call above was paid with real USDC on Base.\n");
 }
 
-// ─── GET helper ──────────────────────────────────────────
 
 async function callGet(path: string, format: (data: any) => string) {
   try {
@@ -285,7 +281,6 @@ async function callGet(path: string, format: (data: any) => string) {
   }
 }
 
-// ─── POST helper ─────────────────────────────────────────
 
 async function callPost(path: string, body: any, format: (data: any) => string) {
   try {
@@ -305,7 +300,6 @@ async function callPost(path: string, body: any, format: (data: any) => string) 
   }
 }
 
-// ─── 402 handshake demo (no wallet) ─────────────────────
 
 interface PaymentResponse {
   error?: string;
@@ -451,7 +445,6 @@ async function demoWithout402() {
   indent("🔗  GitHub:    https://github.com/TasnidChain/APITOLL\n");
 }
 
-// ─── Run ─────────────────────────────────────────────────
 
 if (process.env.APITOLL_API_KEY) {
   demo().catch(console.error);

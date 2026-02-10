@@ -24,7 +24,6 @@ describe("deposits", () => {
     return t.withIdentity({ subject: TEST_USER });
   }
 
-  // ─── create ─────────────────────────────────────────────
   describe("create", () => {
     it("calculates 1.5% on-ramp fee correctly", async () => {
       const t = convexTest(schema, modules);
@@ -133,7 +132,6 @@ describe("deposits", () => {
     });
   });
 
-  // ─── getByPaymentIntent ─────────────────────────────────
   describe("getByPaymentIntent", () => {
     it("finds deposit by Stripe payment intent ID", async () => {
       const t = convexTest(schema, modules);
@@ -166,7 +164,6 @@ describe("deposits", () => {
     });
   });
 
-  // ─── getStats ───────────────────────────────────────────
   describe("getStats", () => {
     it("aggregates completed deposit statistics", async () => {
       const t = convexTest(schema, modules);

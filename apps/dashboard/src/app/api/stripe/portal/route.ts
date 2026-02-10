@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // SECURITY: Always look up customer by authenticated userId.
+    // Always look up customer by authenticated userId.
     // Never accept customerId from the request body (IDOR vulnerability).
     let customerId: string | undefined;
 

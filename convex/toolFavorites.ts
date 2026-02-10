@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { requireOrgAccess } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Toggle Favorite (add/remove bookmark)
-// ═══════════════════════════════════════════════════
 
 export const toggle = mutation({
   args: {
@@ -39,9 +37,7 @@ export const toggle = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Favorites for an Org
-// ═══════════════════════════════════════════════════
 
 export const listByOrg = query({
   args: {
@@ -83,9 +79,7 @@ export const listByOrg = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Check if Favorited
-// ═══════════════════════════════════════════════════
 
 export const isFavorited = query({
   args: {
@@ -104,9 +98,7 @@ export const isFavorited = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Internal: Toggle (from HTTP API)
-// ═══════════════════════════════════════════════════
 
 export const internalToggle = internalMutation({
   args: {
@@ -139,9 +131,7 @@ export const internalToggle = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Internal: List (from HTTP API)
-// ═══════════════════════════════════════════════════
 
 export const internalListByOrg = internalQuery({
   args: {

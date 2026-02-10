@@ -1,6 +1,4 @@
-// ═══════════════════════════════════════════════════
 // Types for LangChain/CrewAI Integration
-// ═══════════════════════════════════════════════════
 
 export interface PaidToolConfig {
   /** Tool name */

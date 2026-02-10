@@ -9,7 +9,6 @@ import { CHAIN_CONFIG } from "./types";
 
 const TEST_WALLET = "0x1234567890abcdef1234567890abcdef12345678";
 
-// ─── buildPaymentRequirements ───────────────────────────────────
 
 describe("MCP buildPaymentRequirements", () => {
   it("builds requirements with correct amount conversion", () => {
@@ -54,7 +53,6 @@ describe("MCP buildPaymentRequirements", () => {
   });
 });
 
-// ─── verifyPayment ──────────────────────────────────────────────
 
 describe("MCP verifyPayment", () => {
   const mockFetch = vi.fn();
@@ -143,7 +141,6 @@ describe("MCP verifyPayment", () => {
   });
 });
 
-// ─── createPaymentRequiredResponse ──────────────────────────────
 
 describe("createPaymentRequiredResponse", () => {
   it("creates error response with payment info", () => {
@@ -157,7 +154,6 @@ describe("createPaymentRequiredResponse", () => {
   });
 });
 
-// ─── createPaymentReceipt ───────────────────────────────────────
 
 describe("createPaymentReceipt", () => {
   it("creates receipt from verification result", () => {

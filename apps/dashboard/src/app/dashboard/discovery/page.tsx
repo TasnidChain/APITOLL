@@ -105,9 +105,7 @@ type Tool = {
   isActive: boolean
 }
 
-// ═══════════════════════════════════════════════════
 // Trending Section (Agent Gossip Network)
-// ═══════════════════════════════════════════════════
 interface TrendingItem {
   endpoint: string
   host: string
@@ -215,9 +213,7 @@ function TrendingSection() {
   )
 }
 
-// ═══════════════════════════════════════════════════
 // Featured Spotlight Carousel
-// ═══════════════════════════════════════════════════
 function FeaturedSpotlight({ tools }: { tools: Tool[] }) {
   if (tools.length === 0) return null
 
@@ -347,9 +343,7 @@ function FeaturedToolCard({ tool }: { tool: Tool }) {
   )
 }
 
-// ═══════════════════════════════════════════════════
 // Regular Tool Card
-// ═══════════════════════════════════════════════════
 function ToolCard({ tool, onFeature }: { tool: Tool; onFeature?: (tool: Tool) => void }) {
   return (
     <div className="group rounded-xl border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-md">
@@ -452,9 +446,7 @@ function ToolCard({ tool, onFeature }: { tool: Tool; onFeature?: (tool: Tool) =>
   )
 }
 
-// ═══════════════════════════════════════════════════
 // Feature My API Modal (Upgrade Flow)
-// ═══════════════════════════════════════════════════
 function FeatureModal({
   tool,
   onClose,
@@ -635,9 +627,7 @@ function FeatureModal({
   )
 }
 
-// ═══════════════════════════════════════════════════
 // Add Tool Modal
-// ═══════════════════════════════════════════════════
 function AddToolModal({ onClose }: { onClose: () => void }) {
   const createTool = useMutation(api.tools.create)
   const orgId = useOrgId()
@@ -872,9 +862,7 @@ function AddToolModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-// ═══════════════════════════════════════════════════
 // Main Discovery Page
-// ═══════════════════════════════════════════════════
 export default function DiscoveryPage() {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')

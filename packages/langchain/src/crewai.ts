@@ -1,9 +1,7 @@
 import { PaidTool } from './paid-tool'
 import { AgentWalletConfig } from './types'
 
-// ═══════════════════════════════════════════════════
 // CrewAI Adapter
-// ═══════════════════════════════════════════════════
 
 /**
  * Convert paid tools to CrewAI tool format
@@ -99,9 +97,7 @@ export class CrewAITool {
   }
 }
 
-// ═══════════════════════════════════════════════════
 // CrewAI Agent Factory
-// ═══════════════════════════════════════════════════
 
 /**
  * Configuration for a CrewAI agent with paid tools

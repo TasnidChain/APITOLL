@@ -18,7 +18,6 @@ import { createAgentWallet, createFacilitatorSigner } from "@apitoll/buyer-sdk";
 
 const FACILITATOR_URL = process.env.FACILITATOR_URL || "https://pay.apitoll.com";
 
-// ─── Agent wallet ──────────────────────────────────────────────
 
 const agent = createAgentWallet({
   name: "VercelAI-Agent",
@@ -37,7 +36,6 @@ const agent = createAgentWallet({
   },
 });
 
-// ─── Define tools that call paid APIs ──────────────────────────
 
 // These are the tool definitions you'd pass to generateText() or streamText()
 // In Vercel AI SDK format:
@@ -94,7 +92,6 @@ const paidTools: ToolDef[] = [
   },
 ];
 
-// ─── Vercel AI SDK integration pattern ─────────────────────────
 
 async function callPaidTool(toolName: string, args: Record<string, string>): Promise<unknown> {
   const tool = paidTools.find((t) => t.name === toolName);
@@ -120,7 +117,6 @@ async function callPaidTool(toolName: string, args: Record<string, string>): Pro
   return response.json();
 }
 
-// ─── Demo: simulate what Vercel AI SDK does ────────────────────
 
 async function main() {
   console.log("Vercel AI SDK + x402 Paid Tools");

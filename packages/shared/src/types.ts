@@ -1,4 +1,3 @@
-// ─── Chain & Network Types ──────────────────────────────────────
 
 export type SupportedChain = "base" | "solana";
 
@@ -37,7 +36,6 @@ export const BASE_USDC_ADDRESS = DEFAULT_CHAIN_CONFIGS.base.usdcAddress;
 /** Solana USDC mint address — single source of truth */
 export const SOLANA_USDC_ADDRESS = DEFAULT_CHAIN_CONFIGS.solana.usdcAddress;
 
-// ─── Payment Types ──────────────────────────────────────────────
 
 export type PaymentScheme = "exact";
 
@@ -84,7 +82,6 @@ export interface PaymentReceipt {
   blockNumber?: number;
 }
 
-// ─── Endpoint Registration ──────────────────────────────────────
 
 export interface EndpointConfig {
   /** Price in USDC (human-readable, e.g., "0.005") */
@@ -103,7 +100,6 @@ export interface EndpointConfig {
 
 export type EndpointRegistry = Record<string, EndpointConfig>;
 
-// ─── Transaction Types ──────────────────────────────────────────
 
 export type TransactionStatus = "pending" | "settled" | "failed" | "refunded";
 
@@ -138,7 +134,6 @@ export interface Transaction {
   latencyMs?: number;
 }
 
-// ─── Policy Types ───────────────────────────────────────────────
 
 export type PolicyType = "budget" | "vendor_acl" | "rate_limit";
 
@@ -170,7 +165,6 @@ export interface RateLimitPolicy {
 
 export type Policy = BudgetPolicy | VendorAclPolicy | RateLimitPolicy;
 
-// ─── Agent Types ────────────────────────────────────────────────
 
 export interface AgentConfig {
   /** Agent name */
@@ -202,7 +196,6 @@ export interface AgentWallet {
   createdAt: string;
 }
 
-// ─── Platform Fee Types ─────────────────────────────────────────
 
 export interface PlatformFeeConfig {
   /** Fee in basis points (100 = 1%, 300 = 3%) */
@@ -224,7 +217,6 @@ export interface FeeBreakdown {
   feeBps: number;
 }
 
-// ─── Subscription / Plan Types ──────────────────────────────────
 
 export type PlanTier = "free" | "pro" | "enterprise";
 
@@ -280,7 +272,6 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   },
 };
 
-// ─── Refund / Dispute Types ─────────────────────────────────────
 
 export type DisputeStatus = "open" | "under_review" | "resolved" | "rejected";
 export type DisputeResolution = "refunded" | "partial_refund" | "denied";
@@ -307,7 +298,6 @@ export interface Dispute {
   resolvedAt?: string;
 }
 
-// ─── Seller Types ───────────────────────────────────────────────
 
 export interface SellerConfig {
   /** Seller wallet address for receiving payments */
@@ -328,7 +318,6 @@ export interface SellerConfig {
   discovery?: DiscoveryConfig;
 }
 
-// ─── Discovery & Referral Types ─────────────────────────────────
 
 export interface DiscoveryConfig {
   /** Seller name for agent discovery */
@@ -384,7 +373,6 @@ export interface AgentDiscoveryPayload {
   };
 }
 
-// ─── Analytics Types ────────────────────────────────────────────
 
 export interface SpendSummary {
   /** Time period */
@@ -401,7 +389,6 @@ export interface SpendSummary {
   avgCostPerRequest: string;
 }
 
-// ─── Platform Events ────────────────────────────────────────────
 
 export type EventType =
   | "transaction.created"
@@ -417,7 +404,6 @@ export interface PlatformEvent {
   data: Transaction | { agentId: string; message: string };
 }
 
-// ─── Evolution & Gossip Types ─────────────────────────────────
 
 export type MutationType =
   | "preference_boost"
@@ -468,7 +454,6 @@ export interface TrendingEndpoint {
   lastSeen: number;
 }
 
-// ─── Reputation Types ──────────────────────────────────────────
 
 export type ReputationTier = "New" | "Active" | "Trusted" | "Elite";
 
@@ -524,7 +509,6 @@ export interface LeaderboardEntry {
   lastActive: number;
 }
 
-// ─── API Response Types ─────────────────────────────────────────
 
 export interface ApiResponse<T> {
   success: boolean;

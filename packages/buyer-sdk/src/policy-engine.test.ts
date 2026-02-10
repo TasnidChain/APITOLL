@@ -19,7 +19,6 @@ function makeTx(overrides: Partial<Transaction> = {}): Transaction {
   };
 }
 
-// ─── Policy Engine Core ─────────────────────────────────────────
 
 describe("PolicyEngine", () => {
   describe("vendor ACL enforcement", () => {

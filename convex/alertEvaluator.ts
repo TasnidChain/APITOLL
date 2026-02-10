@@ -2,10 +2,8 @@ import { v } from "convex/values";
 import { query, internalMutation } from "./_generated/server";
 import { requireOrgAccess } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Alert Evaluation Engine
 // Runs on a cron to check all active alert rules
-// ═══════════════════════════════════════════════════
 
 const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -211,9 +209,7 @@ export const evaluateAlerts = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Alert Events for an Org
-// ═══════════════════════════════════════════════════
 
 export const listAlertEvents = query({
   args: {

@@ -1,8 +1,6 @@
 import { sql } from './client'
 
-// ═══════════════════════════════════════════════════
 // Organizations
-// ═══════════════════════════════════════════════════
 
 export async function getOrganizationByApiKey(apiKey: string) {
   const [org] = await sql`
@@ -20,9 +18,7 @@ export async function createOrganization(name: string, billingWallet?: string) {
   return org
 }
 
-// ═══════════════════════════════════════════════════
 // Agents
-// ═══════════════════════════════════════════════════
 
 export async function getAgentsByOrg(orgId: string) {
   return sql`
@@ -65,9 +61,7 @@ export async function updateAgentBalance(id: string, balance: number) {
   return agent
 }
 
-// ═══════════════════════════════════════════════════
 // Sellers
-// ═══════════════════════════════════════════════════
 
 export async function getSellersByOrg(orgId: string) {
   return sql`
@@ -97,9 +91,7 @@ export async function createSeller(data: {
   return seller
 }
 
-// ═══════════════════════════════════════════════════
 // Endpoints
-// ═══════════════════════════════════════════════════
 
 export async function getEndpointsBySeller(sellerId: string) {
   return sql`
@@ -138,9 +130,7 @@ export async function upsertEndpoint(data: {
   return endpoint
 }
 
-// ═══════════════════════════════════════════════════
 // Transactions
-// ═══════════════════════════════════════════════════
 
 export async function createTransaction(data: {
   id: string
@@ -232,9 +222,7 @@ export async function getTransactionsByOrg(
   `
 }
 
-// ═══════════════════════════════════════════════════
 // Analytics
-// ═══════════════════════════════════════════════════
 
 export async function getOverviewStats(orgId: string) {
   const [stats] = await sql`

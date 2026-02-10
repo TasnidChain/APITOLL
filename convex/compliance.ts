@@ -2,15 +2,11 @@ import { v } from "convex/values";
 import { query, internalMutation, internalQuery } from "./_generated/server";
 import { requireAdmin } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Compliance Screening (Moat: Regulatory Foundation)
 // Screens wallet addresses against sanctions lists.
 // Currently a stub — real OFAC integration gated behind env var.
-// ═══════════════════════════════════════════════════
 
-// ═══════════════════════════════════════════════════
 // Screen a Wallet Address
-// ═══════════════════════════════════════════════════
 
 export const screenWallet = internalMutation({
   args: {
@@ -49,9 +45,7 @@ export const screenWallet = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Check if a Wallet is Blocked
-// ═══════════════════════════════════════════════════
 
 export const isWalletBlocked = internalQuery({
   args: { walletAddress: v.string() },
@@ -68,9 +62,7 @@ export const isWalletBlocked = internalQuery({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Admin: List All Screenings
-// ═══════════════════════════════════════════════════
 
 export const listScreenings = query({
   args: {
@@ -97,9 +89,7 @@ export const listScreenings = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Admin: Manually Block a Wallet
-// ═══════════════════════════════════════════════════
 
 export const blockWallet = internalMutation({
   args: {

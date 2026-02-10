@@ -12,7 +12,6 @@
 
 import { createAgentWallet } from "@apitoll/buyer-sdk";
 
-// ─── Configure the agent wallet ─────────────────────────────────
 
 const agent = createAgentWallet({
   name: "ResearchBot",
@@ -71,7 +70,6 @@ const agent = createAgentWallet({
   },
 });
 
-// ─── Use the agent to call paid APIs ────────────────────────────
 
 async function runResearchTask() {
   console.log("\n🤖 ResearchBot starting task: Weather data collection\n");

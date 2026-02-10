@@ -23,7 +23,6 @@ function makeReport(overrides = {}) {
   };
 }
 
-// ─── Tests using fake timers (batch/flush/retry) ────────────────
 
 describe("AnalyticsReporter (batching)", () => {
   const mockFetch = vi.fn();
@@ -196,7 +195,6 @@ describe("AnalyticsReporter (batching)", () => {
   });
 });
 
-// ─── Tests using real timers (webhook / HMAC) ───────────────────
 
 describe("AnalyticsReporter (webhooks)", () => {
   const mockFetch = vi.fn();

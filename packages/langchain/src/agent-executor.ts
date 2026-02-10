@@ -1,9 +1,7 @@
 import { PaidTool } from './paid-tool'
 import { AgentWalletConfig, ToolCallResult } from './types'
 
-// ═══════════════════════════════════════════════════
 // Paid Agent Executor
-// ═══════════════════════════════════════════════════
 
 /**
  * An agent executor that wraps fetch with automatic x402 payment handling.
@@ -178,9 +176,7 @@ export class PaidAgentExecutor {
   }
 }
 
-// ═══════════════════════════════════════════════════
 // Factory Function
-// ═══════════════════════════════════════════════════
 
 /**
  * Create a paid agent executor

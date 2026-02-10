@@ -3,10 +3,8 @@ import { query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { requireOrgAccess } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Dashboard-specific queries
 // Aggregations and stats for the frontend
-// ═══════════════════════════════════════════════════
 
 /**
  * Overview stats for the main dashboard page.
@@ -14,7 +12,7 @@ import { requireOrgAccess } from "./helpers";
 export const getOverviewStats = query({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     const { org } = await requireOrgAccess(ctx, args.orgId);
 
     // Get all agents for this org
@@ -90,7 +88,7 @@ export const getDailyStats = query({
     days: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.orgId);
     const numDays = args.days ?? 30;
     const now = Date.now();
@@ -158,7 +156,7 @@ export const listTransactions = query({
     chain: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.orgId);
     const agents = await ctx.db
       .query("agents")
@@ -225,7 +223,7 @@ export const listTransactions = query({
 export const listAgents = query({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.orgId);
     const agents = await ctx.db
       .query("agents")
@@ -284,7 +282,7 @@ export const listAgents = query({
 export const listSellers = query({
   args: { orgId: v.id("organizations") },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.orgId);
     const sellers = await ctx.db
       .query("sellers")

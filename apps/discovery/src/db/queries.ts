@@ -1,8 +1,6 @@
 import { sql } from './client'
 
-// ═══════════════════════════════════════════════════
 // Tool Types
-// ═══════════════════════════════════════════════════
 
 export interface Tool {
   id: string
@@ -46,9 +44,7 @@ export interface SearchOptions {
   offset?: number
 }
 
-// ═══════════════════════════════════════════════════
 // Search & Discovery
-// ═══════════════════════════════════════════════════
 
 export async function searchTools(options: SearchOptions = {}): Promise<Tool[]> {
   const {
@@ -137,9 +133,7 @@ export async function getToolsByCategory(category: string, limit = 20): Promise<
   `
 }
 
-// ═══════════════════════════════════════════════════
 // Categories
-// ═══════════════════════════════════════════════════
 
 export interface Category {
   id: string
@@ -159,9 +153,7 @@ export async function getCategories(): Promise<Category[]> {
   `
 }
 
-// ═══════════════════════════════════════════════════
 // Tool Registration (for sellers)
-// ═══════════════════════════════════════════════════
 
 export interface CreateToolInput {
   sellerId: string
@@ -241,9 +233,7 @@ export async function getToolsBySeller(sellerId: string): Promise<Tool[]> {
   `
 }
 
-// ═══════════════════════════════════════════════════
 // Stats & Analytics
-// ═══════════════════════════════════════════════════
 
 export async function incrementToolCalls(toolId: string, latencyMs: number): Promise<void> {
   await sql`

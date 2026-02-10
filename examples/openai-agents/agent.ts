@@ -16,7 +16,6 @@ import { createAgentWallet, createFacilitatorSigner } from "@apitoll/buyer-sdk";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
 const FACILITATOR_URL = process.env.FACILITATOR_URL || "https://pay.apitoll.com";
 
-// ─── Define paid tools as OpenAI function schemas ──────────────
 
 const tools = [
   {
@@ -76,7 +75,6 @@ const tools = [
   },
 ];
 
-// ─── Agent wallet for auto-paying ──────────────────────────────
 
 const agent = createAgentWallet({
   name: "OpenAI-Agent",
@@ -94,7 +92,6 @@ const agent = createAgentWallet({
   },
 });
 
-// ─── Tool executor — calls paid APIs via agent wallet ──────────
 
 async function executeTool(name: string, args: Record<string, string>): Promise<string> {
   const tool = tools.find((t) => t.function.name === name);
@@ -135,7 +132,6 @@ async function executeTool(name: string, args: Record<string, string>): Promise<
   }
 }
 
-// ─── Chat loop with OpenAI ─────────────────────────────────────
 
 async function chat(userMessage: string): Promise<string> {
   if (!OPENAI_API_KEY) {
@@ -223,7 +219,6 @@ async function chat(userMessage: string): Promise<string> {
   return choice.message?.content || "No response";
 }
 
-// ─── Run ────────────────────────────────────────────────────────
 
 async function main() {
   console.log("OpenAI Function Calling + x402 Paid Tools");

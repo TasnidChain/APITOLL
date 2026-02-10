@@ -1,8 +1,6 @@
 import { z } from 'zod'
 
-// ═══════════════════════════════════════════════════
 // Tool Configuration
-// ═══════════════════════════════════════════════════
 
 export interface PaidToolConfig {
   /** Price in USD (e.g., 0.005 = $0.005) */
@@ -25,9 +23,7 @@ export interface ToolDefinition {
   payment?: PaidToolConfig
 }
 
-// ═══════════════════════════════════════════════════
 // Payment Types
-// ═══════════════════════════════════════════════════
 
 export interface PaymentRequirement {
   scheme: 'exact'
@@ -54,9 +50,7 @@ export interface VerificationResult {
   error?: string
 }
 
-// ═══════════════════════════════════════════════════
 // Server Configuration
-// ═══════════════════════════════════════════════════
 
 export interface PaidMCPServerConfig {
   /** Your wallet address to receive payments */
@@ -75,9 +69,7 @@ export interface PaidMCPServerConfig {
   onPaymentError?: (toolName: string, error: Error) => void
 }
 
-// ═══════════════════════════════════════════════════
 // MCP Protocol Types (subset we need)
-// ═══════════════════════════════════════════════════
 
 export interface MCPToolRequest {
   method: 'tools/call'
@@ -105,9 +97,7 @@ export interface MCPToolResponse {
   }
 }
 
-// ═══════════════════════════════════════════════════
 // Chain Constants
-// ═══════════════════════════════════════════════════
 
 export const CHAIN_CONFIG = {
   base: {

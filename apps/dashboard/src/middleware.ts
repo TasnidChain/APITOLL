@@ -6,7 +6,7 @@ import type { NextRequest } from 'next/server'
 export default function middleware(_req: NextRequest) {
   const response = NextResponse.next()
 
-  // SECURITY FIX: Add security headers to all responses
+  // Add security headers to all responses
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-Frame-Options', 'DENY')
   response.headers.set('X-XSS-Protection', '1; mode=block')

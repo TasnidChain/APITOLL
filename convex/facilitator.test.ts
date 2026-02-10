@@ -31,7 +31,6 @@ describe("facilitator payments", () => {
     createdAt: Date.now(),
   };
 
-  // ─── upsertPayment ─────────────────────────────────────
   describe("upsertPayment", () => {
     it("creates a new payment record", async () => {
       const t = convexTest(schema, modules);
@@ -96,7 +95,6 @@ describe("facilitator payments", () => {
     });
   });
 
-  // ─── Idempotency Key ──────────────────────────────────────
   describe("idempotency key", () => {
     it("returns existing payment when same idempotencyKey is sent twice", async () => {
       const t = convexTest(schema, modules);
@@ -173,7 +171,6 @@ describe("facilitator payments", () => {
     });
   });
 
-  // ─── updatePaymentStatus ────────────────────────────────
   describe("updatePaymentStatus", () => {
     it("updates status and txHash", async () => {
       const t = convexTest(schema, modules);
@@ -230,7 +227,6 @@ describe("facilitator payments", () => {
     });
   });
 
-  // ─── getPayment ─────────────────────────────────────────
   describe("getPayment", () => {
     it("returns payment by ID", async () => {
       const t = convexTest(schema, modules);
@@ -257,7 +253,6 @@ describe("facilitator payments", () => {
     });
   });
 
-  // ─── getActivePayments ──────────────────────────────────
   describe("getActivePayments", () => {
     it("returns pending and processing payments", async () => {
       const t = convexTest(schema, modules);

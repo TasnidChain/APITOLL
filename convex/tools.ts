@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { requireAuth, requireAdmin, requireOrgAccess } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Create Tool (for Discovery)
-// ═══════════════════════════════════════════════════
 
 export const create = mutation({
   args: {
@@ -51,10 +49,8 @@ export const create = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Public Registration (from /api/discover/register)
 // No auth required — tools start as unverified
-// ═══════════════════════════════════════════════════
 
 export const registerPublic = mutation({
   args: {
@@ -73,7 +69,7 @@ export const registerPublic = mutation({
     // NOTE: No auth required — this is a public API for seller onboarding.
     // Defense: tools start as unverified + input validation + rate limiting in http/dashboard layer.
 
-    // SECURITY FIX: Strict input validation (CRITICAL-02)
+    // Strict input validation (CRITICAL-02)
     if (!args.name || args.name.trim().length === 0) throw new Error("Name is required");
     if (args.name.length > 100) throw new Error("Name must be under 100 characters");
     if (args.description.length > 1000) throw new Error("Description must be under 1000 characters");
@@ -138,9 +134,7 @@ export const registerPublic = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Search Tools
-// ═══════════════════════════════════════════════════
 
 export const search = query({
   args: {
@@ -205,9 +199,7 @@ export const search = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get by Slug
-// ═══════════════════════════════════════════════════
 
 export const getBySlug = query({
   args: { slug: v.string() },
@@ -219,9 +211,7 @@ export const getBySlug = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Featured Tools
-// ═══════════════════════════════════════════════════
 
 export const getFeatured = query({
   args: { limit: v.optional(v.number()) },
@@ -276,9 +266,7 @@ export const getFeatured = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get by Seller
-// ═══════════════════════════════════════════════════
 
 export const getBySeller = query({
   args: { sellerId: v.id("sellers") },
@@ -290,9 +278,7 @@ export const getBySeller = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Update Tool
-// ═══════════════════════════════════════════════════
 
 export const update = mutation({
   args: {
@@ -308,7 +294,7 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await requireAuth(ctx);
-    // SECURITY FIX: Verify caller owns the tool via seller → org chain
+    // Verify caller owns the tool via seller → org chain
     const tool = await ctx.db.get(args.id);
     if (!tool) throw new Error("Tool not found");
     if (tool.sellerId) {
@@ -326,15 +312,13 @@ export const update = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Deactivate Tool
-// ═══════════════════════════════════════════════════
 
 export const deactivate = mutation({
   args: { id: v.id("tools") },
   handler: async (ctx, args) => {
     await requireAuth(ctx);
-    // SECURITY FIX: Verify caller owns the tool via seller → org chain
+    // Verify caller owns the tool via seller → org chain
     const tool = await ctx.db.get(args.id);
     if (!tool) throw new Error("Tool not found");
     if (tool.sellerId) {
@@ -347,10 +331,8 @@ export const deactivate = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Increment Calls (called after successful usage)
-// SECURITY: internalMutation — only called from httpActions after payment validation
-// ═══════════════════════════════════════════════════
+// internalMutation — only called from httpActions after payment validation
 
 export const incrementCalls = internalMutation({
   args: {
@@ -372,9 +354,7 @@ export const incrementCalls = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get as MCP Format
-// ═══════════════════════════════════════════════════
 
 export const getAsMCP = query({
   args: { slug: v.string() },
@@ -402,9 +382,7 @@ export const getAsMCP = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List All as MCP
-// ═══════════════════════════════════════════════════
 
 export const listAsMCP = query({
   args: {
@@ -451,9 +429,7 @@ export const listAsMCP = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Premium Marketplace: Set Featured
-// ═══════════════════════════════════════════════════
 
 export const setFeatured = mutation({
   args: {
@@ -494,9 +470,7 @@ export const setFeatured = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Premium Marketplace: Set Verified
-// ═══════════════════════════════════════════════════
 
 export const setVerified = mutation({
   args: {
@@ -512,9 +486,7 @@ export const setVerified = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Rate a Tool
-// ═══════════════════════════════════════════════════
 
 export const rateTool = mutation({
   args: {

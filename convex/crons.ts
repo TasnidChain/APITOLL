@@ -11,9 +11,7 @@ crons.interval(
   internal.rateLimit.cleanupExpired,
 );
 
-// ═══════════════════════════════════════════════════
 // Moat Crons
-// ═══════════════════════════════════════════════════
 
 // Recalculate all seller trust scores hourly
 crons.interval(

@@ -17,7 +17,6 @@ const testEndpoint: EndpointConfig = {
   description: "Test data endpoint",
 };
 
-// ─── buildPaymentRequirements ───────────────────────────────────
 
 describe("buildPaymentRequirements", () => {
   it("builds requirements for a single chain", () => {
@@ -62,7 +61,6 @@ describe("buildPaymentRequirements", () => {
   });
 });
 
-// ─── encodePaymentRequired ──────────────────────────────────────
 
 describe("encodePaymentRequired", () => {
   it("encodes requirements to base64", () => {
@@ -79,7 +77,6 @@ describe("encodePaymentRequired", () => {
   });
 });
 
-// ─── verifyPayment ──────────────────────────────────────────────
 
 describe("verifyPayment", () => {
   const mockFetch = vi.fn();
@@ -222,7 +219,6 @@ describe("verifyPayment", () => {
   });
 });
 
-// ─── findEndpointConfig ─────────────────────────────────────────
 
 describe("findEndpointConfig", () => {
   const endpoints: Record<string, EndpointConfig> = {
@@ -263,7 +259,6 @@ describe("findEndpointConfig", () => {
   });
 });
 
-// ─── getEndpointFeeBreakdown ────────────────────────────────────
 
 describe("getEndpointFeeBreakdown", () => {
   it("returns fee breakdown with platform fee", () => {

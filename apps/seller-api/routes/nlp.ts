@@ -8,7 +8,6 @@ function formatPayment(ctx: ReturnType<typeof getX402Context>) {
   return { txHash: ctx.receipt.txHash, amount: ctx.receipt.amount, chain: ctx.receipt.chain };
 }
 
-// ─── Named Entity Extraction ─────────────────────────────────
 
 const ENTITY_PATTERNS: [string, RegExp][] = [
   ["EMAIL", /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g],
@@ -66,7 +65,6 @@ router.post("/api/entities", (req: Request, res: Response) => {
   });
 });
 
-// ─── Text Similarity (Jaccard + Cosine on word vectors) ──────
 
 function tokenize(text: string): string[] {
   return text.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter(Boolean);

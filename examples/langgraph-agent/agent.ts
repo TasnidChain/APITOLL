@@ -21,7 +21,6 @@ import { createAgentWallet, createFacilitatorSigner, type AgentWallet } from "@a
 const FACILITATOR_URL = process.env.FACILITATOR_URL || "https://pay.apitoll.com";
 const SELLER_API = process.env.SELLER_API_URL || "http://localhost:4402";
 
-// ─── Agent wallet (shared across all graph nodes) ──────────────
 
 function createSigner() {
   return process.env.FACILITATOR_API_KEY
@@ -43,7 +42,6 @@ const wallet = createAgentWallet({
   },
 });
 
-// ─── Graph State ──────────────────────────────────────────────
 
 interface GraphState {
   query: string;
@@ -67,7 +65,6 @@ function createInitialState(query: string): GraphState {
   };
 }
 
-// ─── Paid tool helpers ────────────────────────────────────────
 
 async function callTool(
   url: string,
@@ -87,7 +84,6 @@ async function callTool(
   }
 }
 
-// ─── Graph Nodes ──────────────────────────────────────────────
 
 /** Plan node: break the query into sub-tasks */
 async function plannerNode(state: GraphState): Promise<GraphState> {
@@ -213,7 +209,6 @@ async function synthesizerNode(state: GraphState): Promise<GraphState> {
   return { ...state, finalAnswer };
 }
 
-// ─── Graph Execution Engine ───────────────────────────────────
 
 /** Conditional edge: should we loop back to researcher? */
 function shouldContinueResearch(state: GraphState): "researcher" | "synthesizer" {
@@ -248,7 +243,6 @@ async function runGraph(query: string): Promise<GraphState> {
   return state;
 }
 
-// ─── Main ─────────────────────────────────────────────────────
 
 async function main() {
   console.log("LangGraph Stateful Agent + x402 Payments");

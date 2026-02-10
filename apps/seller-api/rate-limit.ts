@@ -9,7 +9,6 @@ import { createLogger } from "@apitoll/shared";
 
 const log = createLogger("seller-api:rate-limit");
 
-// ─── In-Memory Store ──────────────────────────────────────────
 interface RateLimitEntry {
   count: number;
   resetAt: number;
@@ -44,7 +43,6 @@ function checkMemory(key: string, max: number, windowMs: number): { allowed: boo
   return { allowed: entry.count <= max, count: entry.count, resetAt: entry.resetAt };
 }
 
-// ─── Redis Store (optional) ───────────────────────────────────
 let redis: { incr(key: string): Promise<number>; expire(key: string, seconds: number): Promise<void> } | null = null;
 let circuitOpen = true;
 let circuitOpenedAt = Date.now();
@@ -110,7 +108,6 @@ async function checkRedis(key: string, max: number, windowSec: number): Promise<
   }
 }
 
-// ─── Middleware Factory ───────────────────────────────────────
 export function rateLimit(opts: {
   windowMs: number;
   max: number;

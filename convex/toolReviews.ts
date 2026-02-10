@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { requireAuth, requireOrgAccess } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Submit Review (one review per org per tool)
-// ═══════════════════════════════════════════════════
 
 export const submit = mutation({
   args: {
@@ -80,9 +78,7 @@ export const submit = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Reviews for a Tool
-// ═══════════════════════════════════════════════════
 
 export const listByTool = query({
   args: {
@@ -110,9 +106,7 @@ export const listByTool = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Internal: Submit review (from HTTP API)
-// ═══════════════════════════════════════════════════
 
 export const internalSubmit = internalMutation({
   args: {
@@ -179,9 +173,7 @@ export const internalSubmit = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Internal: List reviews (from HTTP API)
-// ═══════════════════════════════════════════════════
 
 export const internalListByTool = internalQuery({
   args: {

@@ -1,9 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, query } from "./_generated/server";
 
-// ═══════════════════════════════════════════════════
 // Record Gossip Event (called by /api/gossip endpoint)
-// ═══════════════════════════════════════════════════
 
 export const recordGossip = internalMutation({
   args: {
@@ -64,7 +62,7 @@ export const recordGossip = internalMutation({
         : existing.mutations;
 
       // Calculate trending score
-      // SECURITY FIX: Use minimum 1 hour age to prevent velocity gaming
+      // Use minimum 1 hour age to prevent velocity gaming
       // (previously min was 0.1h, giving 10x velocity boost to new endpoints)
       const ageHours = Math.max((now - existing.firstSeen) / 3600000, 1);
       const velocity = Math.min((newDiscoveries / ageHours) * 50, 500); // cap velocity at 500
@@ -91,7 +89,7 @@ export const recordGossip = internalMutation({
       return { trending_score: score, is_new_agent: isNewAgent };
     } else {
       // First time seeing this endpoint — start with a LOW score
-      // SECURITY FIX: Previously started at 260, which exceeded the auto-indexing
+      // Previously started at 260, which exceeded the auto-indexing
       // threshold of 200, allowing a single unauthenticated POST to auto-register
       // a malicious tool. Now starts at 10 (base score for 1 discovery).
       // An endpoint must accumulate real usage from multiple agents to trend.
@@ -115,9 +113,7 @@ export const recordGossip = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Trending APIs
-// ═══════════════════════════════════════════════════
 
 export const getTrending = query({
   args: {
@@ -137,9 +133,7 @@ export const getTrending = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Network Stats (for dashboard)
-// ═══════════════════════════════════════════════════
 
 export const getNetworkStats = query({
   args: {},
@@ -179,9 +173,7 @@ export const getNetworkStats = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Recent Gossip Events (live feed)
-// ═══════════════════════════════════════════════════
 
 export const getRecentEvents = query({
   args: {
@@ -196,9 +188,7 @@ export const getRecentEvents = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Check Milestones & Fire Webhooks
-// ═══════════════════════════════════════════════════
 
 export const checkMilestones = internalMutation({
   args: {
@@ -280,9 +270,7 @@ export const checkMilestones = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Agent Profile from Gossip History
-// ═══════════════════════════════════════════════════
 
 export const getAgentProfile = query({
   args: { agentId: v.string() },
@@ -336,9 +324,7 @@ export const getAgentProfile = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Agent Evolution Leaderboard
-// ═══════════════════════════════════════════════════
 
 export const getLeaderboard = query({
   args: { limit: v.optional(v.number()) },

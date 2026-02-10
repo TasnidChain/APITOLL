@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(response);
   } catch {
-    // SECURITY FIX: Don't leak internal error details
+    // Don't leak internal error details
     return NextResponse.json({ error: "Invalid gossip payload" }, { status: 400 });
   }
 }
@@ -249,7 +249,7 @@ export async function GET(req: NextRequest) {
       }
     );
   } catch {
-    // SECURITY FIX: Don't leak internal error details
+    // Don't leak internal error details
     return NextResponse.json({ error: "Failed to fetch trending data" }, { status: 500 });
   }
 }

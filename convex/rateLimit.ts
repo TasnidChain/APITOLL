@@ -1,12 +1,10 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
 
-// ═══════════════════════════════════════════════════
 // DB-Backed Rate Limiter for Convex HTTP Actions
 //
 // Since Convex httpActions are stateless (V8 isolates),
 // we use the rateLimits table for persistence.
-// ═══════════════════════════════════════════════════
 
 /**
  * Check + increment a rate limit counter.

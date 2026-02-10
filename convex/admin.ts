@@ -2,15 +2,11 @@ import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { requireAdmin } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Platform-wide Admin Queries & Mutations
 // These operate across ALL orgs (no orgId parameter)
 // All require admin authentication.
-// ═══════════════════════════════════════════════════
 
-// ═══════════════════════════════════════════════════
 // 1. Get Platform Stats
-// ═══════════════════════════════════════════════════
 
 export const getPlatformStats = query({
   args: {},
@@ -125,9 +121,7 @@ export const getPlatformStats = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // 2. List All Orgs
-// ═══════════════════════════════════════════════════
 
 export const listAllOrgs = query({
   args: {},
@@ -148,7 +142,7 @@ export const listAllOrgs = query({
           .filter((q) => q.eq(q.field("orgId"), org._id))
           .collect();
 
-        // SECURITY FIX: Strip apiKey from admin listing to prevent leaks
+        // Strip apiKey from admin listing to prevent leaks
         const { apiKey: _apiKey, ...safeOrg } = org;
         return {
           ...safeOrg,
@@ -162,9 +156,7 @@ export const listAllOrgs = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // 3. Admin Update Plan
-// ═══════════════════════════════════════════════════
 
 export const adminUpdatePlan = mutation({
   args: {
@@ -177,9 +169,7 @@ export const adminUpdatePlan = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // 4. Admin Update Tool
-// ═══════════════════════════════════════════════════
 
 export const adminUpdateTool = mutation({
   args: {
@@ -201,9 +191,7 @@ export const adminUpdateTool = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // 5. List All Tools
-// ═══════════════════════════════════════════════════
 
 export const listAllTools = query({
   args: {},
@@ -229,9 +217,7 @@ export const listAllTools = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // 6. List All Disputes
-// ═══════════════════════════════════════════════════
 
 export const listAllDisputes = query({
   args: {},
@@ -257,9 +243,7 @@ export const listAllDisputes = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // 7. Resolve Dispute
-// ═══════════════════════════════════════════════════
 
 export const resolveDispute = mutation({
   args: {
@@ -289,9 +273,7 @@ export const resolveDispute = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // 8. Get Activity Log
-// ═══════════════════════════════════════════════════
 
 export const getActivityLog = query({
   args: {},

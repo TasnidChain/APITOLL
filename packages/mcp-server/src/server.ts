@@ -13,9 +13,7 @@ import {
   createPaymentReceipt,
 } from './payment'
 
-// ═══════════════════════════════════════════════════
 // Paid MCP Server
-// ═══════════════════════════════════════════════════
 
 export class PaidMCPServer {
   private tools: Map<string, ToolDefinition & { handler: Function }> = new Map()
@@ -33,9 +31,7 @@ export class PaidMCPServer {
     }
   }
 
-  // ═══════════════════════════════════════════════════
   // Tool Registration
-  // ═══════════════════════════════════════════════════
 
   /**
    * Register a free tool (no payment required)
@@ -78,9 +74,7 @@ export class PaidMCPServer {
     return this
   }
 
-  // ═══════════════════════════════════════════════════
   // Tool Execution
-  // ═══════════════════════════════════════════════════
 
   /**
    * Handle a tool call request
@@ -209,9 +203,7 @@ export class PaidMCPServer {
     }
   }
 
-  // ═══════════════════════════════════════════════════
   // Tool Listing (for MCP protocol)
-  // ═══════════════════════════════════════════════════
 
   /**
    * Get all tool definitions for MCP tools/list
@@ -254,9 +246,7 @@ export class PaidMCPServer {
     }
   }
 
-  // ═══════════════════════════════════════════════════
   // Discovery Registration
-  // ═══════════════════════════════════════════════════
 
   /**
    * Register all paid tools with the Discovery API
@@ -301,9 +291,7 @@ export class PaidMCPServer {
     }
   }
 
-  // ═══════════════════════════════════════════════════
   // Helpers
-  // ═══════════════════════════════════════════════════
 
   private zodToJsonSchema(schema: z.ZodType): object {
     // Basic zod to JSON schema conversion
@@ -347,9 +335,7 @@ export class PaidMCPServer {
   }
 }
 
-// ═══════════════════════════════════════════════════
 // Factory Function
-// ═══════════════════════════════════════════════════
 
 export function createPaidMCPServer(config: PaidMCPServerConfig): PaidMCPServer {
   return new PaidMCPServer(config)

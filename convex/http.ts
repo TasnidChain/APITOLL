@@ -4,7 +4,6 @@ import type { ActionCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { api, internal } from "./_generated/api";
 
-// ─── Rate Limit Config ──────────────────────────────────────────────
 // Defines rate limits per route category
 const RATE_LIMITS = {
   signup: { windowMs: 3_600_000, maxRequests: 5 },      // 5 signups per hour per IP
@@ -57,7 +56,6 @@ async function checkRateLimit(
   return null;
 }
 
-// ─── Request Body Interfaces ────────────────────────────────────────
 
 interface TransactionInput {
   txHash?: string;
@@ -117,7 +115,6 @@ interface StripeWebhookBody {
   };
 }
 
-// ─── Environment Variable Validation ─────────────────────────────────
 // Fail fast if critical environment variables are missing
 
 function validateEnvOnStartup() {
@@ -139,7 +136,6 @@ validateEnvOnStartup();
 
 const http = httpRouter();
 
-// ─── Web Crypto Helpers ──────────────────────────────────────────────
 
 /**
  * Compute HMAC-SHA256 using the Web Crypto API (available in Convex V8 runtime).
@@ -177,7 +173,6 @@ function timingSafeEqual(a: string, b: string): boolean {
   return result === 0;
 }
 
-// ─── Stripe Webhook Signature Verification ───────────────────────────
 
 /**
  * Verify a Stripe webhook signature using Web Crypto API.
@@ -222,7 +217,6 @@ async function verifyStripeSignature(
   return signatures.some((sig) => timingSafeEqual(sig, expectedSig));
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────
 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "").split(",").filter(Boolean);
 
@@ -241,7 +235,7 @@ const SECURITY_HEADERS: Record<string, string> = {
 function corsHeaders(request?: Request): Record<string, string> {
   const origin = request?.headers.get("Origin") || "";
 
-  // SECURITY FIX: Deny all CORS by default
+  // Deny all CORS by default
   if (ALLOWED_ORIGINS.length === 0) {
     // No origins configured = deny all cross-origin requests
     return {
@@ -322,9 +316,7 @@ async function authenticateOrg(ctx: ActionCtx, request: Request) {
   return await ctx.runQuery(internal.organizations.getByApiKey, { apiKey });
 }
 
-// ═══════════════════════════════════════════════════
 // Transaction Webhook (from Seller SDK) — with fee tracking
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/webhook/transactions",
@@ -340,7 +332,7 @@ http.route({
       return errorResponse("Invalid seller key", 401, request);
     }
 
-    // SECURITY: Rate limit transaction webhooks — 30 per minute per seller
+    // Rate limit transaction webhooks — 30 per minute per seller
     const limited = await checkRateLimit(ctx, `txwh:${seller._id}`, RATE_LIMITS.authWrite, request);
     if (limited) return limited;
 
@@ -388,15 +380,13 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Self-Serve Signup — Create Organization + API Key
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/signup",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
-    // SECURITY: Rate limit signups — 5 per hour per IP
+    // Rate limit signups — 5 per hour per IP
     const ip = getClientIP(request);
     const limited = await checkRateLimit(ctx, `signup:${ip}`, RATE_LIMITS.signup, request);
     if (limited) return limited;
@@ -418,7 +408,7 @@ http.route({
       return errorResponse("name is required (2-100 characters)", 400, request);
     }
 
-    // SECURITY: Validate billingEmail format if provided
+    // Validate billingEmail format if provided
     if (billingEmail && typeof billingEmail === "string") {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(billingEmail) || billingEmail.length > 254) {
@@ -426,7 +416,7 @@ http.route({
       }
     }
 
-    // SECURITY: Validate billingWallet if provided
+    // Validate billingWallet if provided
     if (billingWallet && typeof billingWallet === "string") {
       if (billingWallet.length > 64 || !/^[a-zA-Z0-9]+$/.test(billingWallet)) {
         return errorResponse("Invalid wallet address format", 400, request);
@@ -460,9 +450,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // API Key Management
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/keys/regenerate",
@@ -486,9 +474,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Billing Summary
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/billing",
@@ -505,24 +491,22 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Discovery API - Search Tools (with premium ranking)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/tools",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
-    // SECURITY: Rate limit public reads — 100 per minute per IP
+    // Rate limit public reads — 100 per minute per IP
     const ip = getClientIP(request);
     const limited = await checkRateLimit(ctx, `read:${ip}`, RATE_LIMITS.publicRead, request);
     if (limited) return limited;
 
     const url = new URL(request.url);
-    const query = url.searchParams.get("q")?.slice(0, 200) ?? undefined; // SECURITY: limit query length
+    const query = url.searchParams.get("q")?.slice(0, 200) ?? undefined; // limit query length
     const category = url.searchParams.get("category")?.slice(0, 50) ?? undefined;
     const maxPrice = clampFloat(url.searchParams.get("maxPrice"), 0, 1000, 0) || undefined;
-    const chains = url.searchParams.get("chains")?.split(",").filter(Boolean).slice(0, 5); // SECURITY: limit chains
+    const chains = url.searchParams.get("chains")?.split(",").filter(Boolean).slice(0, 5); // limit chains
     const limit = clampInt(url.searchParams.get("limit"), 1, 100, 20);
 
     const tools = await ctx.runQuery(api.tools.search, {
@@ -537,9 +521,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Discovery API - Featured Tools (premium marketplace)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/tools/featured",
@@ -554,9 +536,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Discovery API - MCP Format
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/mcp/tools",
@@ -577,9 +557,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Discovery API - Single Tool MCP Format
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/mcp/tools/:slug",
@@ -597,9 +575,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Categories
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/categories",
@@ -610,9 +586,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Analytics - Overview (plan-gated)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/analytics/overview",
@@ -626,9 +600,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Analytics - Daily Stats (plan-gated retention)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/analytics/daily",
@@ -660,9 +632,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Analytics - Premium: Spend by Chain
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/analytics/chains",
@@ -680,9 +650,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Analytics - Premium: Top Endpoints
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/analytics/top-endpoints",
@@ -703,21 +671,19 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Platform Revenue (admin only)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/admin/revenue",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
-    // SECURITY FIX: Use admin secret instead of plan-based auth.
+    // Use admin secret instead of plan-based auth.
     // Previously any enterprise org could view platform-wide revenue.
     // Now requires the ADMIN_API_SECRET env var (shared secret for admin API access).
     const adminSecret = process.env.ADMIN_API_SECRET;
     const providedSecret = request.headers.get("X-Admin-Secret");
 
-    // SECURITY FIX: Use timing-safe comparison to prevent timing attacks
+    // Use timing-safe comparison to prevent timing attacks
     if (!adminSecret || !providedSecret || !timingSafeEqual(adminSecret, providedSecret)) {
       return errorResponse("Admin access required", 403, request);
     }
@@ -727,9 +693,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Disputes - Create
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/disputes",
@@ -759,7 +723,7 @@ http.route({
 
       return jsonResponse({ disputeId, status: "open" }, 201, request);
     } catch (err) {
-      // SECURITY: Only expose safe error messages, not internal details
+      // Only expose safe error messages, not internal details
       const safeMessages = [
         "Transaction not found",
         "Dispute already exists for this transaction",
@@ -777,9 +741,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Disputes - List
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/disputes",
@@ -800,9 +762,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Deposits - Create (Fiat On-Ramp)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/deposits",
@@ -871,9 +831,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Deposits - List
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/deposits",
@@ -890,9 +848,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Stripe Webhook (subscription events)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/webhook/stripe",
@@ -1015,9 +971,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Health Check
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/health",
@@ -1035,9 +989,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Gossip — Record (agent POST, forwarded from Next.js)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/gossip",
@@ -1059,21 +1011,21 @@ http.route({
       return errorResponse("agentId and endpoint are required", 400, request);
     }
 
-    // SECURITY: Input validation — prevent oversized strings
+    // Input validation — prevent oversized strings
     const agentId = String(body.agentId).slice(0, 128);
     const endpoint = String(body.endpoint).slice(0, 512);
     const host = String(body.host || "").slice(0, 256);
 
-    // SECURITY: Validate endpoint looks like a URL path
+    // Validate endpoint looks like a URL path
     if (!/^https?:\/\/|^\//.test(endpoint)) {
       return errorResponse("endpoint must be a URL or path", 400, request);
     }
 
-    // SECURITY: Rate limit gossip — 30 per minute per agent
+    // Rate limit gossip — 30 per minute per agent
     const limited = await checkRateLimit(ctx, `gossip:${agentId}`, RATE_LIMITS.gossip, request);
     if (limited) return limited;
 
-    // SECURITY: Clamp numeric values to sane ranges
+    // Clamp numeric values to sane ranges
     const amount = typeof body.amount === "number" ? Math.max(0, Math.min(body.amount, 1_000_000)) : 0;
     const latencyMs = typeof body.latencyMs === "number" ? Math.max(0, Math.min(body.latencyMs, 300_000)) : 0;
 
@@ -1090,16 +1042,14 @@ http.route({
 
       return jsonResponse(result, 200, request);
     } catch (err) {
-      // SECURITY: Don't leak internal error details
+      // Don't leak internal error details
       console.error("Gossip recording failed:", err);
       return errorResponse("Failed to record gossip", 500, request);
     }
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Evolution — Save State (agent POST, forwarded from Next.js)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/evolution/save",
@@ -1121,14 +1071,14 @@ http.route({
       return errorResponse("agentId is required", 400, request);
     }
 
-    // SECURITY: Input validation
+    // Input validation
     const agentId = String(body.agentId).slice(0, 128);
 
-    // SECURITY: Rate limit evolution saves — 20 per minute per agent
+    // Rate limit evolution saves — 20 per minute per agent
     const limited = await checkRateLimit(ctx, `evolution:${agentId}`, RATE_LIMITS.evolution, request);
     if (limited) return limited;
 
-    // SECURITY: Limit mutations array size to prevent DB bloat
+    // Limit mutations array size to prevent DB bloat
     const mutations = Array.isArray(body.mutations)
       ? body.mutations.slice(0, 100).map((m) => ({
           type: String(m.type).slice(0, 64),
@@ -1148,16 +1098,14 @@ http.route({
 
       return jsonResponse(result, 200, request);
     } catch (err) {
-      // SECURITY: Don't leak internal error details
+      // Don't leak internal error details
       console.error("Evolution save failed:", err);
       return errorResponse("Failed to save evolution state", 500, request);
     }
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Reputation - Agent/Wallet Score (public)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/reputation",
@@ -1200,9 +1148,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Combined Leaderboard (reputation + evolution)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/leaderboard",
@@ -1221,9 +1167,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Discovery API - Tool Registration (public)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/discover/register",
@@ -1286,9 +1230,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Discovery API - Tool Detail (by slug)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/tools/detail",
@@ -1305,9 +1247,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Reviews - Submit (authenticated)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/reviews",
@@ -1347,9 +1287,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Reviews - List by Tool (public)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/reviews",
@@ -1374,9 +1312,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Favorites - Toggle (authenticated)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/favorites",
@@ -1408,9 +1344,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Favorites - List (authenticated)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/favorites",
@@ -1427,9 +1361,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Seller Trust Scores (public)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/sellers/score",
@@ -1472,9 +1404,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Escrow — Query (authenticated)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/escrow",
@@ -1512,9 +1442,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Alert Events — List (authenticated)
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/alerts/events",
@@ -1535,9 +1463,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // Compliance — Admin: List Screenings
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/admin/compliance",
@@ -1563,9 +1489,7 @@ http.route({
   }),
 });
 
-// ═══════════════════════════════════════════════════
 // CORS Preflight — all API routes
-// ═══════════════════════════════════════════════════
 
 http.route({
   path: "/api/*",

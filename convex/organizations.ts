@@ -2,7 +2,6 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { requireAuth, requireAdmin, requireOrgAccess } from "./helpers";
 
-// ─── Secure API Key Generation ───────────────────────────────────
 
 function generateSecureKey(prefix: string): string {
   // Use crypto.getRandomValues for 32 bytes of entropy
@@ -12,9 +11,7 @@ function generateSecureKey(prefix: string): string {
   return `${prefix}_${hex}`;
 }
 
-// ═══════════════════════════════════════════════════
 // Create Organization
-// ═══════════════════════════════════════════════════
 
 export const create = mutation({
   args: {
@@ -32,7 +29,7 @@ export const create = mutation({
     // Generate secure API key (32 bytes = 64 hex chars)
     const apiKey = generateSecureKey("org");
 
-    // SECURITY FIX: Store clerkUserId so org ownership can be verified
+    // Store clerkUserId so org ownership can be verified
     const id = await ctx.db.insert("organizations", {
       name,
       billingWallet: args.billingWallet,
@@ -46,11 +43,9 @@ export const create = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get by API Key
-// ═══════════════════════════════════════════════════
 
-// SECURITY: internalQuery — API key lookup should NOT be exposed to browsers.
+// internalQuery — API key lookup should NOT be exposed to browsers.
 // Used by authenticateOrg() in http.ts httpActions.
 export const getByApiKey = internalQuery({
   args: { apiKey: v.string() },
@@ -62,31 +57,27 @@ export const getByApiKey = internalQuery({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Organization
-// ═══════════════════════════════════════════════════
 
 export const get = query({
   args: { id: v.id("organizations") },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.id);
     const org = await ctx.db.get(args.id);
     if (!org) return null;
-    // SECURITY: Strip apiKey — never expose to frontend
+    // Strip apiKey — never expose to frontend
     const { apiKey: _apiKey, ...safe } = org;
     return safe;
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Org API Key (authenticated users only — for the API Keys page)
-// ═══════════════════════════════════════════════════
 
 export const getApiKey = query({
   args: { id: v.id("organizations") },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization before exposing API key
+    // Verify caller owns this organization before exposing API key
     await requireOrgAccess(ctx, args.id);
     const org = await ctx.db.get(args.id);
     if (!org) return null;
@@ -94,9 +85,7 @@ export const getApiKey = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Organizations (with pagination)
-// ═══════════════════════════════════════════════════
 
 export const list = query({
   args: {
@@ -108,14 +97,12 @@ export const list = query({
       .query("organizations")
       .order("desc")
       .take(args.limit ?? 50);
-    // SECURITY: Strip apiKeys — never expose to frontend
+    // Strip apiKeys — never expose to frontend
     return orgs.map(({ apiKey: _apiKey, ...safe }) => safe);
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Update Plan
-// ═══════════════════════════════════════════════════
 
 export const updatePlan = mutation({
   args: {
@@ -128,9 +115,7 @@ export const updatePlan = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Update Billing Wallet
-// ═══════════════════════════════════════════════════
 
 export const updateBillingWallet = mutation({
   args: {
@@ -138,7 +123,7 @@ export const updateBillingWallet = mutation({
     billingWallet: v.string(),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.id);
     await ctx.db.patch(args.id, { billingWallet: args.billingWallet });
   },
@@ -161,14 +146,12 @@ export const internalCreate = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Regenerate API Key (secure)
-// ═══════════════════════════════════════════════════
 
 export const regenerateApiKey = mutation({
   args: { id: v.id("organizations") },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this organization
+    // Verify caller owns this organization
     await requireOrgAccess(ctx, args.id);
     const newApiKey = generateSecureKey("org");
     await ctx.db.patch(args.id, { apiKey: newApiKey });

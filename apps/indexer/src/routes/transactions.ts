@@ -32,9 +32,7 @@ const batchReportSchema = z.object({
   transactions: z.array(transactionReportSchema),
 })
 
-// ═══════════════════════════════════════════════════
 // Webhook endpoint for Seller SDK
-// ═══════════════════════════════════════════════════
 
 app.post('/report', requireSellerAuth, async (c) => {
   const seller = c.get('seller')
@@ -74,9 +72,7 @@ app.post('/report', requireSellerAuth, async (c) => {
   })
 })
 
-// ═══════════════════════════════════════════════════
 // Dashboard API endpoints
-// ═══════════════════════════════════════════════════
 
 app.get('/', requireOrgAuth, async (c) => {
   const org = c.get('org')

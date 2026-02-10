@@ -16,7 +16,6 @@ describe("admin", () => {
     vi.unstubAllEnvs();
   });
 
-  // ─── Auth boundary tests ────────────────────────────────
   describe("authentication", () => {
     it("rejects unauthenticated calls to getPlatformStats", async () => {
       const t = convexTest(schema, modules);
@@ -51,7 +50,6 @@ describe("admin", () => {
     });
   });
 
-  // ─── getPlatformStats ───────────────────────────────────
   describe("getPlatformStats", () => {
     it("counts organizations by plan", async () => {
       const t = convexTest(schema, modules);
@@ -185,7 +183,6 @@ describe("admin", () => {
     });
   });
 
-  // ─── adminUpdatePlan ────────────────────────────────────
   describe("adminUpdatePlan", () => {
     it("rejects unauthenticated plan change", async () => {
       const t = convexTest(schema, modules);

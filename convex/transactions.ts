@@ -2,16 +2,12 @@ import { v } from "convex/values";
 import { internalMutation, query } from "./_generated/server";
 import { requireAuth } from "./helpers";
 
-// ═══════════════════════════════════════════════════
-// SECURITY: Transaction mutations are internalMutation (defense-in-depth).
+// Transaction mutations are internalMutation (defense-in-depth).
 // They are only callable from other Convex functions (httpActions in http.ts),
 // NOT from the browser or external ConvexHttpClient.
 // The HTTP routes in http.ts validate API keys before calling these.
-// ═══════════════════════════════════════════════════
 
-// ═══════════════════════════════════════════════════
 // Create Transaction (from seller SDK webhook)
-// ═══════════════════════════════════════════════════
 
 export const create = internalMutation({
   args: {
@@ -38,7 +34,7 @@ export const create = internalMutation({
     blockNumber: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Deduplicate by txHash to prevent double-counting
+    // Deduplicate by txHash to prevent double-counting
     if (args.txHash) {
       const existing = await ctx.db
         .query("transactions")
@@ -56,9 +52,7 @@ export const create = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Batch Create (for webhook efficiency)
-// ═══════════════════════════════════════════════════
 
 export const createBatch = internalMutation({
   args: {
@@ -86,7 +80,7 @@ export const createBatch = internalMutation({
     const ids = [];
     let skipped = 0;
     for (const tx of args.transactions) {
-      // SECURITY FIX: Deduplicate by txHash to prevent double-counting revenue
+      // Deduplicate by txHash to prevent double-counting revenue
       if (tx.txHash) {
         const existing = await ctx.db
           .query("transactions")
@@ -108,9 +102,7 @@ export const createBatch = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Update Status
-// ═══════════════════════════════════════════════════
 
 export const updateStatus = internalMutation({
   args: {
@@ -132,9 +124,7 @@ export const updateStatus = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Transactions
-// ═══════════════════════════════════════════════════
 
 export const list = query({
   args: {
@@ -169,9 +159,7 @@ export const list = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get by Agent
-// ═══════════════════════════════════════════════════
 
 export const getByAgent = query({
   args: {
@@ -188,9 +176,7 @@ export const getByAgent = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get by Seller
-// ═══════════════════════════════════════════════════
 
 export const getBySeller = query({
   args: {

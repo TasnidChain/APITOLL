@@ -2,16 +2,12 @@ import { v } from "convex/values";
 import { query, mutation, internalMutation } from "./_generated/server";
 import { requireOrgAccess } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Escrow / Buyer Protection
 // Time-locked payment holds with auto-release
-// ═══════════════════════════════════════════════════
 
 const DEFAULT_HOLD_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
-// ═══════════════════════════════════════════════════
 // Hold a Payment in Escrow
-// ═══════════════════════════════════════════════════
 
 export const holdPayment = internalMutation({
   args: {
@@ -45,9 +41,7 @@ export const holdPayment = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Release Payment to Seller
-// ═══════════════════════════════════════════════════
 
 export const releasePayment = internalMutation({
   args: { escrowId: v.id("escrowPayments") },
@@ -65,9 +59,7 @@ export const releasePayment = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Auto-Release Expired Escrow Payments (cron)
-// ═══════════════════════════════════════════════════
 
 export const autoReleaseExpired = internalMutation({
   args: {},
@@ -96,9 +88,7 @@ export const autoReleaseExpired = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Buyer Disputes an Escrowed Payment
-// ═══════════════════════════════════════════════════
 
 export const disputeEscrow = mutation({
   args: {
@@ -142,9 +132,7 @@ export const disputeEscrow = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Refund an Escrowed Payment (admin action)
-// ═══════════════════════════════════════════════════
 
 export const refundEscrow = internalMutation({
   args: { escrowId: v.id("escrowPayments") },
@@ -162,9 +150,7 @@ export const refundEscrow = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Queries
-// ═══════════════════════════════════════════════════
 
 export const listByOrg = query({
   args: {

@@ -3,9 +3,7 @@
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 
-// ═══════════════════════════════════════════════════
 // Node.js Actions — Stripe & Ethers (requires "use node")
-// ═══════════════════════════════════════════════════
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -18,7 +16,6 @@ function requireEnv(name: string): string {
   return value;
 }
 
-// ─── Create Stripe PaymentIntent ─────────────────────────────────────
 
 export const createStripePaymentIntent = internalAction({
   args: {
@@ -51,7 +48,6 @@ export const createStripePaymentIntent = internalAction({
   },
 });
 
-// ─── Transfer USDC via Ethers (Base) ────────────────────────────────
 
 // Base USDC contract address — canonical source: @apitoll/shared DEFAULT_CHAIN_CONFIGS.base.usdcAddress
 const USDC_ADDRESS_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -118,7 +114,6 @@ export const transferUSDC = internalAction({
   },
 });
 
-// ─── Transfer USDC on Solana (SPL Token) ────────────────────────────
 
 // Solana USDC mint address
 const SOLANA_USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";

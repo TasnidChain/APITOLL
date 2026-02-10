@@ -139,7 +139,6 @@ export function resolveChains(chains?: SupportedChain[]): SupportedChain[] {
   return chains && chains.length > 0 ? chains : ["base"];
 }
 
-// ─── Platform Fee Utilities ──────────────────────────────────────
 
 /**
  * Calculate fee breakdown for a given price and platform fee config.
@@ -176,7 +175,6 @@ export function getPlatformWallet(
   return chain === "base" ? feeConfig.platformWalletBase : feeConfig.platformWalletSolana;
 }
 
-// ─── Plan Enforcement Utilities ──────────────────────────────────
 
 /**
  * Get the limits for a given plan tier.
@@ -208,7 +206,6 @@ export function checkPlanLimit(
   return null;
 }
 
-// ─── Input Validation Utilities ──────────────────────────────────
 
 /**
  * Validate an Ethereum address (0x + 40 hex chars).
@@ -324,7 +321,6 @@ export async function verifyHmacSignature(
   return secureCompare(expected, providedSignature);
 }
 
-// ─── Security Utilities ──────────────────────────────────────────
 
 /**
  * Generate a cryptographically secure API key with prefix.

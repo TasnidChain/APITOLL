@@ -11,9 +11,7 @@ import {
   createCrewAIAgent,
 } from '@apitoll/langchain'
 
-// ═══════════════════════════════════════════════════
 // Wallet Configuration
-// ═══════════════════════════════════════════════════
 
 const walletConfig = {
   name: 'CrewWallet',
@@ -33,9 +31,7 @@ const walletConfig = {
   },
 }
 
-// ═══════════════════════════════════════════════════
 // Define Tools
-// ═══════════════════════════════════════════════════
 
 const tools: PaidTool[] = [
   createPaidTool({
@@ -88,9 +84,7 @@ const tools: PaidTool[] = [
   }),
 ]
 
-// ═══════════════════════════════════════════════════
 // Create Agents
-// ═══════════════════════════════════════════════════
 
 const researcherAgent = createCrewAIAgent({
   role: 'Weather Researcher',
@@ -114,9 +108,7 @@ const analystAgent = createCrewAIAgent({
   verbose: true,
 })
 
-// ═══════════════════════════════════════════════════
 // Example Crew Setup
-// ═══════════════════════════════════════════════════
 
 async function main() {
   console.log('╔═══════════════════════════════════════════════════╗')

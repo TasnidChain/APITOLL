@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { requireAuth, requireAdmin, requireOrgAccess } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Create Dispute
-// ═══════════════════════════════════════════════════
 
 export const create = mutation({
   args: {
@@ -13,13 +11,13 @@ export const create = mutation({
     reason: v.string(),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this org
+    // Verify caller owns this org
     await requireOrgAccess(ctx, args.orgId);
     // Verify the transaction exists
     const transaction = await ctx.db.get(args.transactionId);
     if (!transaction) throw new Error("Transaction not found");
 
-    // SECURITY FIX: Verify the transaction belongs to this org's agent
+    // Verify the transaction belongs to this org's agent
     if (transaction.agentId) {
       const agent = await ctx.db.get(transaction.agentId);
       if (!agent || String(agent.orgId) !== String(args.orgId)) {
@@ -54,9 +52,7 @@ export const create = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Disputes by Org
-// ═══════════════════════════════════════════════════
 
 export const listByOrg = query({
   args: {
@@ -64,7 +60,7 @@ export const listByOrg = query({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this org
+    // Verify caller owns this org
     await requireOrgAccess(ctx, args.orgId);
     let disputes;
 
@@ -95,9 +91,7 @@ export const listByOrg = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List All Open Disputes (admin view)
-// ═══════════════════════════════════════════════════
 
 export const listOpen = query({
   handler: async (ctx) => {
@@ -118,9 +112,7 @@ export const listOpen = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Resolve Dispute
-// ═══════════════════════════════════════════════════
 
 export const resolve = mutation({
   args: {
@@ -162,9 +154,7 @@ export const resolve = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Update Status (move to under_review)
-// ═══════════════════════════════════════════════════
 
 export const updateStatus = mutation({
   args: {

@@ -1,9 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
-// ═══════════════════════════════════════════════════
 // SECURITY FIX #7: Wallet Address Validation
-// ═══════════════════════════════════════════════════
 
 /**
  * Validates Ethereum address format (EVM chains like Base)
@@ -34,9 +32,7 @@ function _isValidSolanaAddress(addr: string): boolean {
  */
 const walletAddressValidator = v.string();
 
-// ═══════════════════════════════════════════════════
 // Typed JSON Schema Validators (replacing v.any())
-// ═══════════════════════════════════════════════════
 
 /**
  * Budget policy rules: { dailyLimit, perTransactionLimit, monthlyLimit }
@@ -107,15 +103,13 @@ const alertThresholdValidator = v.object({
 });
 
 export default defineSchema({
-  // ═══════════════════════════════════════════════════
   // Organizations (multi-tenant) — with Stripe billing
-  // ═══════════════════════════════════════════════════
   organizations: defineTable({
     name: v.string(),
     billingWallet: v.optional(v.string()),
     plan: v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise")),
     apiKey: v.string(),
-    // SECURITY FIX: Clerk user ID for org ownership verification
+    // Clerk user ID for org ownership verification
     clerkUserId: v.optional(v.string()),
     // Stripe billing fields
     stripeCustomerId: v.optional(v.string()),
@@ -138,13 +132,11 @@ export default defineSchema({
     .index("by_stripe_customer", ["stripeCustomerId"])
     .index("by_clerk_user", ["clerkUserId"]),
 
-  // ═══════════════════════════════════════════════════
   // Agents (buyer-side wallets)
-  // ═══════════════════════════════════════════════════
   agents: defineTable({
     orgId: v.id("organizations"),
     name: v.string(),
-    walletAddress: walletAddressValidator, // SECURITY FIX: Validated wallet address
+    walletAddress: walletAddressValidator, // Validated wallet address
     chain: v.union(v.literal("base"), v.literal("solana")),
     balance: v.number(),
     status: v.union(v.literal("active"), v.literal("paused"), v.literal("depleted")),
@@ -153,21 +145,17 @@ export default defineSchema({
     .index("by_org", ["orgId"])
     .index("by_wallet", ["walletAddress"]),
 
-  // ═══════════════════════════════════════════════════
   // Sellers (API/tool providers)
-  // ═══════════════════════════════════════════════════
   sellers: defineTable({
     orgId: v.optional(v.id("organizations")),
     name: v.string(),
-    walletAddress: walletAddressValidator, // SECURITY FIX: Validated wallet address
+    walletAddress: walletAddressValidator, // Validated wallet address
     apiKey: v.string(),
   })
     .index("by_wallet", ["walletAddress"])
     .index("by_api_key", ["apiKey"]),
 
-  // ═══════════════════════════════════════════════════
   // Endpoints (registered paid endpoints)
-  // ═══════════════════════════════════════════════════
   endpoints: defineTable({
     sellerId: v.id("sellers"),
     method: v.string(),
@@ -184,12 +172,10 @@ export default defineSchema({
     totalRevenue: v.number(),
   }).index("by_seller", ["sellerId"]),
 
-  // ═══════════════════════════════════════════════════
   // Transactions — with platform fee tracking
-  // ═══════════════════════════════════════════════════
   transactions: defineTable({
     txHash: v.optional(v.string()),
-    agentAddress: walletAddressValidator, // SECURITY FIX: Validated wallet address
+    agentAddress: walletAddressValidator, // Validated wallet address
     agentId: v.optional(v.id("agents")),
     sellerId: v.optional(v.id("sellers")),
     endpointId: v.optional(v.id("endpoints")),
@@ -221,9 +207,7 @@ export default defineSchema({
     .index("by_chain", ["chain", "requestedAt"])
     .index("by_tx_hash", ["txHash"]),
 
-  // ═══════════════════════════════════════════════════
   // Tools (for Discovery API) — with premium listing support
-  // ═══════════════════════════════════════════════════
   tools: defineTable({
     sellerId: v.optional(v.id("sellers")),
     name: v.string(),
@@ -267,9 +251,7 @@ export default defineSchema({
       filterFields: ["category", "isActive"],
     }),
 
-  // ═══════════════════════════════════════════════════
   // Categories
-  // ═══════════════════════════════════════════════════
   categories: defineTable({
     slug: v.string(),
     name: v.string(),
@@ -277,9 +259,7 @@ export default defineSchema({
     icon: v.optional(v.string()),
   }).index("by_slug", ["slug"]),
 
-  // ═══════════════════════════════════════════════════
   // Policies (buyer-side rules)
-  // ═══════════════════════════════════════════════════
   policies: defineTable({
     orgId: v.id("organizations"),
     agentId: v.optional(v.id("agents")),
@@ -294,9 +274,7 @@ export default defineSchema({
     .index("by_org", ["orgId"])
     .index("by_agent", ["agentId"]),
 
-  // ═══════════════════════════════════════════════════
   // Alert Rules
-  // ═══════════════════════════════════════════════════
   alertRules: defineTable({
     orgId: v.id("organizations"),
     agentId: v.optional(v.id("agents")),
@@ -313,9 +291,7 @@ export default defineSchema({
     lastTriggered: v.optional(v.number()),
   }).index("by_org", ["orgId"]),
 
-  // ═══════════════════════════════════════════════════
   // Disputes & Refunds
-  // ═══════════════════════════════════════════════════
   disputes: defineTable({
     transactionId: v.id("transactions"),
     orgId: v.id("organizations"),
@@ -340,9 +316,7 @@ export default defineSchema({
     .index("by_transaction", ["transactionId"])
     .index("by_status", ["status"]),
 
-  // ═══════════════════════════════════════════════════
   // Platform Revenue Ledger
-  // ═══════════════════════════════════════════════════
   platformRevenue: defineTable({
     transactionId: v.id("transactions"),
     amount: v.number(),
@@ -353,9 +327,7 @@ export default defineSchema({
   })
     .index("by_collected", ["collectedAt"]),
 
-  // ═══════════════════════════════════════════════════
   // Referrals (agent-to-agent viral loop)
-  // ═══════════════════════════════════════════════════
   referrals: defineTable({
     referrerSellerId: v.optional(v.id("sellers")),
     referrerWallet: v.string(),
@@ -383,9 +355,7 @@ export default defineSchema({
     .index("by_referral", ["referralId"])
     .index("by_transaction", ["transactionId"]),
 
-  // ═══════════════════════════════════════════════════
   // Gossip / Trending (agent viral network)
-  // ═══════════════════════════════════════════════════
   gossip: defineTable({
     endpoint: v.string(),         // "/api/joke" — normalized path
     host: v.string(),             // "api.apitoll.com"
@@ -417,9 +387,7 @@ export default defineSchema({
     .index("by_endpoint", ["endpoint"])
     .index("by_created", ["createdAt"]),
 
-  // ═══════════════════════════════════════════════════
   // Fiat Deposits (Stripe → USDC on-ramp)
-  // ═══════════════════════════════════════════════════
   deposits: defineTable({
     orgId: v.id("organizations"),
     agentId: v.optional(v.id("agents")),
@@ -434,7 +402,7 @@ export default defineSchema({
       v.literal("completed"),
       v.literal("failed")
     ),
-    walletAddress: walletAddressValidator, // SECURITY FIX: Validated wallet address
+    walletAddress: walletAddressValidator, // Validated wallet address
     chain: v.union(v.literal("base"), v.literal("solana")),
     txHash: v.optional(v.string()),
     createdAt: v.number(),
@@ -444,9 +412,7 @@ export default defineSchema({
     .index("by_stripe_pi", ["stripePaymentIntentId"])
     .index("by_status", ["status"]),
 
-  // ═══════════════════════════════════════════════════
   // Webhooks (seller payment notifications)
-  // ═══════════════════════════════════════════════════
   webhooks: defineTable({
     orgId: v.id("organizations"),
     sellerId: v.optional(v.id("sellers")),
@@ -475,13 +441,9 @@ export default defineSchema({
     .index("by_webhook", ["webhookId"])
     .index("by_status", ["status"]),
 
-  // ═══════════════════════════════════════════════════
   // Agent Evolution State (mutation persistence)
-  // ═══════════════════════════════════════════════════
-  // ═══════════════════════════════════════════════════
   // Facilitator Payments (persistent payment records)
   // Replaces in-memory Map for crash/redeploy resilience
-  // ═══════════════════════════════════════════════════
   facilitatorPayments: defineTable({
     paymentId: v.string(),
     idempotencyKey: v.optional(v.string()), // Client-provided key to prevent duplicate payments
@@ -511,9 +473,7 @@ export default defineSchema({
     .index("by_idempotency_key", ["idempotencyKey"])
     .index("by_status", ["status"]),
 
-  // ═══════════════════════════════════════════════════
   // Rate Limiting (DB-backed for Convex httpActions)
-  // ═══════════════════════════════════════════════════
   rateLimits: defineTable({
     key: v.string(),           // e.g., "signup:192.168.1.1" or "gossip:agentXYZ"
     count: v.number(),         // requests in current window
@@ -522,9 +482,7 @@ export default defineSchema({
     .index("by_key", ["key"])
     .index("by_window", ["windowStart"]),
 
-  // ═══════════════════════════════════════════════════
   // Tool Reviews (marketplace ratings & reviews)
-  // ═══════════════════════════════════════════════════
   toolReviews: defineTable({
     toolId: v.id("tools"),
     orgId: v.id("organizations"),
@@ -538,9 +496,7 @@ export default defineSchema({
     .index("by_org", ["orgId"])
     .index("by_tool_org", ["toolId", "orgId"]),
 
-  // ═══════════════════════════════════════════════════
   // Tool Favorites (bookmarks for agents/orgs)
-  // ═══════════════════════════════════════════════════
   toolFavorites: defineTable({
     toolId: v.id("tools"),
     orgId: v.id("organizations"),
@@ -550,9 +506,7 @@ export default defineSchema({
     .index("by_tool", ["toolId"])
     .index("by_tool_org", ["toolId", "orgId"]),
 
-  // ═══════════════════════════════════════════════════
   // Seller Trust Scores (Moat: Trust Graph)
-  // ═══════════════════════════════════════════════════
   sellerScores: defineTable({
     sellerId: v.id("sellers"),
     score: v.number(), // 0-1000
@@ -575,9 +529,7 @@ export default defineSchema({
     .index("by_score", ["score"])
     .index("by_tier", ["tier"]),
 
-  // ═══════════════════════════════════════════════════
   // Policy Audit Log (Moat: Spend Control Plane)
-  // ═══════════════════════════════════════════════════
   policyAuditLog: defineTable({
     orgId: v.id("organizations"),
     policyId: v.optional(v.id("policies")),
@@ -601,9 +553,7 @@ export default defineSchema({
     .index("by_policy", ["policyId"])
     .index("by_timestamp", ["timestamp"]),
 
-  // ═══════════════════════════════════════════════════
   // Alert Events (Moat: Spend Control Plane)
-  // ═══════════════════════════════════════════════════
   alertEvents: defineTable({
     alertRuleId: v.id("alertRules"),
     orgId: v.id("organizations"),
@@ -619,9 +569,7 @@ export default defineSchema({
     .index("by_rule", ["alertRuleId"])
     .index("by_created", ["createdAt"]),
 
-  // ═══════════════════════════════════════════════════
   // Escrow Payments (Moat: Buyer Protection)
-  // ═══════════════════════════════════════════════════
   escrowPayments: defineTable({
     transactionId: v.optional(v.id("transactions")),
     paymentId: v.optional(v.string()),
@@ -646,9 +594,7 @@ export default defineSchema({
     .index("by_seller", ["sellerAddress"])
     .index("by_hold_until", ["holdUntil"]),
 
-  // ═══════════════════════════════════════════════════
   // Compliance Screenings (Moat: Compliance)
-  // ═══════════════════════════════════════════════════
   complianceScreenings: defineTable({
     walletAddress: v.string(),
     screeningType: v.union(v.literal("ofac_sdn"), v.literal("kyt")),

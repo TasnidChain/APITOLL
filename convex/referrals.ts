@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { requireAuth, requireAdmin } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Create Referral Code
-// ═══════════════════════════════════════════════════
 
 export const createReferral = mutation({
   args: {
@@ -43,11 +41,9 @@ export const createReferral = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Track Referral Event (called on each referred tx)
-// ═══════════════════════════════════════════════════
 
-// SECURITY: internalMutation — only called from httpActions after tx validation
+// internalMutation — only called from httpActions after tx validation
 export const trackReferralEvent = internalMutation({
   args: {
     referralCode: v.string(),
@@ -95,14 +91,12 @@ export const trackReferralEvent = internalMutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Referral by Code
-// ═══════════════════════════════════════════════════
 
 export const getByCode = query({
   args: { referralCode: v.string() },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Require authentication to look up referral data
+    // Require authentication to look up referral data
     await requireAuth(ctx);
     return await ctx.db
       .query("referrals")
@@ -111,14 +105,12 @@ export const getByCode = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Referral Stats for Seller
-// ═══════════════════════════════════════════════════
 
 export const getByWallet = query({
   args: { referrerWallet: v.string() },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Require authentication
+    // Require authentication
     await requireAuth(ctx);
     return await ctx.db
       .query("referrals")
@@ -130,7 +122,7 @@ export const getByWallet = query({
 export const getBySeller = query({
   args: { sellerId: v.id("sellers") },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Require authentication
+    // Require authentication
     await requireAuth(ctx);
     return await ctx.db
       .query("referrals")
@@ -139,9 +131,7 @@ export const getBySeller = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Referral Events for a Referral
-// ═══════════════════════════════════════════════════
 
 export const getEvents = query({
   args: {
@@ -149,7 +139,7 @@ export const getEvents = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Require authentication
+    // Require authentication
     await requireAuth(ctx);
     return await ctx.db
       .query("referralEvents")
@@ -159,9 +149,7 @@ export const getEvents = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Deactivate Referral
-// ═══════════════════════════════════════════════════
 
 export const deactivate = mutation({
   args: { referralId: v.id("referrals") },
@@ -171,9 +159,7 @@ export const deactivate = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Platform-wide Referral Stats
-// ═══════════════════════════════════════════════════
 
 export const platformStats = query({
   args: {},

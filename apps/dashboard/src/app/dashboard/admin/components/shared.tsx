@@ -3,9 +3,7 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 
-// ═══════════════════════════════════════════════════
 // Shared Admin Components
-// ═══════════════════════════════════════════════════
 
 export function MetricCard({
   label,

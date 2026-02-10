@@ -13,7 +13,6 @@ function formatPayment(ctx: ReturnType<typeof getX402Context>) {
   return { txHash: ctx.receipt.txHash, amount: ctx.receipt.amount, chain: ctx.receipt.chain };
 }
 
-// ─── Yahoo Finance (free, no key required) ──────────────────────
 
 interface StockQuote {
   symbol: string;
@@ -151,7 +150,6 @@ async function fetchYahooHistory(symbol: string, range: string, interval: string
   };
 }
 
-// ─── Exchange Rates (free) ──────────────────────────────────────
 
 interface ExchangeRates {
   base: string;

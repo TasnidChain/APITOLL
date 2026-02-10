@@ -17,7 +17,6 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
 const FACILITATOR_URL = process.env.FACILITATOR_URL || "https://pay.apitoll.com";
 const SELLER_API = process.env.SELLER_API_URL || "http://localhost:4402";
 
-// ─── Define paid tools as Claude tool schemas ───────────────────
 
 interface PaidToolDef {
   name: string;
@@ -84,7 +83,6 @@ const tools: PaidToolDef[] = [
   },
 ];
 
-// ─── Agent wallet for auto-paying ──────────────────────────────
 
 const agent = createAgentWallet({
   name: "Claude-Agent",
@@ -103,7 +101,6 @@ const agent = createAgentWallet({
   },
 });
 
-// ─── Tool executor — calls paid APIs via agent wallet ──────────
 
 async function executeTool(name: string, args: Record<string, string>): Promise<string> {
   const tool = tools.find((t) => t.name === name);
@@ -143,7 +140,6 @@ async function executeTool(name: string, args: Record<string, string>): Promise<
   }
 }
 
-// ─── Claude conversation with tool use ──────────────────────────
 
 interface ClaudeMessage {
   role: "user" | "assistant";
@@ -265,7 +261,6 @@ async function chat(userMessage: string): Promise<string> {
   return textBlock?.text || "No response";
 }
 
-// ─── Run ────────────────────────────────────────────────────────
 
 async function main() {
   console.log("Anthropic Claude + x402 Paid Tools");

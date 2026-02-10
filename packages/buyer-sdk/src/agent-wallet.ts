@@ -11,7 +11,6 @@ import {
 import { PolicyEngine, type PolicyCheckResult } from "./policy-engine";
 import { APITOLLMutator, type MutatorConfig } from "./mutator";
 
-// ─── Types ──────────────────────────────────────────────────────
 
 export interface AgentWalletOptions extends AgentConfig {
   /** Signing function: receives payment requirements, returns signed payment header */
@@ -44,7 +43,6 @@ export interface AgentFetchOptions extends RequestInit {
   sellerId?: string;
 }
 
-// ─── Agent Wallet ───────────────────────────────────────────────
 
 /**
  * Agent wallet with built-in x402 payment handling and policy enforcement.
@@ -369,7 +367,6 @@ export class AgentWallet {
   }
 }
 
-// ─── Factory Function ───────────────────────────────────────────
 
 /**
  * Create a new agent wallet with x402 payment handling.
@@ -378,7 +375,6 @@ export function createAgentWallet(options: AgentWalletOptions): AgentWallet {
   return new AgentWallet(options);
 }
 
-// ─── Error Classes ──────────────────────────────────────────────
 
 export class AgentPaymentError extends Error {
   constructor(message: string, public url: string) {

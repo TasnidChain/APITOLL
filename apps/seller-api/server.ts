@@ -6,9 +6,7 @@ import { rateLimit } from "./rate-limit";
 
 const log = createLogger("seller-api");
 
-// ═══════════════════════════════════════════════════
 // Route Imports
-// ═══════════════════════════════════════════════════
 
 // Original routes
 import jokeRouter from "./routes/joke";
@@ -99,9 +97,7 @@ import openapiRouter from "./openapi";
 const app = express();
 app.use(express.json({ limit: "25mb" })); // PDF base64 uploads can be large
 
-// ═══════════════════════════════════════════════════
 // Security Headers (applied to all responses)
-// ═══════════════════════════════════════════════════
 app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
@@ -111,9 +107,7 @@ app.use((_req, res, next) => {
   next();
 });
 
-// ═══════════════════════════════════════════════════
 // Rate Limiting
-// ═══════════════════════════════════════════════════
 
 // Global: 200 requests per minute per IP
 app.use(rateLimit({ windowMs: 60_000, max: 200, keyPrefix: "global", message: "Rate limit exceeded — max 200 req/min" }));
@@ -122,9 +116,7 @@ app.use(rateLimit({ windowMs: 60_000, max: 200, keyPrefix: "global", message: "R
 app.use("/health", rateLimit({ windowMs: 60_000, max: 30, keyPrefix: "health" }));
 app.use("/api/tools", rateLimit({ windowMs: 60_000, max: 30, keyPrefix: "tools" }));
 
-// ═══════════════════════════════════════════════════
 // Configuration
-// ═══════════════════════════════════════════════════
 const USDC_ADDRESS = process.env.USDC_ADDRESS || BASE_USDC_ADDRESS;
 const BASE_RPC_URL = process.env.BASE_RPC_URL || "https://mainnet.base.org";
 const NETWORK_ID = process.env.NETWORK_ID || "eip155:8453";
@@ -140,14 +132,11 @@ if (!process.env.BASE_URL) {
   log.warn("BASE_URL not set — defaulting to http://localhost:" + PORT + " (development only)");
 }
 
-// ═══════════════════════════════════════════════════
 // x402 Payment Middleware — protects all paid endpoints
-// ═══════════════════════════════════════════════════
 app.use(
   paymentMiddleware({
     walletAddress: process.env.SELLER_WALLET!,
     endpoints: {
-      // ── Original Endpoints ───────────────────────
       "GET /api/joke": {
         price: "0.001",
         chains: ["base"],
@@ -199,7 +188,6 @@ app.use(
         description: "Reverse geocoding — coordinates to address",
       },
 
-      // ── Data & Lookup ────────────────────────────
       "GET /api/weather": {
         price: "0.001",
         chains: ["base"],
@@ -251,7 +239,6 @@ app.use(
         description: "Public holidays by country and year (Nager.Date)",
       },
 
-      // ── Text Processing ──────────────────────────
       "POST /api/sentiment": {
         price: "0.002",
         chains: ["base"],
@@ -288,7 +275,6 @@ app.use(
         description: "Profanity detection and filtering",
       },
 
-      // ── Web & URL Utilities ──────────────────────
       "GET /api/meta": {
         price: "0.002",
         chains: ["base"],
@@ -325,7 +311,6 @@ app.use(
         description: "SSL/TLS certificate info for any domain",
       },
 
-      // ── Compute & Dev Tools ──────────────────────
       "POST /api/hash": {
         price: "0.001",
         chains: ["base"],
@@ -373,7 +358,6 @@ app.use(
         description: "Markdown to HTML conversion with stats",
       },
 
-      // ── Media & Visual ───────────────────────────
       "GET /api/qr": {
         price: "0.002",
         chains: ["base"],
@@ -400,14 +384,12 @@ app.use(
         description: "Deterministic identicon avatar from any string",
       },
 
-      // ── Blockchain ───────────────────────────────
       "GET /api/ens": {
         price: "0.002",
         chains: ["base"],
         description: "ENS name resolution (name ↔ address)",
       },
 
-      // ─── Tier 2: Data Enrichment ───────────────────
       "GET /api/enrich/domain": {
         price: "0.020",
         chains: ["base"],
@@ -424,7 +406,6 @@ app.use(
         description: "Wikipedia summary for any topic",
       },
 
-      // ─── Tier 2: Email ─────────────────────────────
       "POST /api/email/send": {
         price: "0.003",
         chains: ["base"],
@@ -436,7 +417,6 @@ app.use(
         description: "Validate email addresses with MX record check",
       },
 
-      // ─── Tier 2: Document Extraction ───────────────
       "POST /api/extract/pdf": {
         price: "0.010",
         chains: ["base"],
@@ -448,7 +428,6 @@ app.use(
         description: "Extract clean text from HTML content or URL",
       },
 
-      // ─── Tier 2: Finance ───────────────────────────
       "GET /api/finance/quote": {
         price: "0.002",
         chains: ["base"],
@@ -470,7 +449,6 @@ app.use(
         description: "Currency conversion with live rates",
       },
 
-      // ─── Tier 3: NLP & Text Intelligence ─────────────
       "POST /api/entities": {
         price: "0.002",
         chains: ["base"],
@@ -482,7 +460,6 @@ app.use(
         description: "Text similarity scoring (Jaccard + cosine)",
       },
 
-      // ─── Tier 3: Data Transformation ──────────────────
       "POST /api/transform/csv": {
         price: "0.002",
         chains: ["base"],
@@ -504,7 +481,6 @@ app.use(
         description: "YAML to JSON conversion",
       },
 
-      // ─── Tier 3: Date & Time ──────────────────────────
       "GET /api/datetime/between": {
         price: "0.001",
         chains: ["base"],
@@ -521,7 +497,6 @@ app.use(
         description: "Unix timestamp converter (to/from ISO dates)",
       },
 
-      // ─── Tier 3: Security & Recon ─────────────────────
       "GET /api/security/headers": {
         price: "0.003",
         chains: ["base"],
@@ -538,7 +513,6 @@ app.use(
         description: "URL uptime/health check with response time",
       },
 
-      // ─── Tier 3: Math & Calculation ───────────────────
       "POST /api/math/eval": {
         price: "0.001",
         chains: ["base"],
@@ -555,7 +529,6 @@ app.use(
         description: "Statistical analysis (mean, median, std dev, percentiles)",
       },
 
-      // ─── Tier 4: Real-World Data (free public APIs) ─────
       "GET /api/nasa/apod": {
         price: "0.002",
         chains: ["base"],
@@ -674,9 +647,7 @@ app.use(
   })
 );
 
-// ═══════════════════════════════════════════════════
 // Mount Routes
-// ═══════════════════════════════════════════════════
 
 // Original
 app.use(jokeRouter);
@@ -760,14 +731,10 @@ app.use(earthquakesRouter);
 app.use(airqualityRouter);
 app.use(factsRouter);
 
-// ═══════════════════════════════════════════════════
 // API Documentation (free — no payment required)
-// ═══════════════════════════════════════════════════
 app.use(openapiRouter);
 
-// ═══════════════════════════════════════════════════
 // Free Endpoints (no payment required)
-// ═══════════════════════════════════════════════════
 
 // Root route — show landing for browsers, JSON for agents
 app.get("/", (req, res) => {
@@ -868,7 +835,6 @@ app.get("/api/tools", (_req, res) => {
     protocol: "x402",
     totalEndpoints: 75,
     tools: [
-      // ── Original ──────────────────────────────────
       { endpoint: "GET /api/joke", price: "$0.001 USDC", description: "Random programming joke", category: "original" },
       { endpoint: "GET /api/search?q=...", price: "$0.003 USDC", description: "Web search with structured results", category: "original" },
       { endpoint: "POST /api/scrape", price: "$0.002 USDC", description: "URL to Markdown converter", category: "original" },
@@ -880,7 +846,6 @@ app.get("/api/tools", (_req, res) => {
       { endpoint: "GET /api/geocode?q=...", price: "$0.001 USDC", description: "Address to coordinates", category: "original" },
       { endpoint: "GET /api/geocode/reverse?lat=...&lon=...", price: "$0.001 USDC", description: "Coordinates to address", category: "original" },
 
-      // ── Data & Lookup ─────────────────────────────
       { endpoint: "GET /api/weather?city=...", price: "$0.001 USDC", description: "Current weather by city or lat/lon", category: "data" },
       { endpoint: "GET /api/ip?ip=...", price: "$0.001 USDC", description: "IP geolocation lookup", category: "data" },
       { endpoint: "GET /api/timezone?lat=...&lon=...", price: "$0.001 USDC", description: "Timezone by coordinates or zone name", category: "data" },
@@ -892,7 +857,6 @@ app.get("/api/tools", (_req, res) => {
       { endpoint: "GET /api/domain?domain=...", price: "$0.003 USDC", description: "Full domain profile (DNS + WHOIS)", category: "data" },
       { endpoint: "GET /api/holidays?country=...&year=...", price: "$0.001 USDC", description: "Public holidays by country", category: "data" },
 
-      // ── Text Processing ───────────────────────────
       { endpoint: "POST /api/sentiment", price: "$0.002 USDC", description: "Sentiment analysis (AFINN lexicon)", category: "text" },
       { endpoint: "POST /api/summarize", price: "$0.003 USDC", description: "Extractive text summarization", category: "text" },
       { endpoint: "POST /api/keywords", price: "$0.002 USDC", description: "Keyword extraction", category: "text" },
@@ -901,7 +865,6 @@ app.get("/api/tools", (_req, res) => {
       { endpoint: "POST /api/translate", price: "$0.003 USDC", description: "Text translation", category: "text" },
       { endpoint: "POST /api/profanity", price: "$0.001 USDC", description: "Profanity filter/detection", category: "text" },
 
-      // ── Web & URL Utilities ───────────────────────
       { endpoint: "GET /api/meta?url=...", price: "$0.002 USDC", description: "URL meta tags (OG, Twitter Cards)", category: "web" },
       { endpoint: "GET /api/screenshot?url=...", price: "$0.01 USDC", description: "URL screenshot", category: "web" },
       { endpoint: "GET /api/links?url=...", price: "$0.002 USDC", description: "Extract all links from URL", category: "web" },
@@ -910,7 +873,6 @@ app.get("/api/tools", (_req, res) => {
       { endpoint: "GET /api/headers?url=...", price: "$0.001 USDC", description: "HTTP response headers", category: "web" },
       { endpoint: "GET /api/ssl?domain=...", price: "$0.002 USDC", description: "SSL certificate info", category: "web" },
 
-      // ── Compute & Dev Tools ───────────────────────
       { endpoint: "POST /api/hash", price: "$0.001 USDC", description: "Hash generation (MD5, SHA256, etc)", category: "compute" },
       { endpoint: "POST /api/jwt/decode", price: "$0.001 USDC", description: "JWT token decode", category: "compute" },
       { endpoint: "POST /api/regex", price: "$0.002 USDC", description: "Regex test & match", category: "compute" },
@@ -922,56 +884,45 @@ app.get("/api/tools", (_req, res) => {
       { endpoint: "POST /api/uuid", price: "$0.001 USDC", description: "UUID generation (v4, v7)", category: "compute" },
       { endpoint: "POST /api/markdown", price: "$0.002 USDC", description: "Markdown to HTML", category: "compute" },
 
-      // ── Media & Visual ────────────────────────────
       { endpoint: "GET /api/qr?data=...", price: "$0.002 USDC", description: "QR code generation", category: "media" },
       { endpoint: "GET /api/placeholder?width=...&height=...", price: "$0.001 USDC", description: "Placeholder image (SVG)", category: "media" },
       { endpoint: "GET /api/color?hex=...", price: "$0.001 USDC", description: "Color info (RGB, HSL, name)", category: "media" },
       { endpoint: "GET /api/favicon?domain=...", price: "$0.001 USDC", description: "Favicon extraction", category: "media" },
       { endpoint: "GET /api/avatar?input=...", price: "$0.001 USDC", description: "Deterministic identicon avatar", category: "media" },
 
-      // ── Blockchain ────────────────────────────────
       { endpoint: "GET /api/ens?name=...", price: "$0.002 USDC", description: "ENS name ↔ address resolution", category: "blockchain" },
 
-      // ── Data Enrichment ─────────────────────────
       { endpoint: "GET /api/enrich/domain?domain=...", price: "$0.020 USDC", description: "Domain enrichment — tech stack, socials, DNS", category: "enrichment" },
       { endpoint: "GET /api/enrich/github?username=...", price: "$0.010 USDC", description: "GitHub user profile + top repos", category: "enrichment" },
       { endpoint: "GET /api/enrich/wiki?q=...", price: "$0.005 USDC", description: "Wikipedia summary", category: "enrichment" },
 
-      // ── Email ───────────────────────────────────
       { endpoint: "POST /api/email/send", price: "$0.003 USDC", description: "Send email (Resend or SMTP)", category: "email" },
       { endpoint: "POST /api/email/validate", price: "$0.002 USDC", description: "Email validation with MX check", category: "email" },
 
-      // ── Document Extraction ─────────────────────
       { endpoint: "POST /api/extract/pdf", price: "$0.010 USDC", description: "PDF to text extraction", category: "documents" },
       { endpoint: "POST /api/extract/text", price: "$0.002 USDC", description: "HTML to clean text", category: "documents" },
 
-      // ── Finance ─────────────────────────────────
       { endpoint: "GET /api/finance/quote?symbol=...", price: "$0.002 USDC", description: "Real-time stock quote", category: "finance" },
       { endpoint: "GET /api/finance/history?symbol=...", price: "$0.005 USDC", description: "Historical OHLCV candles", category: "finance" },
       { endpoint: "GET /api/finance/forex?base=...", price: "$0.001 USDC", description: "150+ currency exchange rates", category: "finance" },
       { endpoint: "GET /api/finance/convert?from=...&to=...", price: "$0.001 USDC", description: "Currency conversion", category: "finance" },
 
-      // ── NLP & Text Intelligence ─────────────────────
       { endpoint: "POST /api/entities", price: "$0.002 USDC", description: "Named entity extraction (emails, URLs, dates, crypto)", category: "nlp" },
       { endpoint: "POST /api/similarity", price: "$0.002 USDC", description: "Text similarity scoring (Jaccard + cosine)", category: "nlp" },
 
-      // ── Data Transformation ─────────────────────────
       { endpoint: "POST /api/transform/csv", price: "$0.002 USDC", description: "CSV to JSON conversion", category: "transform" },
       { endpoint: "POST /api/transform/json-to-csv", price: "$0.002 USDC", description: "JSON array to CSV", category: "transform" },
       { endpoint: "POST /api/transform/xml", price: "$0.002 USDC", description: "XML to JSON conversion", category: "transform" },
       { endpoint: "POST /api/transform/yaml", price: "$0.002 USDC", description: "YAML to JSON conversion", category: "transform" },
 
-      // ── Date & Time ─────────────────────────────────
       { endpoint: "GET /api/datetime/between?from=...&to=...", price: "$0.001 USDC", description: "Duration between dates", category: "datetime" },
       { endpoint: "GET /api/datetime/business-days?from=...&to=...", price: "$0.001 USDC", description: "Business days calculator", category: "datetime" },
       { endpoint: "GET /api/datetime/unix?timestamp=...", price: "$0.001 USDC", description: "Unix timestamp converter", category: "datetime" },
 
-      // ── Security & Recon ────────────────────────────
       { endpoint: "GET /api/security/headers?url=...", price: "$0.003 USDC", description: "Security headers audit (A+ to F grade)", category: "security" },
       { endpoint: "GET /api/security/techstack?url=...", price: "$0.005 USDC", description: "Technology stack detection", category: "security" },
       { endpoint: "GET /api/security/uptime?url=...", price: "$0.001 USDC", description: "URL uptime check with response time", category: "security" },
 
-      // ── Math & Calculation ──────────────────────────
       { endpoint: "POST /api/math/eval", price: "$0.001 USDC", description: "Math expression evaluator", category: "math" },
       { endpoint: "GET /api/math/convert?value=...&from=...&to=...", price: "$0.001 USDC", description: "Unit converter (length, weight, temp, etc)", category: "math" },
       { endpoint: "POST /api/math/stats", price: "$0.002 USDC", description: "Statistical analysis (mean, median, std dev)", category: "math" },
@@ -981,9 +932,7 @@ app.get("/api/tools", (_req, res) => {
   });
 });
 
-// ═══════════════════════════════════════════════════
 // Start Server
-// ═══════════════════════════════════════════════════
 if (!process.env.SELLER_WALLET) {
   log.error("SELLER_WALLET environment variable required. Usage: SELLER_WALLET=0x... npx tsx server.ts");
   process.exit(1);
@@ -999,9 +948,7 @@ const server = app.listen(PORT, () => {
   });
 });
 
-// ═══════════════════════════════════════════════════
 // Graceful Shutdown
-// ═══════════════════════════════════════════════════
 
 const SHUTDOWN_TIMEOUT_MS = 15_000; // 15s for in-flight requests to finish
 
@@ -1023,9 +970,7 @@ function gracefulShutdown(signal: string) {
 process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
 process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
-// ═══════════════════════════════════════════════════
 // Global Error Handlers
-// ═══════════════════════════════════════════════════
 
 process.on("unhandledRejection", (reason) => {
   log.error("Unhandled promise rejection", {

@@ -15,9 +15,7 @@
 import { z } from 'zod'
 import { createPaidMCPServer, toExpressRouter, runStdio } from '@apitoll/mcp-server'
 
-// ═══════════════════════════════════════════════════
 // Create the MCP Server
-// ═══════════════════════════════════════════════════
 
 const server = createPaidMCPServer({
   walletAddress: '0xYourWalletAddress', // Your USDC wallet
@@ -30,9 +28,7 @@ const server = createPaidMCPServer({
   },
 })
 
-// ═══════════════════════════════════════════════════
 // Free Tool: Simple Weather
-// ═══════════════════════════════════════════════════
 
 server.tool(
   'get_weather_simple',
@@ -51,9 +47,7 @@ server.tool(
   }
 )
 
-// ═══════════════════════════════════════════════════
 // Paid Tool: Detailed Forecast
-// ═══════════════════════════════════════════════════
 
 server.paidTool(
   'get_weather_detailed',
@@ -99,9 +93,7 @@ server.paidTool(
   }
 )
 
-// ═══════════════════════════════════════════════════
 // Paid Tool: Historical Data
-// ═══════════════════════════════════════════════════
 
 server.paidTool(
   'get_weather_historical',
@@ -145,9 +137,7 @@ server.paidTool(
   }
 )
 
-// ═══════════════════════════════════════════════════
 // Paid Tool: Weather Alerts
-// ═══════════════════════════════════════════════════
 
 server.paidTool(
   'get_weather_alerts',
@@ -186,9 +176,7 @@ server.paidTool(
   }
 )
 
-// ═══════════════════════════════════════════════════
 // Run the Server
-// ═══════════════════════════════════════════════════
 
 const mode = process.argv[2] || 'http'
 

@@ -32,9 +32,7 @@ const FACILITATOR_URL = process.env.FACILITATOR_URL || "https://pay.apitoll.com"
 const FACILITATOR_API_KEY = process.env.FACILITATOR_API_KEY || "";
 const SELLER_API = process.env.SELLER_API_URL || "http://localhost:4402";
 
-// ═══════════════════════════════════════════════════════════════
 // Message Bus — inter-agent communication
-// ═══════════════════════════════════════════════════════════════
 
 interface Message {
   from: string;
@@ -77,9 +75,7 @@ class MessageBus {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // Knowledge Base — shared memory between agents
-// ═══════════════════════════════════════════════════════════════
 
 interface KnowledgeEntry {
   key: string;
@@ -130,9 +126,7 @@ class KnowledgeBase {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // Budget Pool — collective spending control
-// ═══════════════════════════════════════════════════════════════
 
 class BudgetPool {
   private allocations = new Map<string, number>();
@@ -193,9 +187,7 @@ class BudgetPool {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // Task DAG — dependency-aware task execution
-// ═══════════════════════════════════════════════════════════════
 
 type TaskStatus = "pending" | "running" | "completed" | "failed";
 
@@ -218,9 +210,7 @@ interface TaskContext {
   pool: BudgetPool;
 }
 
-// ═══════════════════════════════════════════════════════════════
 // Swarm Agent
-// ═══════════════════════════════════════════════════════════════
 
 interface SwarmAgent {
   name: string;
@@ -259,9 +249,7 @@ function createSwarmAgent(
   return { name, role, wallet, capabilities };
 }
 
-// ═══════════════════════════════════════════════════════════════
 // Swarm Coordinator — orchestrates everything
-// ═══════════════════════════════════════════════════════════════
 
 class SwarmCoordinator {
   private agents: SwarmAgent[] = [];
@@ -459,9 +447,7 @@ class SwarmCoordinator {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // Paid API helpers
-// ═══════════════════════════════════════════════════════════════
 
 async function callPaidAPI(
   wallet: ReturnType<typeof createAgentWallet>,
@@ -482,9 +468,7 @@ async function callPaidAPI(
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // Main — run the swarm
-// ═══════════════════════════════════════════════════════════════
 
 async function main() {
   console.log("Multi-Agent Swarm with Advanced Coordination");
@@ -501,7 +485,6 @@ async function main() {
   console.log(`Agents: ${[researcher, analyst, scout].map((a) => `${a.name}($${swarm.pool.getAllocation(a.name)})`).join(", ")}`);
   console.log(`Total budget: $${swarm.pool.totalBudget}\n`);
 
-  // ── Define task DAG ─────────────────────────────────────────
   //
   //  search_topic ─────┐
   //                     ├──▶ analyze_results ──▶ generate_report
@@ -644,7 +627,6 @@ async function main() {
     },
   });
 
-  // ── Execute the DAG ─────────────────────────────────────────
 
   console.log("Task DAG:");
   console.log("  search ──────┐");
@@ -655,7 +637,6 @@ async function main() {
 
   await swarm.executePipeline();
 
-  // ── Print full report ───────────────────────────────────────
 
   swarm.printReport();
 }

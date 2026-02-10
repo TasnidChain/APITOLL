@@ -1,8 +1,6 @@
 import { PaidToolConfig, ToolCallResult } from './types'
 
-// ═══════════════════════════════════════════════════
 // Paid Tool Class (LangChain Compatible)
-// ═══════════════════════════════════════════════════
 
 /**
  * A LangChain-compatible tool that handles x402 payments automatically.
@@ -131,9 +129,7 @@ export class PaidTool {
   }
 }
 
-// ═══════════════════════════════════════════════════
 // Factory Functions
-// ═══════════════════════════════════════════════════
 
 /**
  * Create a paid tool from config

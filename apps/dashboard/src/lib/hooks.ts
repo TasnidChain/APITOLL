@@ -5,9 +5,7 @@ import { api } from '../../../../convex/_generated/api'
 import { Id } from '../../../../convex/_generated/dataModel'
 import type { Policy, AlertRule } from '@/lib/types'
 
-// ═══════════════════════════════════════════════════
 // Shared types for dashboard data
-// ═══════════════════════════════════════════════════
 
 export interface DashboardAgent {
   _id: string
@@ -47,11 +45,9 @@ export interface DashboardTransaction {
   sellerAmount?: number
 }
 
-// ═══════════════════════════════════════════════════
 // Org context — Uses first org from Convex.
 // Returns undefined while loading, null if no org exists.
 // NO MOCK DATA — only real Convex data.
-// ═══════════════════════════════════════════════════
 
 export function useOrgId(): Id<"organizations"> | null {
   const orgs = useQuery(api.organizations.list, { limit: 1 })
@@ -65,11 +61,9 @@ export function useOrg(orgId: Id<"organizations"> | null) {
   )
 }
 
-// ═══════════════════════════════════════════════════
 // Dashboard queries — REAL DATA ONLY
 // Returns undefined while loading.
 // Pages must handle empty/zero states themselves.
-// ═══════════════════════════════════════════════════
 
 export function useOverviewStats(orgId: Id<"organizations"> | null) {
   return useQuery(
@@ -113,9 +107,7 @@ export function useSellers(
   ) as DashboardSeller[] | undefined
 }
 
-// ═══════════════════════════════════════════════════
 // Billing queries
-// ═══════════════════════════════════════════════════
 
 export function useBillingSummary(orgId: Id<"organizations"> | null) {
   return useQuery(
@@ -138,9 +130,7 @@ export function useSellerLimit(orgId: Id<"organizations"> | null) {
   )
 }
 
-// ═══════════════════════════════════════════════════
 // Disputes queries
-// ═══════════════════════════════════════════════════
 
 export function useDisputes(orgId: Id<"organizations"> | null, status?: string) {
   return useQuery(
@@ -149,9 +139,7 @@ export function useDisputes(orgId: Id<"organizations"> | null, status?: string) 
   )
 }
 
-// ═══════════════════════════════════════════════════
 // Deposits queries
-// ═══════════════════════════════════════════════════
 
 export function useDeposits(orgId: Id<"organizations"> | null, limit?: number) {
   return useQuery(
@@ -167,9 +155,7 @@ export function useDepositStats(orgId: Id<"organizations"> | null) {
   )
 }
 
-// ═══════════════════════════════════════════════════
 // Policies queries
-// ═══════════════════════════════════════════════════
 
 export function usePolicies(orgId: Id<"organizations"> | null) {
   return useQuery(
@@ -185,9 +171,7 @@ export function useAlertRules(orgId: Id<"organizations"> | null) {
   ) as AlertRule[] | undefined
 }
 
-// ═══════════════════════════════════════════════════
 // Platform Revenue queries
-// ═══════════════════════════════════════════════════
 
 export function useRevenueOverview() {
   return useQuery(api.platformRevenue.getOverview)
@@ -197,9 +181,7 @@ export function useDailyRevenue(days?: number) {
   return useQuery(api.platformRevenue.getDailyRevenue, { days })
 }
 
-// ═══════════════════════════════════════════════════
 // Webhook queries
-// ═══════════════════════════════════════════════════
 
 export function useWebhooks(orgId: Id<"organizations"> | null) {
   return useQuery(

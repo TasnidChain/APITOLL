@@ -2,9 +2,7 @@ import { v } from "convex/values";
 import { internalQuery, mutation, query } from "./_generated/server";
 import { requireAuth, requireOrgAccess, requireSellerAccess } from "./helpers";
 
-// ═══════════════════════════════════════════════════
 // Create Seller
-// ═══════════════════════════════════════════════════
 
 export const create = mutation({
   args: {
@@ -31,16 +29,14 @@ export const create = mutation({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Sellers by Org
-// ═══════════════════════════════════════════════════
 
 export const listByOrg = query({
   args: {
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this org
+    // Verify caller owns this org
     await requireOrgAccess(ctx, args.orgId);
     // Get sellers that belong to this org
     const sellers = await ctx.db
@@ -48,21 +44,19 @@ export const listByOrg = query({
       .filter((q) => q.eq(q.field("orgId"), args.orgId))
       .collect();
 
-    // SECURITY: Strip apiKeys — never expose to frontend
+    // Strip apiKeys — never expose to frontend
     return sellers.map(({ apiKey: _apiKey, ...safe }) => safe);
   },
 });
 
-// ═══════════════════════════════════════════════════
 // List Seller API Keys by Org (for API Keys page)
-// ═══════════════════════════════════════════════════
 
 export const listApiKeysByOrg = query({
   args: {
     orgId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this org
+    // Verify caller owns this org
     await requireOrgAccess(ctx, args.orgId);
     const sellers = await ctx.db
       .query("sellers")
@@ -77,11 +71,9 @@ export const listApiKeysByOrg = query({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get by API Key
-// ═══════════════════════════════════════════════════
 
-// SECURITY: internalQuery — API key lookup should NOT be exposed to browsers.
+// internalQuery — API key lookup should NOT be exposed to browsers.
 // Used by httpActions in http.ts for seller authentication.
 export const getByApiKey = internalQuery({
   args: { apiKey: v.string() },
@@ -93,9 +85,7 @@ export const getByApiKey = internalQuery({
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Seller
-// ═══════════════════════════════════════════════════
 
 export const get = query({
   args: { id: v.id("sellers") },
@@ -103,20 +93,18 @@ export const get = query({
     await requireAuth(ctx);
     const seller = await ctx.db.get(args.id);
     if (!seller) return null;
-    // SECURITY: Strip apiKey — never expose to frontend
+    // Strip apiKey — never expose to frontend
     const { apiKey: _apiKey, ...safe } = seller;
     return safe;
   },
 });
 
-// ═══════════════════════════════════════════════════
 // Get Seller Stats
-// ═══════════════════════════════════════════════════
 
 export const getStats = query({
   args: { id: v.id("sellers") },
   handler: async (ctx, args) => {
-    // SECURITY FIX: Verify caller owns this seller
+    // Verify caller owns this seller
     await requireSellerAccess(ctx, args.id);
     const transactions = await ctx.db
       .query("transactions")
