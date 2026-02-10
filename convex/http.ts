@@ -1428,6 +1428,142 @@ http.route({
 });
 
 // ═══════════════════════════════════════════════════
+// Seller Trust Scores (public)
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/sellers/score",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const ip = getClientIP(request);
+    const limited = await checkRateLimit(ctx, `read:${ip}`, RATE_LIMITS.publicRead, request);
+    if (limited) return limited;
+
+    const url = new URL(request.url);
+    const sellerId = url.searchParams.get("sellerId");
+    if (!sellerId) {
+      return errorResponse("sellerId query parameter required", 400, request);
+    }
+
+    try {
+      const score = await ctx.runQuery(api.sellerReputation.getSellerScore, {
+        sellerId: sellerId as Id<"sellers">,
+      });
+      return jsonResponse(score, 200, request);
+    } catch {
+      return errorResponse("Seller not found", 404, request);
+    }
+  }),
+});
+
+http.route({
+  path: "/api/sellers/leaderboard",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const ip = getClientIP(request);
+    const limited = await checkRateLimit(ctx, `read:${ip}`, RATE_LIMITS.publicRead, request);
+    if (limited) return limited;
+
+    const url = new URL(request.url);
+    const limit = clampInt(url.searchParams.get("limit"), 1, 50, 20);
+
+    const leaderboard = await ctx.runQuery(api.sellerReputation.getSellerLeaderboard, { limit });
+    return jsonResponse({ leaderboard, count: leaderboard.length }, 200, request);
+  }),
+});
+
+// ═══════════════════════════════════════════════════
+// Escrow — Query (authenticated)
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/escrow",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const org = await authenticateOrg(ctx, request);
+    if (!org) return errorResponse("Unauthorized", 401, request);
+
+    const url = new URL(request.url);
+    const status = url.searchParams.get("status") as "held" | "released" | "disputed" | "refunded" | null;
+    const limit = clampInt(url.searchParams.get("limit"), 1, 100, 50);
+
+    const payments = await ctx.runQuery(api.escrow.listByOrg, {
+      orgId: org._id,
+      status: status ?? undefined,
+      limit,
+    });
+
+    return jsonResponse({ payments, count: payments.length }, 200, request);
+  }),
+});
+
+http.route({
+  path: "/api/escrow/stats",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const org = await authenticateOrg(ctx, request);
+    if (!org) return errorResponse("Unauthorized", 401, request);
+
+    const stats = await ctx.runQuery(api.escrow.getEscrowStats, {
+      orgId: org._id,
+    });
+
+    return jsonResponse(stats, 200, request);
+  }),
+});
+
+// ═══════════════════════════════════════════════════
+// Alert Events — List (authenticated)
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/alerts/events",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const org = await authenticateOrg(ctx, request);
+    if (!org) return errorResponse("Unauthorized", 401, request);
+
+    const url = new URL(request.url);
+    const limit = clampInt(url.searchParams.get("limit"), 1, 100, 50);
+
+    const events = await ctx.runQuery(api.alertEvaluator.listAlertEvents, {
+      orgId: org._id,
+      limit,
+    });
+
+    return jsonResponse({ events, count: events.length }, 200, request);
+  }),
+});
+
+// ═══════════════════════════════════════════════════
+// Compliance — Admin: List Screenings
+// ═══════════════════════════════════════════════════
+
+http.route({
+  path: "/api/admin/compliance",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const adminSecret = process.env.ADMIN_API_SECRET;
+    const providedSecret = request.headers.get("X-Admin-Secret");
+
+    if (!adminSecret || !providedSecret || !timingSafeEqual(adminSecret, providedSecret)) {
+      return errorResponse("Admin access required", 403, request);
+    }
+
+    const url = new URL(request.url);
+    const limit = clampInt(url.searchParams.get("limit"), 1, 200, 100);
+    const resultFilter = url.searchParams.get("result") as "clear" | "flagged" | "blocked" | null;
+
+    const screenings = await ctx.runQuery(api.compliance.listScreenings, {
+      limit,
+      resultFilter: resultFilter ?? undefined,
+    });
+
+    return jsonResponse({ screenings, count: screenings.length }, 200, request);
+  }),
+});
+
+// ═══════════════════════════════════════════════════
 // CORS Preflight — all API routes
 // ═══════════════════════════════════════════════════
 

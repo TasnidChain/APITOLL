@@ -5,6 +5,7 @@ import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../../../../convex/_generated/api'
 import type { Id } from '../../../../../../convex/_generated/dataModel'
 import { useOrgId, useSellers, useSellerLimit } from '@/lib/hooks'
+import { cn } from '@/lib/utils'
 import { StatCardSkeleton } from '@/components/loading'
 import { formatUSD, formatCompact } from '@/lib/utils'
 import {
@@ -153,23 +154,8 @@ export default function SellersPage() {
                 </div>
               )}
 
-              {/* Trust & Reputation — real data only */}
-              <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1">
-                  <ShieldCheck className="h-3 w-3 text-emerald-500" />
-                  Verified
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {formatCompact(seller.totalCalls)} calls
-                </span>
-                {seller.totalRevenue > 0 && (
-                  <span className="inline-flex items-center gap-1">
-                    <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                    Earning
-                  </span>
-                )}
-              </div>
+              {/* Trust & Reputation — live seller scores */}
+              <SellerTrustBadge sellerId={seller._id} totalCalls={seller.totalCalls} totalRevenue={seller.totalRevenue} />
 
               <div className="mt-3 border-t pt-3">
                 <p className="text-xs text-muted-foreground">
@@ -192,6 +178,41 @@ export default function SellersPage() {
           orgId={orgId}
           onClose={() => setShowModal(false)}
         />
+      )}
+    </div>
+  )
+}
+
+const tierConfig = {
+  verified: { label: 'Verified', color: 'bg-emerald-500/10 text-emerald-500', dot: 'bg-emerald-500' },
+  reliable: { label: 'Reliable', color: 'bg-blue-500/10 text-blue-500', dot: 'bg-blue-500' },
+  standard: { label: 'Standard', color: 'bg-zinc-500/10 text-zinc-400', dot: 'bg-zinc-400' },
+  probation: { label: 'Probation', color: 'bg-red-500/10 text-red-500', dot: 'bg-red-500' },
+} as const
+
+function SellerTrustBadge({ sellerId, totalCalls, totalRevenue }: { sellerId: string; totalCalls: number; totalRevenue: number }) {
+  const sellerScore = useQuery(api.sellerReputation.getSellerScore, { sellerId: sellerId as Id<'sellers'> })
+
+  const tier = (sellerScore?.tier ?? 'standard') as keyof typeof tierConfig
+  const config = tierConfig[tier] ?? tierConfig.standard
+  const score = sellerScore?.score ?? 0
+
+  return (
+    <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
+      <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium', config.color)}>
+        <span className={cn('h-1.5 w-1.5 rounded-full', config.dot)} />
+        {config.label}
+      </span>
+      <span className="font-mono text-[10px] opacity-70">Score: {score}/1000</span>
+      <span className="inline-flex items-center gap-1">
+        <Clock className="h-3 w-3" />
+        {formatCompact(totalCalls)} calls
+      </span>
+      {totalRevenue > 0 && (
+        <span className="inline-flex items-center gap-1">
+          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+          Earning
+        </span>
       )}
     </div>
   )

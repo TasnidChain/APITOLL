@@ -15,6 +15,10 @@ const VALID_EVENTS = [
   "seller.payout",
   "tool.registered",
   "tool.updated",
+  "alert.triggered",
+  "escrow.held",
+  "escrow.released",
+  "escrow.disputed",
 ] as const;
 
 function validateEvents(events: string[]) {

@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../../../../convex/_generated/api'
 import { Id } from '../../../../../../convex/_generated/dataModel'
 import { useOrgId, usePolicies, useAgents, useAlertRules } from '@/lib/hooks'
-import { formatUSD } from '@/lib/utils'
+import { formatUSD, timeAgo } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import {
   ShieldCheck,
   DollarSign,
@@ -19,6 +20,8 @@ import {
   ToggleRight,
   Bell,
   Bot,
+  FileText,
+  AlertCircle,
 } from 'lucide-react'
 import type { Policy, PolicyType, BudgetRules, VendorAclRules, RateLimitRules } from '@/lib/types'
 import type { DashboardAgent } from '@/lib/hooks'
@@ -189,6 +192,12 @@ export default function PoliciesPage() {
         </div>
       )}
 
+      {/* Recent Alert Events */}
+      {orgId && <AlertEventsSection orgId={orgId as Id<'organizations'>} />}
+
+      {/* Policy Audit Log */}
+      {orgId && <AuditLogSection orgId={orgId as Id<'organizations'>} />}
+
       {/* Create Policy Modal */}
       {showCreate && orgId && (
         <CreatePolicyModal
@@ -197,6 +206,113 @@ export default function PoliciesPage() {
           onClose={() => setShowCreate(false)}
         />
       )}
+    </div>
+  )
+}
+
+function AlertEventsSection({ orgId }: { orgId: Id<'organizations'> }) {
+  const events = useQuery(api.alertEvaluator.listAlertEvents, { orgId, limit: 10 })
+
+  if (!events || events.length === 0) return null
+
+  const severityConfig = {
+    budget_threshold: { color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    budget_exceeded: { color: 'text-red-500', bg: 'bg-red-500/10' },
+    low_balance: { color: 'text-orange-500', bg: 'bg-orange-500/10' },
+    high_failure_rate: { color: 'text-red-500', bg: 'bg-red-500/10' },
+    anomalous_spend: { color: 'text-violet-500', bg: 'bg-violet-500/10' },
+  } as const
+
+  return (
+    <div className="rounded-xl border bg-card">
+      <div className="border-b p-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 text-amber-500" />
+          <h3 className="font-semibold">Recent Alerts</h3>
+        </div>
+        <span className="text-xs text-muted-foreground">{events.length} events</span>
+      </div>
+      <div className="divide-y max-h-80 overflow-y-auto">
+        {events.map((event) => {
+          const config = severityConfig[event.ruleType as keyof typeof severityConfig] ?? { color: 'text-muted-foreground', bg: 'bg-muted' }
+          return (
+            <div key={event._id} className="flex items-start gap-3 p-4">
+              <div className={cn('mt-0.5 flex h-7 w-7 items-center justify-center rounded-lg shrink-0', config.bg)}>
+                <AlertCircle className={cn('h-4 w-4', config.color)} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{event.message}</p>
+                <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="rounded-full bg-muted px-2 py-0.5 font-mono">
+                    {event.ruleType.replace(/_/g, ' ')}
+                  </span>
+                  <span>{timeAgo(new Date(event.createdAt))}</span>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function AuditLogSection({ orgId }: { orgId: Id<'organizations'> }) {
+  const auditLog = useQuery(api.policies.getAuditLog, { orgId, limit: 20 })
+
+  if (!auditLog || auditLog.length === 0) return null
+
+  const actionConfig = {
+    created: { label: 'Created', color: 'text-emerald-500' },
+    updated: { label: 'Updated', color: 'text-blue-500' },
+    toggled: { label: 'Toggled', color: 'text-amber-500' },
+    deleted: { label: 'Deleted', color: 'text-red-500' },
+  } as const
+
+  return (
+    <div className="rounded-xl border bg-card">
+      <div className="border-b p-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-muted-foreground" />
+          <h3 className="font-semibold">Policy Audit Log</h3>
+        </div>
+        <span className="text-xs text-muted-foreground">{auditLog.length} entries</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50">
+            <tr>
+              <th className="px-4 py-2 text-left font-medium text-muted-foreground">Time</th>
+              <th className="px-4 py-2 text-left font-medium text-muted-foreground">Action</th>
+              <th className="px-4 py-2 text-left font-medium text-muted-foreground">Type</th>
+              <th className="px-4 py-2 text-left font-medium text-muted-foreground">Changed By</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {auditLog.map((entry) => {
+              const config = actionConfig[entry.action as keyof typeof actionConfig] ?? { label: entry.action, color: 'text-muted-foreground' }
+              return (
+                <tr key={entry._id} className="hover:bg-muted/30">
+                  <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
+                    {timeAgo(new Date(entry.timestamp))}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <span className={cn('font-medium', config.color)}>{config.label}</span>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-mono">
+                      {entry.policyType}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-xs font-mono text-muted-foreground truncate max-w-[200px]">
+                    {entry.changedBy?.slice(0, 16)}...
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

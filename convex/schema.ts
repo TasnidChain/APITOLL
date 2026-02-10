@@ -550,6 +550,117 @@ export default defineSchema({
     .index("by_tool", ["toolId"])
     .index("by_tool_org", ["toolId", "orgId"]),
 
+  // ═══════════════════════════════════════════════════
+  // Seller Trust Scores (Moat: Trust Graph)
+  // ═══════════════════════════════════════════════════
+  sellerScores: defineTable({
+    sellerId: v.id("sellers"),
+    score: v.number(), // 0-1000
+    tier: v.union(
+      v.literal("verified"),
+      v.literal("reliable"),
+      v.literal("standard"),
+      v.literal("probation")
+    ),
+    uptimePercent: v.number(), // 0-100
+    avgLatencyMs: v.number(),
+    successRate: v.number(), // 0-100
+    totalCalls: v.number(),
+    totalRevenue: v.number(),
+    totalDisputes: v.number(),
+    disputeRate: v.number(), // 0-100
+    lastCalculatedAt: v.number(),
+  })
+    .index("by_seller", ["sellerId"])
+    .index("by_score", ["score"])
+    .index("by_tier", ["tier"]),
+
+  // ═══════════════════════════════════════════════════
+  // Policy Audit Log (Moat: Spend Control Plane)
+  // ═══════════════════════════════════════════════════
+  policyAuditLog: defineTable({
+    orgId: v.id("organizations"),
+    policyId: v.optional(v.id("policies")),
+    action: v.union(
+      v.literal("created"),
+      v.literal("updated"),
+      v.literal("deleted"),
+      v.literal("toggled")
+    ),
+    changedBy: v.string(), // Clerk userId
+    previousRules: v.optional(v.string()), // JSON
+    newRules: v.optional(v.string()), // JSON
+    policyType: v.optional(v.union(
+      v.literal("budget"),
+      v.literal("vendor_acl"),
+      v.literal("rate_limit")
+    )),
+    timestamp: v.number(),
+  })
+    .index("by_org", ["orgId"])
+    .index("by_policy", ["policyId"])
+    .index("by_timestamp", ["timestamp"]),
+
+  // ═══════════════════════════════════════════════════
+  // Alert Events (Moat: Spend Control Plane)
+  // ═══════════════════════════════════════════════════
+  alertEvents: defineTable({
+    alertRuleId: v.id("alertRules"),
+    orgId: v.id("organizations"),
+    agentId: v.optional(v.id("agents")),
+    ruleType: v.string(),
+    message: v.string(),
+    currentValue: v.number(),
+    thresholdValue: v.number(),
+    webhookDelivered: v.optional(v.boolean()),
+    createdAt: v.number(),
+  })
+    .index("by_org", ["orgId"])
+    .index("by_rule", ["alertRuleId"])
+    .index("by_created", ["createdAt"]),
+
+  // ═══════════════════════════════════════════════════
+  // Escrow Payments (Moat: Buyer Protection)
+  // ═══════════════════════════════════════════════════
+  escrowPayments: defineTable({
+    transactionId: v.optional(v.id("transactions")),
+    paymentId: v.optional(v.string()),
+    amount: v.number(),
+    currency: v.string(),
+    agentAddress: v.string(),
+    sellerAddress: v.string(),
+    chain: v.union(v.literal("base"), v.literal("solana")),
+    status: v.union(
+      v.literal("held"),
+      v.literal("released"),
+      v.literal("disputed"),
+      v.literal("refunded")
+    ),
+    holdUntil: v.number(),
+    createdAt: v.number(),
+    releasedAt: v.optional(v.number()),
+    disputeId: v.optional(v.id("disputes")),
+  })
+    .index("by_status", ["status"])
+    .index("by_agent", ["agentAddress"])
+    .index("by_seller", ["sellerAddress"])
+    .index("by_hold_until", ["holdUntil"]),
+
+  // ═══════════════════════════════════════════════════
+  // Compliance Screenings (Moat: Compliance)
+  // ═══════════════════════════════════════════════════
+  complianceScreenings: defineTable({
+    walletAddress: v.string(),
+    screeningType: v.union(v.literal("ofac_sdn"), v.literal("kyt")),
+    result: v.union(v.literal("clear"), v.literal("flagged"), v.literal("blocked")),
+    provider: v.string(),
+    details: v.optional(v.string()),
+    screenedAt: v.number(),
+  })
+    .index("by_wallet", ["walletAddress"])
+    .index("by_result", ["result"])
+    .index("by_screened", ["screenedAt"]),
+
   agentEvolution: defineTable({
     agentId: v.string(),
     state: v.any(),

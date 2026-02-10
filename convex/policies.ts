@@ -1,6 +1,36 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { requireAuth, requireOrgAccess } from "./helpers";
+
+// ═══════════════════════════════════════════════════
+// Audit Logging Helper
+// ═══════════════════════════════════════════════════
+
+async function logPolicyAudit(
+  ctx: MutationCtx,
+  data: {
+    orgId: Id<"organizations">;
+    policyId: Id<"policies">;
+    action: "created" | "updated" | "deleted" | "toggled";
+    changedBy: string;
+    previousRules?: string;
+    newRules?: string;
+    policyType: "budget" | "vendor_acl" | "rate_limit";
+  }
+) {
+  await ctx.db.insert("policyAuditLog", {
+    orgId: data.orgId,
+    policyId: data.policyId,
+    action: data.action,
+    changedBy: data.changedBy,
+    previousRules: data.previousRules,
+    newRules: data.newRules,
+    policyType: data.policyType,
+    timestamp: Date.now(),
+  });
+}
 
 // ═══════════════════════════════════════════════════
 // Shared policy rule validators (must match schema.ts)
@@ -39,7 +69,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     // SECURITY FIX: Verify caller owns this organization
-    await requireOrgAccess(ctx, args.orgId);
+    const { identity } = await requireOrgAccess(ctx, args.orgId);
 
     // If agent-specific, ensure agent exists and belongs to org
     if (args.agentId) {
@@ -54,6 +84,16 @@ export const create = mutation({
       policyType: args.policyType,
       rulesJson: args.rulesJson,
       isActive: true,
+    });
+
+    // Audit log
+    await logPolicyAudit(ctx, {
+      orgId: args.orgId,
+      policyId: id,
+      action: "created",
+      changedBy: identity.subject,
+      newRules: JSON.stringify(args.rulesJson),
+      policyType: args.policyType,
     });
 
     return id;
@@ -109,7 +149,9 @@ export const update = mutation({
     const policy = await ctx.db.get(args.id);
     if (!policy) throw new Error("Policy not found");
     // SECURITY FIX: Verify caller owns the policy's organization
-    await requireOrgAccess(ctx, policy.orgId);
+    const { identity } = await requireOrgAccess(ctx, policy.orgId);
+
+    const previousRules = JSON.stringify(policy.rulesJson);
 
     const update: { rulesJson: typeof args.rulesJson; isActive?: boolean } = { rulesJson: args.rulesJson };
     if (args.isActive !== undefined) {
@@ -117,6 +159,17 @@ export const update = mutation({
     }
 
     await ctx.db.patch(args.id, update);
+
+    // Audit log
+    await logPolicyAudit(ctx, {
+      orgId: policy.orgId,
+      policyId: args.id,
+      action: "updated",
+      changedBy: identity.subject,
+      previousRules,
+      newRules: JSON.stringify(args.rulesJson),
+      policyType: policy.policyType,
+    });
   },
 });
 
@@ -132,8 +185,17 @@ export const toggleActive = mutation({
     const policy = await ctx.db.get(args.id);
     if (!policy) throw new Error("Policy not found");
     // SECURITY FIX: Verify caller owns the policy's organization
-    await requireOrgAccess(ctx, policy.orgId);
+    const { identity } = await requireOrgAccess(ctx, policy.orgId);
     await ctx.db.patch(args.id, { isActive: !policy.isActive });
+
+    // Audit log
+    await logPolicyAudit(ctx, {
+      orgId: policy.orgId,
+      policyId: args.id,
+      action: "toggled",
+      changedBy: identity.subject,
+      policyType: policy.policyType,
+    });
   },
 });
 
@@ -149,7 +211,39 @@ export const remove = mutation({
     const policy = await ctx.db.get(args.id);
     if (!policy) throw new Error("Policy not found");
     // SECURITY FIX: Verify caller owns the policy's organization
-    await requireOrgAccess(ctx, policy.orgId);
+    const { identity } = await requireOrgAccess(ctx, policy.orgId);
+
+    // Audit log BEFORE deletion
+    await logPolicyAudit(ctx, {
+      orgId: policy.orgId,
+      policyId: args.id,
+      action: "deleted",
+      changedBy: identity.subject,
+      previousRules: JSON.stringify(policy.rulesJson),
+      policyType: policy.policyType,
+    });
+
     await ctx.db.delete(args.id);
+  },
+});
+
+// ═══════════════════════════════════════════════════
+// Get Policy Audit Log
+// ═══════════════════════════════════════════════════
+
+export const getAuditLog = query({
+  args: {
+    orgId: v.id("organizations"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireOrgAccess(ctx, args.orgId);
+    const limit = args.limit ?? 50;
+
+    return await ctx.db
+      .query("policyAuditLog")
+      .withIndex("by_org", (q) => q.eq("orgId", args.orgId))
+      .order("desc")
+      .take(limit);
   },
 });

@@ -187,7 +187,21 @@ export const search = query({
       );
     }
 
-    return filtered;
+    // Enrich with seller trust scores where sellerId exists
+    return Promise.all(
+      filtered.map(async (tool) => {
+        if (!tool.sellerId) return { ...tool, sellerScore: null, sellerTier: null };
+        const score = await ctx.db
+          .query("sellerScores")
+          .withIndex("by_seller", (q) => q.eq("sellerId", tool.sellerId!))
+          .first();
+        return {
+          ...tool,
+          sellerScore: score?.score ?? null,
+          sellerTier: score?.tier ?? null,
+        };
+      })
+    );
   },
 });
 
@@ -236,13 +250,29 @@ export const getFeatured = query({
     });
 
     // Sort: featured first (by boost score), then verified (by rating)
-    return allTools
+    const sorted = allTools
       .sort((a, b) => {
         const aScore = (a.boostScore ?? 0) * 10 + a.rating;
         const bScore = (b.boostScore ?? 0) * 10 + b.rating;
         return bScore - aScore;
       })
       .slice(0, args.limit ?? 10);
+
+    // Enrich with seller trust scores
+    return Promise.all(
+      sorted.map(async (tool) => {
+        if (!tool.sellerId) return { ...tool, sellerScore: null, sellerTier: null };
+        const score = await ctx.db
+          .query("sellerScores")
+          .withIndex("by_seller", (q) => q.eq("sellerId", tool.sellerId!))
+          .first();
+        return {
+          ...tool,
+          sellerScore: score?.score ?? null,
+          sellerTier: score?.tier ?? null,
+        };
+      })
+    );
   },
 });
 
