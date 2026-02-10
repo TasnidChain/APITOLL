@@ -147,6 +147,116 @@ export async function transferSolanaUSDC(
 }
 
 /**
+ * Transfer USDC on Solana with a fee split: seller gets sellerAmount,
+ * platform wallet gets platformFee. Both transfers happen in a single
+ * atomic transaction (two SPL transfer instructions).
+ */
+export async function transferSolanaUSDCWithFee(
+  config: SolanaConfig,
+  sellerAddress: string,
+  sellerAmount: bigint,
+  platformWallet: string,
+  platformFee: bigint
+): Promise<SolanaTransferResult> {
+  const connection = new Connection(config.rpcUrl, "confirmed");
+
+  const secretKey = parsePrivateKey(config.privateKey);
+  const payer = Keypair.fromSecretKey(secretKey);
+
+  const sellerPubkey = new PublicKey(sellerAddress);
+  const platformPubkey = new PublicKey(platformWallet);
+
+  logger.info(
+    {
+      seller: sellerAddress,
+      sellerAmount: sellerAmount.toString(),
+      platformWallet,
+      platformFee: platformFee.toString(),
+      mint: USDC_MINT.toBase58(),
+    },
+    "Initiating Solana USDC transfer with fee split"
+  );
+
+  // Get associated token accounts
+  const senderATA = await getAssociatedTokenAddress(USDC_MINT, payer.publicKey);
+  const sellerATA = await getAssociatedTokenAddress(USDC_MINT, sellerPubkey);
+  const platformATA = await getAssociatedTokenAddress(USDC_MINT, platformPubkey);
+
+  const instructions = [];
+
+  // Create seller ATA if needed
+  try {
+    await getAccount(connection, sellerATA);
+  } catch {
+    logger.info({ seller: sellerAddress, ata: sellerATA.toBase58() }, "Creating seller ATA");
+    instructions.push(
+      createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        sellerATA,
+        sellerPubkey,
+        USDC_MINT
+      )
+    );
+  }
+
+  // Create platform ATA if needed
+  try {
+    await getAccount(connection, platformATA);
+  } catch {
+    logger.info({ platformWallet, ata: platformATA.toBase58() }, "Creating platform ATA");
+    instructions.push(
+      createAssociatedTokenAccountInstruction(
+        payer.publicKey,
+        platformATA,
+        platformPubkey,
+        USDC_MINT
+      )
+    );
+  }
+
+  // Transfer to seller
+  instructions.push(
+    createTransferInstruction(
+      senderATA,
+      sellerATA,
+      payer.publicKey,
+      sellerAmount
+    )
+  );
+
+  // Transfer platform fee
+  instructions.push(
+    createTransferInstruction(
+      senderATA,
+      platformATA,
+      payer.publicKey,
+      platformFee
+    )
+  );
+
+  const tx = new Transaction().add(...instructions);
+
+  const signature = await sendAndConfirmTransaction(connection, tx, [payer], {
+    commitment: "confirmed",
+  });
+
+  const status = await connection.getTransaction(signature, {
+    commitment: "confirmed",
+    maxSupportedTransactionVersion: 0,
+  });
+
+  logger.info(
+    { txHash: signature, slot: status?.slot, sellerAmount: sellerAmount.toString(), platformFee: platformFee.toString() },
+    "Solana USDC transfer with fee split confirmed"
+  );
+
+  return {
+    txHash: signature,
+    slot: status?.slot ?? 0,
+  };
+}
+
+/**
  * Broadcast a pre-signed Solana transaction.
  */
 export async function broadcastSolanaTransaction(

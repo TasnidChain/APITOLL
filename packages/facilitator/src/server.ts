@@ -79,8 +79,24 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
 const API_KEYS = (process.env.FACILITATOR_API_KEYS || '').split(',').filter(Boolean);
 
+// ─── Platform Fee Configuration ──────────────────────────────────────
+// The facilitator collects a platform fee on every custodial payment.
+// Fee is deducted from the payment: seller gets (amount - fee), platform gets fee.
+const PLATFORM_FEE_BPS = parseInt(process.env.PLATFORM_FEE_BPS || '300', 10); // 300 = 3%
+const PLATFORM_FEE_WALLET_BASE = process.env.PLATFORM_FEE_WALLET_BASE || '';
+const PLATFORM_FEE_WALLET_SOLANA = process.env.PLATFORM_FEE_WALLET_SOLANA || '';
 
-import { transferSolanaUSDC, broadcastSolanaTransaction, verifySolanaTransaction } from './solana';
+if (PLATFORM_FEE_WALLET_BASE) {
+  logger.info({ wallet: PLATFORM_FEE_WALLET_BASE, feeBps: PLATFORM_FEE_BPS }, 'Platform fee enabled (Base)');
+} else {
+  logger.warn('PLATFORM_FEE_WALLET_BASE not set — no platform fee will be collected on Base payments');
+}
+if (PLATFORM_FEE_WALLET_SOLANA) {
+  logger.info({ wallet: PLATFORM_FEE_WALLET_SOLANA, feeBps: PLATFORM_FEE_BPS }, 'Platform fee enabled (Solana)');
+}
+
+
+import { transferSolanaUSDC, transferSolanaUSDCWithFee, broadcastSolanaTransaction, verifySolanaTransaction } from './solana';
 
 const SOLANA_ENABLED = !!SOLANA_PRIVATE_KEY;
 if (SOLANA_ENABLED) {
@@ -167,6 +183,33 @@ interface AuthenticatedRequest extends Request {
 /** JSON-serializable value (used for Convex `v.any()` fields). */
 type JsonValue = string | number | boolean | null | undefined | JsonValue[] | { [key: string]: JsonValue };
 
+interface FeeInfo {
+  feeBps: number;
+  platformWallet: string;
+  sellerAmount: bigint;  // USDC smallest units (6 decimals)
+  platformFee: bigint;   // USDC smallest units (6 decimals)
+}
+
+/**
+ * Calculate the fee split for a payment.
+ * Returns null if no platform fee should be collected (no wallet configured).
+ */
+function calculateFeeSplit(chain: 'base' | 'solana', amountUsdc: string, metadata?: Record<string, unknown>): FeeInfo | null {
+  const platformWallet = chain === 'base' ? PLATFORM_FEE_WALLET_BASE : PLATFORM_FEE_WALLET_SOLANA;
+  if (!platformWallet) return null;
+
+  const feeBps = PLATFORM_FEE_BPS;
+  if (feeBps <= 0) return null;
+
+  const totalSmallest = ethers.parseUnits(amountUsdc, 6);
+  const platformFee = (totalSmallest * BigInt(feeBps)) / 10000n;
+  const sellerAmount = totalSmallest - platformFee;
+
+  if (platformFee <= 0n) return null;
+
+  return { feeBps, platformWallet, sellerAmount, platformFee };
+}
+
 interface PaymentRecord {
   id: string;
   idempotencyKey?: string; // Client-provided key to prevent duplicate payments
@@ -182,6 +225,8 @@ interface PaymentRecord {
   createdAt: number;
   completedAt?: number;
   txHash?: string;
+  feeTxHash?: string; // tx hash of the platform fee transfer (if separate)
+  feeInfo?: { feeBps: number; platformFee: string; sellerAmount: string }; // human-readable
   error?: string;
 }
 
@@ -662,6 +707,8 @@ app.get('/pay/:paymentId', rateLimit, requireAuth, (req: Request, res: Response)
     payment_id: paymentId,
     status: payment.status,
     tx_hash: payment.txHash,
+    fee_tx_hash: payment.feeTxHash,
+    fee_info: payment.feeInfo,
     error: payment.error,
     created_at: payment.createdAt,
     completed_at: payment.completedAt,
@@ -674,22 +721,52 @@ async function processPayment(paymentId: string, signedTx?: string) {
   if (!payment) throw new Error('Payment not found');
 
   const chain = payment.paymentRequired.chain;
-  logger.info(
-    { paymentId, chain, amount: payment.paymentRequired.amount, to: payment.sellerAddress },
-    'Processing payment'
-  );
+  const fee = calculateFeeSplit(chain, payment.paymentRequired.amount, payment.paymentRequired.metadata);
+
+  if (fee) {
+    payment.feeInfo = {
+      feeBps: fee.feeBps,
+      platformFee: ethers.formatUnits(fee.platformFee, 6),
+      sellerAmount: ethers.formatUnits(fee.sellerAmount, 6),
+    };
+    logger.info(
+      { paymentId, chain, total: payment.paymentRequired.amount, sellerAmount: payment.feeInfo.sellerAmount, platformFee: payment.feeInfo.platformFee, feeBps: fee.feeBps, to: payment.sellerAddress },
+      'Processing payment with fee split'
+    );
+  } else {
+    logger.info(
+      { paymentId, chain, amount: payment.paymentRequired.amount, to: payment.sellerAddress },
+      'Processing payment (no fee — platform wallet not configured)'
+    );
+  }
 
   try {
     if (chain === 'solana') {
       if (signedTx) {
-        logger.info({ paymentId }, 'Broadcasting pre-signed Solana transaction');
+        // Pre-signed: can't split fees — broadcast as-is
+        logger.info({ paymentId }, 'Broadcasting pre-signed Solana transaction (no fee split on pre-signed)');
         const result = await broadcastSolanaTransaction(SOLANA_RPC_URL, signedTx);
         payment.status = 'completed';
         payment.txHash = result.txHash;
         payment.completedAt = Date.now();
         logger.info({ paymentId, txHash: result.txHash, slot: result.slot }, 'Solana pre-signed payment confirmed');
         persistPaymentStatus(paymentId, 'completed', result.txHash);
+      } else if (fee) {
+        // Custodial Solana with fee split: two transfers in one atomic tx
+        const result = await transferSolanaUSDCWithFee(
+          { rpcUrl: SOLANA_RPC_URL, privateKey: SOLANA_PRIVATE_KEY },
+          payment.sellerAddress,
+          fee.sellerAmount,
+          fee.platformWallet,
+          fee.platformFee
+        );
+        payment.status = 'completed';
+        payment.txHash = result.txHash;
+        payment.completedAt = Date.now();
+        logger.info({ paymentId, txHash: result.txHash, slot: result.slot, feeBps: fee.feeBps }, 'Solana USDC payment with fee split confirmed');
+        persistPaymentStatus(paymentId, 'completed', result.txHash);
       } else {
+        // Custodial Solana, no fee
         const result = await transferSolanaUSDC(
           { rpcUrl: SOLANA_RPC_URL, privateKey: SOLANA_PRIVATE_KEY },
           payment.sellerAddress,
@@ -702,10 +779,12 @@ async function processPayment(paymentId: string, signedTx?: string) {
         persistPaymentStatus(paymentId, 'completed', result.txHash);
       }
     } else {
+      // ─── Base (EVM) ───────────────────────────────────────────
       const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
 
       if (signedTx) {
-        logger.info({ paymentId }, 'Broadcasting pre-signed EVM transaction');
+        // Pre-signed: can't split fees — broadcast as-is
+        logger.info({ paymentId }, 'Broadcasting pre-signed EVM transaction (no fee split on pre-signed)');
         const txResponse = await provider.broadcastTransaction(signedTx);
         const receipt = await txResponse.wait(2);
 
@@ -720,23 +799,57 @@ async function processPayment(paymentId: string, signedTx?: string) {
         const signer = new ethers.Wallet(FACILITATOR_PRIVATE_KEY, provider);
         const usdc = new ethers.Contract(USDC_ADDRESS_BASE, USDC_ABI, signer);
 
-        const amount = ethers.parseUnits(payment.paymentRequired.amount, 6);
+        if (fee) {
+          // ─── Custodial EVM with fee split ───────────────────────
+          logger.info(
+            { paymentId, seller: payment.sellerAddress, sellerAmount: fee.sellerAmount.toString(), platformWallet: fee.platformWallet, platformFee: fee.platformFee.toString() },
+            'Submitting split USDC transfers (seller + platform fee)'
+          );
 
-        logger.info(
-          { paymentId, to: payment.sellerAddress, amount: amount.toString() },
-          'Submitting USDC transfer from facilitator wallet'
-        );
+          // Transfer 1: Seller gets their share
+          const sellerTx = await usdc.transfer(payment.sellerAddress, fee.sellerAmount);
+          const sellerReceipt = await sellerTx.wait(2);
+          if (!sellerReceipt) throw new Error('Seller transfer failed — no receipt');
 
-        const tx = await usdc.transfer(payment.sellerAddress, amount);
-        const receipt = await tx.wait(2);
+          payment.txHash = sellerReceipt.hash;
+          logger.info({ paymentId, txHash: sellerReceipt.hash }, 'Seller payment confirmed');
 
-        if (!receipt) throw new Error('Transaction failed — no receipt');
+          // Transfer 2: Platform fee
+          try {
+            const feeTx = await usdc.transfer(fee.platformWallet, fee.platformFee);
+            const feeReceipt = await feeTx.wait(2);
+            if (feeReceipt) {
+              payment.feeTxHash = feeReceipt.hash;
+              logger.info({ paymentId, feeTxHash: feeReceipt.hash, feeAmount: payment.feeInfo?.platformFee }, 'Platform fee transfer confirmed');
+            }
+          } catch (feeError: unknown) {
+            // Seller already got paid — log fee failure but don't fail the whole payment
+            logger.error({ paymentId, error: feeError instanceof Error ? feeError.message : String(feeError) }, 'Platform fee transfer failed (seller payment succeeded)');
+          }
 
-        payment.status = 'completed';
-        payment.txHash = receipt.hash;
-        payment.completedAt = Date.now();
-        logger.info({ paymentId, txHash: receipt.hash }, 'Payment confirmed');
-        persistPaymentStatus(paymentId, 'completed', receipt.hash);
+          payment.status = 'completed';
+          payment.completedAt = Date.now();
+          persistPaymentStatus(paymentId, 'completed', sellerReceipt.hash);
+        } else {
+          // ─── Custodial EVM, no fee ──────────────────────────────
+          const amount = ethers.parseUnits(payment.paymentRequired.amount, 6);
+
+          logger.info(
+            { paymentId, to: payment.sellerAddress, amount: amount.toString() },
+            'Submitting USDC transfer from facilitator wallet'
+          );
+
+          const tx = await usdc.transfer(payment.sellerAddress, amount);
+          const receipt = await tx.wait(2);
+
+          if (!receipt) throw new Error('Transaction failed — no receipt');
+
+          payment.status = 'completed';
+          payment.txHash = receipt.hash;
+          payment.completedAt = Date.now();
+          logger.info({ paymentId, txHash: receipt.hash }, 'Payment confirmed');
+          persistPaymentStatus(paymentId, 'completed', receipt.hash);
+        }
       }
     }
   } catch (error: unknown) {

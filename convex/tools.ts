@@ -486,6 +486,30 @@ export const setVerified = mutation({
   },
 });
 
+// Migrate Base URL (internal — for ops/migration scripts)
+// Usage: npx convex run tools:migrateBaseUrl '{"oldBaseUrl":"https://old.example.com","newBaseUrl":"https://new.example.com"}'
+
+export const migrateBaseUrl = internalMutation({
+  args: {
+    oldBaseUrl: v.string(),
+    newBaseUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const tools = await ctx.db
+      .query("tools")
+      .filter((q) => q.eq(q.field("baseUrl"), args.oldBaseUrl))
+      .collect();
+
+    let updated = 0;
+    for (const tool of tools) {
+      await ctx.db.patch(tool._id, { baseUrl: args.newBaseUrl });
+      updated++;
+    }
+
+    return { updated, total: tools.length };
+  },
+});
+
 // Rate a Tool
 
 export const rateTool = mutation({
