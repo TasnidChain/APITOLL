@@ -1,6 +1,6 @@
 {
   "name": "@apitoll/buyer-sdk",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0-beta.4",
   "description": "x402 payment client for AI agents. Auto-handles 402 responses with budget controls, spend tracking, and self-optimization.",
   "license": "MIT",
   "type": "module",
@@ -37,7 +37,7 @@
   },
   "keywords": ["x402", "agent", "micropayments", "usdc", "budget", "spend-management", "evolution", "self-optimization"],
   "dependencies": {
-    "@apitoll/shared": "0.1.0-beta.3"
+    "@apitoll/shared": "0.1.0-beta.4"
   },
   "peerDependencies": {
     "ethers": ">=6.0.0",
