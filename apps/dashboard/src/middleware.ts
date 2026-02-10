@@ -18,9 +18,9 @@ export default function middleware(_req: NextRequest) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.dev https://*.convex.cloud https://*.sentry.io",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.dev https://clerk.apitoll.com https://*.convex.cloud https://*.sentry.io",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.clerk.com https://*.clerk.dev https://*.sentry.io https://api.apitoll.com https://pay.apitoll.com",
+      "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.clerk.com https://*.clerk.dev https://clerk.apitoll.com https://*.sentry.io https://api.apitoll.com https://pay.apitoll.com",
       "img-src 'self' data: https: blob:",
       "font-src 'self' data: https://fonts.gstatic.com",
       "frame-ancestors 'none'",

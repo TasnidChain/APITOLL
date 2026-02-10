@@ -19,6 +19,7 @@ const links = [
   { label: 'How It Works', href: '#how-it-works' },
   { label: 'Pricing', href: '#pricing' },
   { label: 'API Docs', href: 'https://api.apitoll.com/api/docs', external: true },
+  { label: 'Dashboard', href: '/dashboard' },
 ]
 
 export function Navbar() {
@@ -75,12 +76,20 @@ export function Navbar() {
               </SignedIn>
             </>
           ) : (
-            <Link
-              href="/dashboard"
-              className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition-all hover:bg-slate-200"
-            >
-              Get Started
-            </Link>
+            <>
+              <Link
+                href="/dashboard"
+                className="text-sm font-medium text-slate-400 transition-colors hover:text-white"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/dashboard"
+                className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition-all hover:bg-slate-200"
+              >
+                Get Started
+              </Link>
+            </>
           )}
         </div>
 
@@ -132,12 +141,20 @@ export function Navbar() {
                 </SignedIn>
               </>
             ) : (
-              <Link
-                href="/dashboard"
-                className="mt-2 rounded-lg bg-white px-4 py-2 text-center text-sm font-semibold text-slate-950"
-              >
-                Get Started
-              </Link>
+              <>
+                <Link
+                  href="/dashboard"
+                  className="mt-2 rounded-lg border border-slate-700 px-4 py-2 text-center text-sm font-semibold text-white"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className="rounded-lg bg-white px-4 py-2 text-center text-sm font-semibold text-slate-950"
+                >
+                  Get Started
+                </Link>
+              </>
             )}
           </div>
         </div>

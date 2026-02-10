@@ -85,6 +85,14 @@ import datetimeRouter from "./routes/datetime";
 import securityRouter from "./routes/security";
 import mathRouter from "./routes/math";
 
+// Tier 4 APIs (real-world data from free public APIs)
+import nasaRouter from "./routes/nasa";
+import quotesRouter from "./routes/quotes";
+import booksRouter from "./routes/books";
+import earthquakesRouter from "./routes/earthquakes";
+import airqualityRouter from "./routes/airquality";
+import factsRouter from "./routes/facts";
+
 // API Documentation (OpenAPI 3.0.3 + Swagger UI)
 import openapiRouter from "./openapi";
 
@@ -546,6 +554,48 @@ app.use(
         chains: ["base"],
         description: "Statistical analysis (mean, median, std dev, percentiles)",
       },
+
+      // ─── Tier 4: Real-World Data (free public APIs) ─────
+      "GET /api/nasa/apod": {
+        price: "0.002",
+        chains: ["base"],
+        description: "NASA Astronomy Picture of the Day with explanation",
+      },
+      "GET /api/nasa/asteroids": {
+        price: "0.003",
+        chains: ["base"],
+        description: "Near-Earth asteroid data from NASA",
+      },
+      "GET /api/quote": {
+        price: "0.001",
+        chains: ["base"],
+        description: "Random inspirational/famous quotes",
+      },
+      "GET /api/books/search": {
+        price: "0.002",
+        chains: ["base"],
+        description: "Search books via Open Library (title, author, ISBN)",
+      },
+      "GET /api/books/isbn/:isbn": {
+        price: "0.002",
+        chains: ["base"],
+        description: "Book details by ISBN from Open Library",
+      },
+      "GET /api/earthquakes": {
+        price: "0.002",
+        chains: ["base"],
+        description: "Recent earthquake data from USGS (magnitude, location, depth)",
+      },
+      "GET /api/air-quality": {
+        price: "0.002",
+        chains: ["base"],
+        description: "Air quality index and pollutant levels by city or coordinates",
+      },
+      "GET /api/fact": {
+        price: "0.001",
+        chains: ["base"],
+        description: "Random facts — cats, dogs, numbers, or general trivia",
+      },
     },
     chainConfigs: {
       base: {
@@ -611,6 +661,14 @@ app.use(
         { name: "Math Eval", url: `${BASE_URL}/api/math/eval`, price: "0.001", description: "Evaluate math expressions.", method: "POST" },
         { name: "Unit Convert", url: `${BASE_URL}/api/math/convert`, price: "0.001", description: "Unit conversion.", method: "GET" },
         { name: "Statistics", url: `${BASE_URL}/api/math/stats`, price: "0.002", description: "Statistical analysis.", method: "POST" },
+        // Tier 4
+        { name: "NASA APOD", url: `${BASE_URL}/api/nasa/apod`, price: "0.002", description: "NASA Astronomy Picture of the Day.", method: "GET" },
+        { name: "NASA Asteroids", url: `${BASE_URL}/api/nasa/asteroids`, price: "0.003", description: "Near-Earth asteroid tracking.", method: "GET" },
+        { name: "Quotes", url: `${BASE_URL}/api/quote`, price: "0.001", description: "Random inspirational quotes.", method: "GET" },
+        { name: "Book Search", url: `${BASE_URL}/api/books/search`, price: "0.002", description: "Search books via Open Library.", method: "GET" },
+        { name: "Earthquakes", url: `${BASE_URL}/api/earthquakes`, price: "0.002", description: "Recent earthquake data from USGS.", method: "GET" },
+        { name: "Air Quality", url: `${BASE_URL}/api/air-quality`, price: "0.002", description: "Air quality index by city.", method: "GET" },
+        { name: "Random Facts", url: `${BASE_URL}/api/fact`, price: "0.001", description: "Random trivia facts.", method: "GET" },
       ],
     },
   })
@@ -694,6 +752,14 @@ app.use(datetimeRouter);
 app.use(securityRouter);
 app.use(mathRouter);
 
+// Tier 4 APIs (real-world data from free public APIs)
+app.use(nasaRouter);
+app.use(quotesRouter);
+app.use(booksRouter);
+app.use(earthquakesRouter);
+app.use(airqualityRouter);
+app.use(factsRouter);
+
 // ═══════════════════════════════════════════════════
 // API Documentation (free — no payment required)
 // ═══════════════════════════════════════════════════
@@ -740,9 +806,9 @@ app.get("/", (req, res) => {
   <div class="container">
     <div class="logo">⚡ API TOLL</div>
     <h1>Pay-Per-Call APIs for AI Agents</h1>
-    <p class="tagline">60+ endpoints. USDC micropayments on Base. One HTTP header.</p>
+    <p class="tagline">80+ endpoints. USDC micropayments on Base. One HTTP header.</p>
     <div class="stats">
-      <div class="stat"><div class="stat-num">60+</div><div class="stat-label">Endpoints</div></div>
+      <div class="stat"><div class="stat-num">80+</div><div class="stat-label">Endpoints</div></div>
       <div class="stat"><div class="stat-num">x402</div><div class="stat-label">Protocol</div></div>
       <div class="stat"><div class="stat-num">USDC</div><div class="stat-label">On Base L2</div></div>
     </div>

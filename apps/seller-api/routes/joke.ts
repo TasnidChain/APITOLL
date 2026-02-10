@@ -3,38 +3,84 @@ import { getX402Context } from "@apitoll/seller-sdk";
 
 const router = Router();
 
-const jokes = [
+// Fallback jokes if external APIs are down
+const fallbackJokes = [
   "Why do programmers prefer dark mode? Because light attracts bugs!",
   "How many programmers does it take to change a light bulb? None, that's a hardware problem.",
   "Why do Java developers wear glasses? Because they can't C#!",
-  "What's a programmer's favorite hangout place? The Foo Bar.",
-  "Why did the programmer quit his job? Because he didn't get arrays!",
-  "What do you call a programmer from Finland? Nerdic.",
-  "Why do programmers always mix up Christmas and Halloween? Because Oct 31 == Dec 25!",
-  "What's the object-oriented way to become wealthy? Inheritance.",
   "A SQL query walks into a bar, walks up to two tables, and asks: 'Can I join you?'",
-  "There are only 10 kinds of people in the world: those who understand binary, and those who don't.",
-  "Why was the JavaScript developer sad? Because he didn't Node how to Express himself.",
-  "What's a pirate's favorite programming language? R!",
-  "To understand recursion, you must first understand recursion.",
   "99 little bugs in the code, 99 little bugs. Take one down, patch it around... 127 little bugs in the code.",
-  "A programmer's wife tells him: 'Go to the store and get a loaf of bread. If they have eggs, get a dozen.' He comes home with 12 loaves.",
 ];
 
-router.get("/api/joke", (_req: Request, res: Response) => {
-  const joke = jokes[Math.floor(Math.random() * jokes.length)];
-  const ctx = getX402Context(_req);
+function formatPayment(ctx: ReturnType<typeof getX402Context>) {
+  if (!ctx?.receipt) return null;
+  return {
+    txHash: ctx.receipt.txHash,
+    amount: ctx.receipt.amount,
+    from: ctx.receipt.from,
+    chain: ctx.receipt.chain,
+  };
+}
 
+router.get("/api/joke", async (_req: Request, res: Response) => {
+  const ctx = getX402Context(_req);
+  const category = ((_req.query.category as string) || "programming").toLowerCase();
+
+  try {
+    // Try JokeAPI first (free, no key, 1000+ jokes)
+    const jokeApiUrl = `https://v2.jokeapi.dev/joke/${category === "programming" ? "Programming" : "Any"}?blacklistFlags=nsfw,racist,sexist&type=single,twopart`;
+    const resp = await fetch(jokeApiUrl, {
+      signal: AbortSignal.timeout(3000),
+    });
+
+    if (resp.ok) {
+      const data = await resp.json() as { type: string; setup?: string; delivery?: string; joke?: string; category?: string };
+      const joke =
+        data.type === "twopart"
+          ? `${data.setup} — ${data.delivery}`
+          : data.joke;
+
+      return res.json({
+        joke,
+        category: data.category?.toLowerCase() || category,
+        source: "jokeapi.dev",
+        cached: false,
+        payment: formatPayment(ctx),
+      });
+    }
+  } catch {
+    // Fall through to fallback
+  }
+
+  try {
+    // Try Official Joke API as secondary (free, no key)
+    const resp = await fetch(
+      "https://official-joke-api.appspot.com/random_joke",
+      { signal: AbortSignal.timeout(3000) }
+    );
+
+    if (resp.ok) {
+      const data = await resp.json() as { setup: string; punchline: string; type?: string };
+      return res.json({
+        joke: `${data.setup} — ${data.punchline}`,
+        category: data.type || "general",
+        source: "official-joke-api",
+        cached: false,
+        payment: formatPayment(ctx),
+      });
+    }
+  } catch {
+    // Fall through to fallback
+  }
+
+  // Fallback to local jokes
+  const joke = fallbackJokes[Math.floor(Math.random() * fallbackJokes.length)];
   res.json({
     joke,
-    payment: ctx?.receipt
-      ? {
-          txHash: ctx.receipt.txHash,
-          amount: ctx.receipt.amount,
-          from: ctx.receipt.from,
-          chain: ctx.receipt.chain,
-        }
-      : null,
+    category: "programming",
+    source: "local",
+    cached: false,
+    payment: formatPayment(ctx),
   });
 });
 
