@@ -10,7 +10,7 @@ app.use(paymentMiddleware({
   facilitatorUrl: "https://pay.apitoll.com",
   routePricing: {
     "GET /api/joke":    { price: "0.001", network: "base-mainnet" },
-    "POST /api/analyze": { price: "0.02",  network: "base-mainnet" },
+    "POST /api/analyze": { price: "0.02",  network: "solana-mainnet" },
   },
   sellerWallet: process.env.SELLER_WALLET,
 }));`
@@ -85,7 +85,7 @@ export function CodeShowcase() {
                   <Check className="h-3 w-3 text-emerald-400" />
                 </div>
                 <p className="text-sm text-slate-300">
-                  Facilitator handles USDC transfers on Base — sellers never touch crypto wallets
+                  Facilitator handles USDC transfers on Base & Solana — sellers never touch crypto wallets
                 </p>
               </div>
             </div>

@@ -3,8 +3,8 @@ import { CheckCircle, ExternalLink, Zap, Shield } from 'lucide-react'
 const facts = [
   {
     icon: CheckCircle,
-    title: 'Real USDC on Base Mainnet',
-    description: 'Not testnet tokens. Actual USDC micropayments settled on-chain in 2 seconds. Every transaction verifiable on Basescan.',
+    title: 'Real USDC on Base & Solana',
+    description: 'Not testnet tokens. Actual USDC micropayments settled on-chain — 2s on Base, 400ms on Solana. Every transaction verifiable on-chain.',
     iconColor: 'text-emerald-400',
     iconBg: 'bg-emerald-500/10',
   },
@@ -25,6 +25,7 @@ const facts = [
 ]
 
 const techStack = [
+  { name: 'Solana', href: 'https://solana.com' },
   { name: 'Base (Coinbase L2)', href: 'https://base.org' },
   { name: 'USDC Stablecoin', href: 'https://www.circle.com/en/usdc' },
   { name: 'x402 Protocol', href: 'https://www.x402.org/' },
@@ -47,7 +48,7 @@ export function SocialProof() {
             Not a demo. Real payments, live now.
           </h2>
           <p className="mt-4 text-lg text-slate-400">
-            We already ran our first real USDC transaction on Base mainnet.
+            Real USDC transactions live on Base and Solana mainnet.
             The infrastructure works end-to-end.
           </p>
         </div>

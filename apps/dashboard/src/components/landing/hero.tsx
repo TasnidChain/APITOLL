@@ -39,7 +39,7 @@ export function Hero() {
 
           {/* Subheadline */}
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-400 sm:text-xl">
-            Your API returns HTTP 402. The agent pays with USDC. You get paid instantly on Base.
+            Your API returns HTTP 402. The agent pays with USDC. You get paid instantly on Base or Solana.
             No credit cards. No invoices. No chargebacks. Just revenue.
           </p>
 
@@ -65,6 +65,11 @@ export function Hero() {
 
         {/* Real stats */}
         <div className="mx-auto mt-16 flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-white">400ms</p>
+            <p className="text-xs text-slate-500">Settlement on Solana</p>
+          </div>
+          <div className="h-8 w-px bg-slate-800 hidden sm:block" />
           <div className="text-center">
             <p className="text-2xl font-bold text-white">2s</p>
             <p className="text-xs text-slate-500">Settlement on Base</p>
@@ -94,7 +99,7 @@ export function Hero() {
               <div className="h-3 w-3 rounded-full bg-red-500/60" />
               <div className="h-3 w-3 rounded-full bg-amber-500/60" />
               <div className="h-3 w-3 rounded-full bg-emerald-500/60" />
-              <span className="ml-2 text-xs text-slate-500">x402 Payment Flow — Live on Base</span>
+              <span className="ml-2 text-xs text-slate-500">x402 Payment Flow — Live on Base & Solana</span>
             </div>
             {/* Terminal body */}
             <div className="p-6 font-mono text-sm leading-relaxed">
@@ -103,25 +108,27 @@ export function Hero() {
                 <span className="text-blue-400">GET</span>{' '}
                 <span className="text-slate-300">https://api.apitoll.com/api/joke</span>
               </div>
-              <div className="mt-4 text-slate-500">{'// 2. Server returns 402 with payment details'}</div>
+              <div className="mt-4 text-slate-500">{'// 2. Server returns 402 — accepts Base or Solana'}</div>
               <div className="mt-1">
                 <span className="text-amber-400">402</span>{' '}
                 <span className="text-slate-300">Payment Required</span>
               </div>
               <div className="mt-1 pl-4 text-slate-500">
                 {'price: '}<span className="text-emerald-400">0.001 USDC</span>
-                {'  chain: '}<span className="text-cyan-400">base</span>
-                {'  payTo: '}<span className="text-slate-400">0x2955...73B0a5</span>
+                {'  chains: '}<span className="text-cyan-400">base</span>
+                <span className="text-slate-600">{' | '}</span>
+                <span className="text-violet-400">solana</span>
               </div>
               <div className="mt-4 text-slate-500">{'// 3. Agent auto-pays via facilitator & retries'}</div>
               <div className="mt-1">
                 <span className="text-emerald-400">200</span>{' '}
                 <span className="text-slate-300">OK</span>
                 <span className="text-slate-500">{' — '}</span>
-                <span className="text-emerald-400">paid 0.001 USDC on Base</span>
+                <span className="text-emerald-400">paid 0.001 USDC on Solana</span>
               </div>
               <div className="mt-1 pl-4 text-slate-500">
-                {'txHash: '}<a href="https://basescan.org/tx/0x6d8f54958ed4807297b5bf64ec7eb9e560f1a5be7370937e43eefd152f4705c8" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">0x6d8f...52f4705c8</a>
+                {'txHash: '}<span className="text-violet-400">4sGjM...x9Qk2</span>
+                <span className="text-slate-600">{' (400ms)'}</span>
               </div>
             </div>
           </div>
