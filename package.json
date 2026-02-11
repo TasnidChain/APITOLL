@@ -1,6 +1,6 @@
 {
   "name": "apitoll",
-  "description": "API Toll — the payment layer for the AI agent economy. USDC micropayments on Base via x402.",
+  "description": "API Toll — the payment layer for the AI agent economy. USDC micropayments on Base & Solana via x402.",
   "private": true,
   "homepage": "https://apitoll.com",
   "bugs": "https://github.com/TasnidChain/APITOLL/issues",

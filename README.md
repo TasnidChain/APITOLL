@@ -4,7 +4,7 @@
 
 **The payment layer for the AI agent economy.**
 
-Monetize APIs with USDC micropayments. Control agent spending. Settle instantly on Base.
+Monetize APIs with USDC micropayments. Control agent spending. Settle instantly on Base & Solana.
 
 [![CI](https://github.com/TasnidChain/APITOLL/actions/workflows/ci.yml/badge.svg)](https://github.com/TasnidChain/APITOLL/actions/workflows/ci.yml)
 [![npm: seller-sdk](https://img.shields.io/npm/v/@apitoll/seller-sdk?label=seller-sdk&color=blue)](https://www.npmjs.com/package/@apitoll/seller-sdk)
