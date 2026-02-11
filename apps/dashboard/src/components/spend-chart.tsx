@@ -13,7 +13,7 @@ interface SpendChartProps {
 }
 
 export function SpendChart({ data }: SpendChartProps) {
-  const maxSpend = Math.max(...data.map((d) => d.spend))
+  const maxSpend = data.length > 0 ? Math.max(...data.map((d) => d.spend)) : 0
 
   return (
     <div className="rounded-xl border bg-card p-6">

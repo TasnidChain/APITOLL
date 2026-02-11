@@ -2,7 +2,29 @@ import type { PaymentRequirement, SupportedChain } from "@apitoll/shared";
 import type { PaymentSigner } from "../agent-wallet";
 
 /**
+ * Config for the facilitator signer (custodial wallet).
+ */
+export interface FacilitatorSignerConfig {
+  /** URL of the facilitator service (e.g. "https://pay.apitoll.com") */
+  facilitatorUrl: string;
+  /** API key for authenticating with the facilitator */
+  apiKey: string;
+  /** Agent's wallet address (for tracking/analytics) */
+  agentWallet?: string;
+}
+
+/**
  * Creates a signer that uses the API Toll facilitator's custodial wallet.
+ *
+ * Accepts either an object config or 3 positional args (legacy):
+ *
+ * ```ts
+ * // Preferred (object config):
+ * createFacilitatorSigner({ facilitatorUrl: "https://pay.apitoll.com", apiKey: "..." })
+ *
+ * // Legacy (positional args):
+ * createFacilitatorSigner("https://pay.apitoll.com", "apiKey", "0xAgentWallet")
+ * ```
  *
  * Flow:
  * 1. Agent calls facilitator POST /pay with payment requirements
@@ -13,10 +35,14 @@ import type { PaymentSigner } from "../agent-wallet";
  * The facilitator wallet must be pre-funded with USDC on Base.
  */
 export function createFacilitatorSigner(
-  facilitatorUrl: string,
-  apiKey: string,
-  agentWallet: string
+  configOrUrl: FacilitatorSignerConfig | string,
+  apiKeyArg?: string,
+  agentWalletArg?: string
 ): PaymentSigner {
+  // Support both object config and legacy positional args
+  const facilitatorUrl = typeof configOrUrl === 'string' ? configOrUrl : configOrUrl.facilitatorUrl;
+  const apiKey = typeof configOrUrl === 'string' ? (apiKeyArg || '') : configOrUrl.apiKey;
+  const agentWallet = typeof configOrUrl === 'string' ? (agentWalletArg || '') : (configOrUrl.agentWallet || '');
   return async (
     requirements: PaymentRequirement[],
     chain: SupportedChain
@@ -27,8 +53,11 @@ export function createFacilitatorSigner(
     }
 
     // Convert from smallest unit (6 decimals) back to human-readable
-    const amountRaw = parseInt(requirement.maxAmountRequired, 10);
-    const amount = (amountRaw / 1_000_000).toString();
+    // Use BigInt to avoid floating-point precision errors with monetary amounts
+    const amountRaw = BigInt(requirement.maxAmountRequired);
+    const whole = amountRaw / 1_000_000n;
+    const frac = amountRaw % 1_000_000n;
+    const amount = frac === 0n ? whole.toString() : `${whole}.${frac.toString().padStart(6, '0').replace(/0+$/, '')}`;
 
     // Call facilitator /pay to initiate the transfer
     const payResponse = await fetch(`${facilitatorUrl}/pay`, {

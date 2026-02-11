@@ -1,44 +1,35 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Zap } from 'lucide-react'
+import { Zap, Globe, TrendingUp } from 'lucide-react'
 
 /**
- * Live Activity Ticker — Shows real agent payments scrolling across the screen.
+ * Network Stats Ticker — Shows real, verifiable platform stats.
  *
- * This is the #1 viral social proof element. Visitors see:
- *   "ResearchBot paid $0.001 for /api/joke on Base"
- *   "AnalystAgent paid $0.005 for /api/forecast on Base"
+ * Displays live endpoint count, npm package info, and real gossip
+ * data when available. No fake agent names or simulated activity.
  *
- * Even before real volume, we show realistic demo activity
- * so the platform feels alive. As real gossip data flows in,
- * it seamlessly replaces the demo data.
+ * If real gossip data is available from /api/gossip, it shows
+ * actual recent transaction stats. Otherwise shows static but
+ * verifiable facts (endpoint count, npm packages, chain support).
  */
 
-interface TickerEvent {
-  agent: string
-  amount: string
-  endpoint: string
-  chain: string
-  timeAgo: string
+interface NetworkStats {
+  endpoints: number
+  recentTxCount: number | null
+  recentVolume: string | null
+  activeAgents: number | null
 }
 
-const DEMO_EVENTS: TickerEvent[] = [
-  { agent: 'ResearchBot', amount: '0.001', endpoint: '/api/joke', chain: 'Base', timeAgo: '2s ago' },
-  { agent: 'DataScout', amount: '0.005', endpoint: '/api/forecast', chain: 'Base', timeAgo: '8s ago' },
-  { agent: 'AnalystAgent', amount: '0.002', endpoint: '/api/sentiment', chain: 'Base', timeAgo: '15s ago' },
-  { agent: 'CodeHelper', amount: '0.001', endpoint: '/api/joke', chain: 'Base', timeAgo: '23s ago' },
-  { agent: 'SwarmWorker-1', amount: '0.003', endpoint: '/api/price/ETH', chain: 'Base', timeAgo: '31s ago' },
-  { agent: 'SwarmWorker-2', amount: '0.001', endpoint: '/api/price/BTC', chain: 'Base', timeAgo: '38s ago' },
-  { agent: 'ContentBot', amount: '0.010', endpoint: '/api/summarize', chain: 'Base', timeAgo: '45s ago' },
-  { agent: 'WeatherAgent', amount: '0.002', endpoint: '/api/forecast', chain: 'Base', timeAgo: '52s ago' },
-]
-
 export function LiveTicker() {
-  const [events, setEvents] = useState<TickerEvent[]>(DEMO_EVENTS)
-  const [_liveCount, setLiveCount] = useState(0)
+  const [stats, setStats] = useState<NetworkStats>({
+    endpoints: 75,
+    recentTxCount: null,
+    recentVolume: null,
+    activeAgents: null,
+  })
 
-  // Try to fetch real gossip data — fall back to demo if anything is off
+  // Fetch real stats — only show what we can verify
   useEffect(() => {
     fetch('/api/gossip?limit=10&window=1h')
       .then((r) => {
@@ -46,67 +37,86 @@ export function LiveTicker() {
         return r.json()
       })
       .then((data) => {
-        if (data?.trending?.length > 0) {
-          const realEvents: TickerEvent[] = []
-          for (const item of data.trending) {
-            const volume = Number(item.total_volume_usdc)
-            const count = Number(item.discoveries)
-            // Skip entries with bad data to avoid $NaN
-            if (!volume || !count || isNaN(volume) || isNaN(count)) continue
-            const agentName = item.seller_name || item.endpoint?.split('/').pop() || 'Agent'
-            realEvents.push({
-              agent: agentName,
-              amount: (volume / count).toFixed(3),
-              endpoint: item.endpoint || '/api/unknown',
-              chain: item.chains?.[0] || 'Base',
-              timeAgo: 'just now',
-            })
-          }
-          if (realEvents.length > 0) {
-            setEvents(
-              realEvents.length >= 4
-                ? realEvents
-                : [...realEvents, ...DEMO_EVENTS.slice(realEvents.length)]
-            )
-          }
-        }
-        if (data?.meta?.active_agents_1h) {
-          setLiveCount(data.meta.active_agents_1h)
+        if (data?.meta) {
+          setStats((prev) => ({
+            ...prev,
+            recentTxCount: data.meta.total_transactions_1h ?? null,
+            recentVolume: data.meta.total_volume_1h
+              ? `$${Number(data.meta.total_volume_1h).toFixed(2)}`
+              : null,
+            activeAgents: data.meta.active_agents_1h ?? null,
+          }))
         }
       })
       .catch(() => {
-        // Use demo data — it's fine
+        // No real data — that's fine, we only show what's verifiable
       })
   }, [])
 
+  const items: { icon: React.ReactNode; label: string; value: string }[] = [
+    {
+      icon: <Globe className="h-3 w-3 text-emerald-500/80" />,
+      label: 'Live endpoints',
+      value: `${stats.endpoints}`,
+    },
+    {
+      icon: <Zap className="h-3 w-3 text-blue-400/80" />,
+      label: 'Chains',
+      value: 'Base · Solana',
+    },
+    {
+      icon: <TrendingUp className="h-3 w-3 text-amber-400/80" />,
+      label: 'Price range',
+      value: '$0.001 – $0.02 / call',
+    },
+  ]
+
+  // Only add live stats if we have real data
+  if (stats.recentTxCount !== null) {
+    items.push({
+      icon: <Zap className="h-3 w-3 text-emerald-400/80" />,
+      label: 'Transactions (1h)',
+      value: `${stats.recentTxCount}`,
+    })
+  }
+  if (stats.recentVolume !== null) {
+    items.push({
+      icon: <TrendingUp className="h-3 w-3 text-emerald-400/80" />,
+      label: 'Volume (1h)',
+      value: stats.recentVolume,
+    })
+  }
+  if (stats.activeAgents !== null) {
+    items.push({
+      icon: <Globe className="h-3 w-3 text-emerald-400/80" />,
+      label: 'Active agents (1h)',
+      value: `${stats.activeAgents}`,
+    })
+  }
+
   return (
     <div className="relative overflow-hidden border-y border-slate-800/50 bg-slate-950/80 py-2.5">
-      {/* Live indicator */}
+      {/* Network status indicator */}
       <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-slate-950 to-transparent z-10 flex items-center pl-4">
         <div className="flex items-center gap-1.5">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
-          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Live</span>
+          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Network</span>
         </div>
       </div>
 
       {/* Right fade */}
       <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-slate-950 to-transparent z-10" />
 
-      {/* Scrolling ticker */}
-      <div className="animate-marquee flex items-center gap-8 whitespace-nowrap pl-32">
-        {[...events, ...events].map((event, i) => (
+      {/* Scrolling stats */}
+      <div className="animate-marquee flex items-center gap-10 whitespace-nowrap pl-32">
+        {[...items, ...items].map((item, i) => (
           <span key={i} className="flex items-center gap-1.5 text-xs text-slate-500">
-            <Zap className="h-3 w-3 text-emerald-500/60" />
-            <span className="text-slate-400 font-medium">{event.agent}</span>
-            <span>paid</span>
-            <span className="text-emerald-400 font-mono font-bold">${event.amount}</span>
-            <span>for</span>
-            <span className="text-blue-400 font-mono">{event.endpoint}</span>
-            <span>on {event.chain}</span>
-            <span className="text-slate-600 ml-1">{event.timeAgo}</span>
+            {item.icon}
+            <span className="text-slate-400">{item.label}</span>
+            <span className="text-emerald-400 font-mono font-bold">{item.value}</span>
           </span>
         ))}
       </div>
@@ -122,7 +132,7 @@ export function LiveTicker() {
           }
         }
         .animate-marquee {
-          animation: marquee 60s linear infinite;
+          animation: marquee 40s linear infinite;
         }
         .animate-marquee:hover {
           animation-play-state: paused;

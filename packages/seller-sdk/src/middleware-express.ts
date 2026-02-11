@@ -151,23 +151,33 @@ export function paymentMiddleware(options: PaymentMiddlewareOptions) {
       ? `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT || '6379'}`
       : null);
 
-  if (redisUrl) {
+  // Lazy-load Redis to avoid require() in ESM
+  let redisInitialized = false;
+  async function initRedis() {
+    if (redisInitialized || !redisUrl) return;
+    redisInitialized = true;
     try {
-      const Redis = require('redis');
-      redis = Redis.createClient({ url: redisUrl });
-      redis!.on('error', (err: Error) => {
+      // Dynamic import — redis is an optional peer dependency
+      const moduleName = 'redis';
+      const Redis: any = await import(moduleName);
+      redis = Redis.createClient({ url: redisUrl }) as unknown as RedisClient;
+      (redis as any).on?.('error', (err: Error) => {
         console.warn('Redis connection error, using in-memory rate limiting:', err.message);
       });
-      // redis v4 requires explicit connect
-      (redis as any).connect?.().catch(() => {
-        circuitOpen = true;
-        circuitOpenedAt = Date.now();
-      });
+      await (redis as any).connect?.();
+      circuitOpen = false;
     } catch {
-      // Redis not installed — start with circuit open to use in-memory fallback
+      redis = null;
       circuitOpen = true;
       circuitOpenedAt = Date.now();
     }
+  }
+
+  if (redisUrl) {
+    // Start connecting in the background — first requests use in-memory fallback
+    circuitOpen = true;
+    circuitOpenedAt = Date.now();
+    initRedis();
   } else {
     // No Redis configured — use in-memory fallback
     circuitOpen = true;

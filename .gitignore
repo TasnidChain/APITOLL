@@ -8,10 +8,13 @@ build/
 .next/
 out/
 
-# Environment files
+# Environment files (all depths)
 .env
 .env.local
 .env*.local
+**/.env
+**/.env.local
+**/.env*.local
 
 # IDE
 .idea/

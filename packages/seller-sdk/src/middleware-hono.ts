@@ -124,19 +124,29 @@ export function paymentMiddleware(options: SellerConfig): MiddlewareHandler {
   let circuitOpen = false;
   let circuitOpenedAt = 0;
 
-  if (redisUrl) {
+  // Lazy-load Redis to avoid require() in ESM
+  let redisInitialized = false;
+  async function initRedis() {
+    if (redisInitialized || !redisUrl) return;
+    redisInitialized = true;
     try {
-      const Redis = require('redis');
-      redis = Redis.createClient({ url: redisUrl });
-      (redis as any).connect?.().catch(() => {
-        circuitOpen = true;
-        circuitOpenedAt = Date.now();
-      });
+      // Dynamic import — redis is an optional peer dependency
+      const moduleName = 'redis';
+      const Redis: any = await import(moduleName);
+      redis = Redis.createClient({ url: redisUrl }) as any;
+      await (redis as any).connect?.();
+      circuitOpen = false;
     } catch {
-      console.warn('Redis not available for Hono middleware, using in-memory rate limiting');
+      redis = null;
       circuitOpen = true;
       circuitOpenedAt = Date.now();
     }
+  }
+
+  if (redisUrl) {
+    circuitOpen = true;
+    circuitOpenedAt = Date.now();
+    initRedis();
   } else {
     circuitOpen = true;
     circuitOpenedAt = Date.now();

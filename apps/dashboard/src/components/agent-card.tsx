@@ -25,7 +25,7 @@ const statusConfig = {
 
 export function AgentCard({ agent }: AgentCardProps) {
   const status = statusConfig[agent.status]
-  const budgetUsed = (agent.dailySpend / agent.dailyLimit) * 100
+  const budgetUsed = agent.dailyLimit > 0 ? (agent.dailySpend / agent.dailyLimit) * 100 : 0
 
   return (
     <div className="rounded-xl border bg-card p-5 transition-shadow hover:shadow-md">

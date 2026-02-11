@@ -302,7 +302,7 @@ export class AgentWallet {
           latency_ms: latencyMs,
           success: true,
           mutation_triggered: this.mutator !== undefined,
-          sdk_version: "0.1.0-beta.2",
+          sdk_version: "0.1.0-beta.4",
         }),
       });
       // Guard against environments where fetch might not return a Promise

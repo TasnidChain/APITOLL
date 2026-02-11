@@ -78,6 +78,10 @@ const SOLANA_PRIVATE_KEY = process.env.SOLANA_PRIVATE_KEY || ''; // Optional: en
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
 const API_KEYS = (process.env.FACILITATOR_API_KEYS || '').split(',').filter(Boolean);
+if (API_KEYS.length === 0 && process.env.NODE_ENV === 'production') {
+  logger.fatal('FACILITATOR_API_KEYS must be set in production — refusing to start in open auth mode');
+  process.exit(1);
+}
 
 // ─── Platform Fee Configuration ──────────────────────────────────────
 // The facilitator collects a platform fee on every custodial payment.
@@ -126,11 +130,11 @@ const REDIS_URL = process.env.REDIS_URL
     : null);
 
 if (REDIS_URL) {
-  try {
-    const Redis = require('redis');
+  const redisModuleName = 'redis';
+  (import(redisModuleName) as Promise<any>).then((Redis: any) => {
     const client = Redis.createClient({ url: REDIS_URL });
     client.connect?.().then(() => {
-      redisClient = client;
+      redisClient = client as any;
       redisCircuitOpen = false;
       logger.info('Redis connected for facilitator rate limiting');
     }).catch((err: Error) => {
@@ -145,18 +149,24 @@ if (REDIS_URL) {
         logger.warn('Redis circuit breaker OPEN (facilitator). Falling back to in-memory.');
       }
     });
-  } catch {
+  }).catch(() => {
     logger.warn('Redis not available for facilitator, using in-memory rate limiting');
-  }
+  });
 }
 
+
+// Solana addresses are base58-encoded, 32-44 chars. EVM addresses start with 0x.
+function isValidAddress(addr: string, chain: string): boolean {
+  if (chain === 'solana') {
+    return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr);
+  }
+  return ethers.isAddress(addr);
+}
 
 const PaymentRequirementSchema = z.object({
   amount: z.union([z.string(), z.number()]).transform((v) => String(v)),
   currency: z.string().default('USDC'),
-  recipient: z.string().refine((addr) => ethers.isAddress(addr), {
-    message: 'Invalid recipient address',
-  }),
+  recipient: z.string().min(1, 'Recipient address is required'),
   chain: z.enum(['base', 'solana']).default('base'),
   description: z.string().optional(),
   metadata: z.record(z.unknown()).optional(),
@@ -168,10 +178,14 @@ const PayRequestSchema = z.object({
   original_headers: z.record(z.string()).optional(),
   original_body: z.unknown().optional(),
   payment_required: PaymentRequirementSchema,
-  agent_wallet: z.string().refine((addr) => ethers.isAddress(addr), {
-    message: 'Invalid agent wallet address',
-  }),
+  agent_wallet: z.string().min(1, 'Agent wallet address is required'),
   signed_tx: z.string().optional(),
+}).refine((data) => isValidAddress(data.payment_required.recipient, data.payment_required.chain), {
+  message: 'Invalid recipient address for the specified chain',
+  path: ['payment_required', 'recipient'],
+}).refine((data) => isValidAddress(data.agent_wallet, data.payment_required.chain), {
+  message: 'Invalid agent wallet address for the specified chain',
+  path: ['agent_wallet'],
 });
 
 

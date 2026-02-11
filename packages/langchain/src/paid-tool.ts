@@ -99,12 +99,21 @@ export class PaidTool {
       if (paymentReceipt) {
         try {
           const receipt = JSON.parse(paymentReceipt)
-          payment = {
-            amount: receipt.amount,
-            txHash: receipt.txHash,
-            chain: receipt.chain,
+          // Validate receipt shape before trusting it — header comes from untrusted server
+          if (
+            receipt &&
+            typeof receipt === 'object' &&
+            typeof receipt.amount === 'number' &&
+            typeof receipt.txHash === 'string' &&
+            typeof receipt.chain === 'string'
+          ) {
+            payment = {
+              amount: receipt.amount,
+              txHash: receipt.txHash,
+              chain: receipt.chain,
+            }
+            this.onPayment?.(this.name, receipt.amount, receipt.txHash)
           }
-          this.onPayment?.(this.name, receipt.amount, receipt.txHash)
         } catch { /* malformed receipt header — ignore */ }
       }
 

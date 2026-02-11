@@ -1,6 +1,6 @@
 {
   "name": "@apitoll/langchain",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0-beta.4",
   "description": "LangChain and CrewAI adapters for API Toll paid tools",
   "license": "MIT",
   "main": "dist/index.js",
@@ -19,7 +19,7 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
+      "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
   },
@@ -36,8 +36,8 @@
     "tools"
   ],
   "dependencies": {
-    "@apitoll/shared": "0.1.0-beta.3",
-    "@apitoll/buyer-sdk": "0.1.0-beta.3"
+    "@apitoll/shared": "0.1.0-beta.4",
+    "@apitoll/buyer-sdk": "0.1.0-beta.4"
   },
   "peerDependencies": {
     "@langchain/core": ">=0.1.0",

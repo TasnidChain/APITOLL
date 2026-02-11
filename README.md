@@ -190,7 +190,7 @@ The analytics dashboard at [apitoll.com/dashboard](https://apitoll.com/dashboard
 - **Transactions** — Searchable, filterable transaction history
 - **Agents** — Manage agent wallets, policies, spending
 - **Sellers** — Register APIs, track revenue per endpoint
-- **Discovery** — Browse 85+ paid tools in the marketplace
+- **Discovery** — Browse paid tools in the marketplace
 - **Playground** — Test API calls with live payment flow
 - **Billing** — Free / Pro / Enterprise tiers via Stripe
 - **Revenue** — Platform fee analytics (admin)
@@ -199,7 +199,7 @@ The analytics dashboard at [apitoll.com/dashboard](https://apitoll.com/dashboard
 ## Project Structure
 
 ```
-api-toll/
+APITOLL/
 ├── packages/
 │   ├── shared/           Core types, USDC utilities, chain configs, security helpers
 │   ├── seller-sdk/       Express & Hono payment middleware for API monetization
@@ -213,7 +213,7 @@ api-toll/
 │   ├── agent-client/     Example agent that auto-pays for APIs
 │   ├── indexer/          PostgreSQL transaction indexer (Hono)
 │   └── discovery/        Tool discovery & marketplace API (Hono)
-├── convex/               Serverless backend — 36 tables, real-time queries
+├── convex/               Serverless backend — 29 tables, real-time queries
 ├── examples/             Working examples for sellers, agents, MCP, LangChain
 ├── docs/                 Quick start, architecture, deployment, self-custody guides
 ├── scripts/              Wallet setup, seed data, testing utilities
