@@ -8,22 +8,19 @@ RUN npm install -g tsx
 # Copy package files (monorepo structure)
 COPY package.json package-lock.json* ./
 COPY packages/shared/package.json packages/shared/
-COPY packages/seller-sdk/package.json packages/seller-sdk/
 COPY packages/mcp-server/package.json packages/mcp-server/
 COPY apps/hireable-agents/package.json apps/hireable-agents/
 
 # Install dependencies
-RUN npm install --workspace=packages/shared --workspace=packages/seller-sdk --workspace=packages/mcp-server --workspace=apps/hireable-agents
+RUN npm install --workspace=packages/shared --workspace=packages/mcp-server --workspace=apps/hireable-agents
 
 # Copy source
 COPY packages/shared/ packages/shared/
-COPY packages/seller-sdk/ packages/seller-sdk/
 COPY packages/mcp-server/ packages/mcp-server/
 COPY apps/hireable-agents/ apps/hireable-agents/
 
 # Build workspace packages
 RUN npm run build --workspace=packages/shared
-RUN npm run build --workspace=packages/seller-sdk
 RUN npm run build --workspace=packages/mcp-server
 
 # Non-root user
