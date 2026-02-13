@@ -15,6 +15,24 @@ app.use(paymentMiddleware({
   sellerWallet: process.env.SELLER_WALLET,
 }));`
 
+const mcpCode = `// mcp-tools.ts — Monetize MCP tools in 5 lines
+import { createPaidMCPServer, toExpressRouter }
+  from "@apitoll/mcp-server";
+
+const server = createPaidMCPServer({
+  walletAddress: process.env.SELLER_WALLET,
+});
+
+server.paidTool(
+  "analyze",
+  "Analyze data with AI",
+  z.object({ query: z.string() }),
+  { price: 0.01, chains: ["base"] },
+  async ({ query }) => analyzeData(query)
+);
+
+app.use("/mcp", toExpressRouter(server));`
+
 const buyerCode = `// agent.ts — Agent auto-handles 402 payments
 import { createAgentWallet, createFacilitatorSigner }
   from "@apitoll/buyer-sdk";
@@ -33,10 +51,10 @@ const res = await wallet.fetch(
 console.log(await res.json()); // { joke: "..." }`
 
 export function CodeShowcase() {
-  const [activeTab, setActiveTab] = useState<'seller' | 'buyer'>('seller')
+  const [activeTab, setActiveTab] = useState<'seller' | 'buyer' | 'mcp'>('seller')
   const [copied, setCopied] = useState(false)
 
-  const code = activeTab === 'seller' ? sellerCode : buyerCode
+  const code = activeTab === 'seller' ? sellerCode : activeTab === 'mcp' ? mcpCode : buyerCode
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code)
@@ -85,6 +103,14 @@ export function CodeShowcase() {
                   <Check className="h-3 w-3 text-emerald-400" />
                 </div>
                 <p className="text-sm text-slate-300">
+                  <code className="rounded bg-slate-800 px-1.5 py-0.5 text-xs font-mono text-blue-400">@apitoll/mcp-server</code> — Monetize MCP tools in 5 lines of code
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
+                  <Check className="h-3 w-3 text-emerald-400" />
+                </div>
+                <p className="text-sm text-slate-300">
                   Facilitator handles USDC transfers on Base & Solana — sellers never touch crypto wallets
                 </p>
               </div>
@@ -105,6 +131,16 @@ export function CodeShowcase() {
                   }`}
                 >
                   seller.ts
+                </button>
+                <button
+                  onClick={() => setActiveTab('mcp')}
+                  className={`border-b-2 px-4 py-3 text-xs font-semibold transition-colors ${
+                    activeTab === 'mcp'
+                      ? 'border-blue-500 text-white'
+                      : 'border-transparent text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  mcp-tools.ts
                 </button>
                 <button
                   onClick={() => setActiveTab('buyer')}
@@ -170,7 +206,7 @@ function colorize(line: string) {
         if (/^(import|from|export|const|await|new)$/.test(token)) {
           return <span key={idx} className="text-violet-400">{token}</span>
         }
-        if (/^(paymentMiddleware|createAgentWallet|createFacilitatorSigner|fetch|app|wallet|res|console)$/.test(token)) {
+        if (/^(paymentMiddleware|createAgentWallet|createFacilitatorSigner|createPaidMCPServer|toExpressRouter|paidTool|fetch|app|wallet|server|res|console|z)$/.test(token)) {
           return <span key={idx} className="text-cyan-400">{token}</span>
         }
         if (/^\d+\.?\d*$/.test(token)) {

@@ -39,9 +39,10 @@ export function PlatformTab() {
       <Section title="NPM Packages">
         <div className="space-y-3">
           {[
-            { name: '@apitoll/shared', version: '0.1.0-beta.3', description: 'Shared types & utilities' },
-            { name: '@apitoll/seller-sdk', version: '0.1.0-beta.3', description: 'Express/Hono middleware for sellers' },
-            { name: '@apitoll/buyer-sdk', version: '0.1.0-beta.3', description: 'Agent wallet & payment SDK' },
+            { name: '@apitoll/shared', version: '0.1.0-beta.5', description: 'Shared types & utilities' },
+            { name: '@apitoll/seller-sdk', version: '0.1.0-beta.5', description: 'Express/Hono middleware for sellers' },
+            { name: '@apitoll/buyer-sdk', version: '0.1.0-beta.5', description: 'Agent wallet & payment SDK' },
+            { name: '@apitoll/mcp-server', version: '0.1.0-beta.5', description: 'Monetize MCP tools with x402 payments' },
           ].map((pkg) => (
             <div
               key={pkg.name}
@@ -66,7 +67,8 @@ export function PlatformTab() {
             { label: 'Dashboard', url: 'https://apitoll.com', status: 'Live' },
             { label: 'Convex Backend', url: process.env.NEXT_PUBLIC_CONVEX_URL || '', status: 'Live' },
             { label: 'Facilitator', url: 'https://pay.apitoll.com', status: 'Live' },
-            { label: 'Discovery API', url: 'https://apitoll.com/api/discovery', status: 'Live' },
+            { label: 'Discovery API', url: 'https://apitoll.com/api/discover', status: 'Live' },
+            { label: 'Hireable Agents', url: 'https://hireable-agents-production.up.railway.app', status: 'Live' },
           ].map((svc) => (
             <div
               key={svc.label}

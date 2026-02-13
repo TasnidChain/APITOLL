@@ -183,6 +183,7 @@ export async function GET(req: NextRequest) {
       npm: {
         buyer_sdk: "https://www.npmjs.com/package/@apitoll/buyer-sdk",
         seller_sdk: "https://www.npmjs.com/package/@apitoll/seller-sdk",
+        mcp_server: "https://www.npmjs.com/package/@apitoll/mcp-server",
         shared: "https://www.npmjs.com/package/@apitoll/shared",
       },
     },
@@ -206,8 +207,10 @@ export async function GET(req: NextRequest) {
     become_seller: {
       url: "https://apitoll.com/dashboard/sellers",
       sdk: "npm install @apitoll/seller-sdk",
+      mcp_sdk: "npm install @apitoll/mcp-server",
       docs: "https://github.com/TasnidChain/APITOLL",
       commission: "Earn 97% of every payment. 3% platform fee.",
+      mcp_hint: "Use @apitoll/mcp-server to monetize MCP tools — 5 lines of code.",
     },
 
     // Referral program (agent viral loop)
