@@ -119,7 +119,7 @@ export default function PrivacyPage() {
               By using the Service, you acknowledge that blockchain transactions are:
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-6">
-              <li><strong>Public</strong> — all on-chain transactions are visible to anyone on the Base blockchain</li>
+              <li><strong>Public</strong> — all on-chain transactions are visible to anyone on the Base or Solana blockchain</li>
               <li><strong>Permanent</strong> — blockchain data cannot be deleted or modified</li>
               <li><strong>Pseudonymous</strong> — wallet addresses are not inherently linked to real-world identity, but may be correlated through other means</li>
             </ul>

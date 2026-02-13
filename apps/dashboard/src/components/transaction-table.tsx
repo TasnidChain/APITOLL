@@ -95,12 +95,17 @@ export function TransactionTable({
               <td className="py-3 text-muted-foreground">{tx.latencyMs}ms</td>
               <td className="py-3">
                 {tx.txHash && (
-                  <button
+                  <a
+                    href={tx.chain === 'solana'
+                      ? `https://solscan.io/tx/${tx.txHash}`
+                      : `https://basescan.org/tx/${tx.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-muted-foreground hover:text-foreground"
                     title="View on explorer"
                   >
                     <ExternalLink className="h-4 w-4" />
-                  </button>
+                  </a>
                 )}
               </td>
             </tr>

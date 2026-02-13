@@ -747,9 +747,9 @@
 
   <div class="code-block active" id="seller">
     <span class="comment">// Monetize any API endpoint</span><br>
-    <span class="keyword">import</span> { <span class="func">createTollgate</span> } <span class="keyword">from</span> <span class="string">'@apitoll/seller'</span>;<br><br>
+    <span class="keyword">import</span> { <span class="func">paymentMiddleware</span> } <span class="keyword">from</span> <span class="string">'@apitoll/seller-sdk'</span>;<br><br>
     <span class="comment">// That's it. One line to add a toll.</span><br>
-    app.<span class="func">use</span>(<span class="string">'/api/translate'</span>, <span class="func">createTollgate</span>({<br>
+    app.<span class="func">use</span>(<span class="func">paymentMiddleware</span>({<br>
     &nbsp;&nbsp;<span class="prop">price</span>: <span class="string">'0.001'</span>,&nbsp;&nbsp;&nbsp;<span class="comment">// $0.001 per request</span><br>
     &nbsp;&nbsp;<span class="prop">currency</span>: <span class="string">'USDC'</span>,<br>
     &nbsp;&nbsp;<span class="prop">network</span>: <span class="string">'base'</span><br>
@@ -759,10 +759,10 @@
 
   <div class="code-block" id="buyer">
     <span class="comment">// Give your agent a wallet and let it pay</span><br>
-    <span class="keyword">import</span> { <span class="func">createAgent</span> } <span class="keyword">from</span> <span class="string">'@apitoll/buyer'</span>;<br><br>
-    <span class="keyword">const</span> agent = <span class="func">createAgent</span>({ <span class="prop">wallet</span>: agentWallet });<br><br>
+    <span class="keyword">import</span> { <span class="func">createAgentWallet</span> } <span class="keyword">from</span> <span class="string">'@apitoll/buyer-sdk'</span>;<br><br>
+    <span class="keyword">const</span> wallet = <span class="func">createAgentWallet</span>({ <span class="prop">signer</span>: facilitatorSigner });<br><br>
     <span class="comment">// Fetch like normal — payment handled on 402</span><br>
-    <span class="keyword">const</span> data = <span class="keyword">await</span> agent.<span class="func">fetch</span>(<br>
+    <span class="keyword">const</span> data = <span class="keyword">await</span> wallet.<span class="func">fetch</span>(<br>
     &nbsp;&nbsp;<span class="string">'https://api.example.com/translate'</span><br>
     );<br><br>
     <span class="comment">// Agent sees 402 → pays USDC → gets data ✓</span>
@@ -774,7 +774,7 @@
   <h2>Build the agent economy.</h2>
   <p>API Toll is open source. Star the repo. Ship a tollgate. Join the movement.</p>
   <div class="cta-buttons">
-    <a href="https://github.com/TasnidChain/Apitoll" class="btn btn-primary">⭐ Star on GitHub</a>
+    <a href="https://github.com/TasnidChain/APITOLL" class="btn btn-primary">⭐ Star on GitHub</a>
     <a href="https://www.x402.org/" class="btn btn-secondary">Learn x402 →</a>
   </div>
 </div>
@@ -790,8 +790,8 @@
     <div class="value">USDC</div>
   </div>
   <div class="protocol-item">
-    <div class="label">Chain</div>
-    <div class="value">Base L2</div>
+    <div class="label">Chains</div>
+    <div class="value">Base L2 + Solana</div>
   </div>
   <div class="protocol-item">
     <div class="label">License</div>

@@ -66,7 +66,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-white">4. Payments and Settlement</h2>
             <p className="mt-3">
-              All payments are settled on-chain using USDC on the Base blockchain (Coinbase L2). By using the Service:
+              All payments are settled on-chain using USDC on the Base blockchain (Coinbase L2) or Solana. By using the Service:
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-6">
               <li><strong>Finality</strong> — transactions settle in approximately 2 seconds and are irreversible once confirmed on-chain</li>
@@ -135,6 +135,7 @@ export default function TermsPage() {
             <p className="mt-3">
               The API Toll SDKs (<code className="text-blue-400">@apitoll/seller-sdk</code>,{' '}
               <code className="text-blue-400">@apitoll/buyer-sdk</code>,{' '}
+              <code className="text-blue-400">@apitoll/mcp-server</code>,{' '}
               <code className="text-blue-400">@apitoll/shared</code>) are open-source under the MIT License.
               The API Toll dashboard, facilitator service, branding, and proprietary algorithms remain
               the property of Rizq Labs AI LLC.

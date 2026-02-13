@@ -111,7 +111,7 @@ export async function GET(_req: NextRequest) {
       },
     },
     protocol: "x402",
-    chain: "base",
+    chains: ["base", "solana"],
     uptime_url: "https://apitoll.com/api/health",
     dashboard: "https://apitoll.com/dashboard",
     timestamp: new Date().toISOString(),

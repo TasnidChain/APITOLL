@@ -13,6 +13,7 @@ const footerLinks = {
     { label: 'GitHub', href: 'https://github.com/TasnidChain/APITOLL' },
     { label: 'npm: @apitoll/seller-sdk', href: 'https://www.npmjs.com/package/@apitoll/seller-sdk' },
     { label: 'npm: @apitoll/buyer-sdk', href: 'https://www.npmjs.com/package/@apitoll/buyer-sdk' },
+    { label: 'npm: @apitoll/mcp-server', href: 'https://www.npmjs.com/package/@apitoll/mcp-server' },
   ],
   Company: [
     { label: 'Twitter / X', href: 'https://x.com/apitoll' },
@@ -35,7 +36,7 @@ export function Footer() {
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
               Payment infrastructure for the autonomous agent economy. Built on
-              the x402 HTTP payment protocol. Settled on Base with USDC.
+              the x402 HTTP payment protocol. Settled on Base & Solana with USDC.
             </p>
           </div>
 

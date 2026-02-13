@@ -203,7 +203,7 @@ function colorize(line: string) {
         if (token.startsWith('"') && token.endsWith('"')) {
           return <span key={idx} className="text-emerald-400">{token}</span>
         }
-        if (/^(import|from|export|const|await|new)$/.test(token)) {
+        if (/^(import|from|export|const|await|new|async)$/.test(token)) {
           return <span key={idx} className="text-violet-400">{token}</span>
         }
         if (/^(paymentMiddleware|createAgentWallet|createFacilitatorSigner|createPaidMCPServer|toExpressRouter|paidTool|fetch|app|wallet|server|res|console|z)$/.test(token)) {

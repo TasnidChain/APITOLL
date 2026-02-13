@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'API Toll - Payment Infrastructure for AI Agents',
-  description: 'Enable AI agents to autonomously pay for API calls with USDC micropayments. Built on the x402 protocol.',
+  description: 'Enable AI agents to autonomously pay for API calls with USDC micropayments on Base & Solana. Built on the x402 protocol.',
   icons: {
     icon: [
       { url: '/icons/icon-96x96.svg', type: 'image/svg+xml' },
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'API Toll - Payment Infrastructure for AI Agents',
-    description: 'Enable AI agents to autonomously pay for API calls with USDC micropayments on Base. 3-line SDK integration.',
+    description: 'Enable AI agents to autonomously pay for API calls with USDC micropayments on Base & Solana. 3-line SDK integration.',
     url: 'https://apitoll.com',
     siteName: 'API Toll',
     type: 'website',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: '@apitoll',
     title: 'API Toll - Payment Infrastructure for AI Agents',
-    description: 'Enable AI agents to autonomously pay for API calls with USDC micropayments on Base. 3-line SDK integration.',
+    description: 'Enable AI agents to autonomously pay for API calls with USDC micropayments on Base & Solana. 3-line SDK integration.',
   },
 }
 
