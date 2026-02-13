@@ -15,7 +15,11 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "sideEffects": false,
   "engines": {
     "node": ">=18"
@@ -35,7 +39,16 @@
     "dev": "tsc --watch",
     "test": "vitest"
   },
-  "keywords": ["x402", "agent", "micropayments", "usdc", "budget", "spend-management", "evolution", "self-optimization"],
+  "keywords": [
+    "x402",
+    "agent",
+    "micropayments",
+    "usdc",
+    "budget",
+    "spend-management",
+    "evolution",
+    "self-optimization"
+  ],
   "dependencies": {
     "@apitoll/shared": "0.1.0-beta.4"
   },
@@ -45,9 +58,15 @@
     "@solana/spl-token": ">=0.4.0"
   },
   "peerDependenciesMeta": {
-    "ethers": { "optional": true },
-    "@solana/web3.js": { "optional": true },
-    "@solana/spl-token": { "optional": true }
+    "ethers": {
+      "optional": true
+    },
+    "@solana/web3.js": {
+      "optional": true
+    },
+    "@solana/spl-token": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "typescript": "^5.4.0",

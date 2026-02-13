@@ -261,7 +261,7 @@ export class PaidMCPServer {
       if (!tool.payment) continue
 
       try {
-        const response = await fetch(`${this.config.discoveryUrl}/seller/tools`, {
+        const response = await fetch(`${this.config.discoveryUrl}/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -269,16 +269,15 @@ export class PaidMCPServer {
           },
           body: JSON.stringify({
             name: tool.name,
-            slug: tool.name.toLowerCase().replace(/\s+/g, '-'),
             description: tool.description,
-            baseUrl,
+            url: baseUrl,
             method: 'POST',
-            path: `/tools/${name}`,
-            price: tool.payment.price,
-            chains: tool.payment.chains || [this.config.defaultChain],
+            path: `/mcp/tools/${name}`,
+            price: String(tool.payment.price),
+            wallet_address: this.config.walletAddress,
+            chain: (tool.payment.chains || [this.config.defaultChain])[0],
             category: tool.payment.category || 'other',
-            tags: tool.payment.tags || [],
-            inputSchema: this.zodToJsonSchema(tool.inputSchema),
+            referral_code: this.config.sellerId,
           }),
         })
 
