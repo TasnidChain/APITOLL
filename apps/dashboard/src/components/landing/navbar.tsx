@@ -19,7 +19,6 @@ const links = [
   { label: 'How It Works', href: '#how-it-works' },
   { label: 'Pricing', href: '#pricing' },
   { label: 'API Docs', href: 'https://api.apitoll.com/api/docs', external: true },
-  { label: 'Dashboard', href: '/dashboard' },
 ]
 
 export function Navbar() {
