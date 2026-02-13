@@ -7,7 +7,7 @@ WORKDIR /app
 RUN npm install -g tsx
 
 # Copy package files (monorepo structure)
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json* tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/mcp-server/package.json packages/mcp-server/
 COPY apps/hireable-agents/package.json apps/hireable-agents/
