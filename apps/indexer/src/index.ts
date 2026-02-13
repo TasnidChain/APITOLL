@@ -11,8 +11,17 @@ import analyticsRouter from './routes/analytics'
 
 const app = new Hono()
 
+// Allowed origins for CORS — restrict in production
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['https://apitoll.com', 'https://dashboard.apitoll.com', 'https://api.apitoll.com']
+
 // Middleware
-app.use('*', cors())
+app.use('*', cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? allowedOrigins
+    : '*',
+}))
 app.use('*', logger())
 
 // Health check

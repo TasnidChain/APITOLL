@@ -233,6 +233,24 @@ export async function getToolsBySeller(sellerId: string): Promise<Tool[]> {
   `
 }
 
+// Seller Auth
+
+export interface Seller {
+  id: string
+  name: string
+  wallet_address: string
+  api_key: string
+}
+
+export async function getSellerByApiKey(apiKey: string): Promise<Seller | null> {
+  const [seller] = await sql<Seller[]>`
+    SELECT id, name, wallet_address, api_key
+    FROM sellers
+    WHERE api_key = ${apiKey}
+  `
+  return seller || null
+}
+
 // Stats & Analytics
 
 export async function incrementToolCalls(toolId: string, latencyMs: number): Promise<void> {

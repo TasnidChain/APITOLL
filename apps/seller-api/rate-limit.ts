@@ -2,12 +2,23 @@
  * IP-based rate limiter for the seller-api.
  * Uses Redis when REDIS_URL is set, falls back to in-memory Map.
  * Circuit breaker pattern: if Redis fails repeatedly, auto-fallback to in-memory.
+ *
+ * ⚠️  In production, REDIS_URL is strongly recommended for distributed rate limiting.
+ *     In-memory fallback does not work across multiple instances.
  */
 
 import { Request, Response, NextFunction } from "express";
 import { createLogger } from "@apitoll/shared";
 
 const log = createLogger("seller-api:rate-limit");
+
+// Warn loudly at startup if Redis is missing in production
+if (process.env.NODE_ENV === "production" && !process.env.REDIS_URL && !process.env.REDIS_HOST) {
+  log.error(
+    "⚠️  REDIS_URL not set in production! Rate limiting will use in-memory store, " +
+    "which does NOT work across multiple instances. Set REDIS_URL for distributed rate limiting."
+  );
+}
 
 interface RateLimitEntry {
   count: number;

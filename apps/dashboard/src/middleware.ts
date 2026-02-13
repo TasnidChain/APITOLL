@@ -1,9 +1,38 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+// Protected API routes that require authentication
+const PROTECTED_API_ROUTES = [
+  '/api/stripe/checkout',
+  '/api/stripe/portal',
+  '/api/agents',
+  '/api/playground',
+]
+
 // Clerk auth is handled client-side via ClerkClientProvider + useClerkReady.
 // Server-side clerkMiddleware can be added here if CLERK_SECRET_KEY is set.
-export default function middleware(_req: NextRequest) {
+// Below we add a basic guard for API routes that checks for a Clerk session.
+export default function middleware(req: NextRequest) {
+  // Protect API routes — require Clerk session token
+  const isProtectedApi = PROTECTED_API_ROUTES.some(route => req.nextUrl.pathname.startsWith(route))
+
+  if (isProtectedApi) {
+    // Check for Clerk session token (cookie-based auth from Clerk)
+    const sessionToken = req.cookies.get('__session')?.value
+      || req.cookies.get('__clerk_db_jwt')?.value
+    // Check for API key auth (for programmatic access)
+    const apiKey = req.headers.get('X-API-Key') || req.headers.get('Authorization')?.replace('Bearer ', '')
+
+    if (!sessionToken && !apiKey) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+  }
+
+  // Note: /api/stripe/webhook is NOT protected — it uses Stripe signature verification instead
+
   const response = NextResponse.next()
 
   // Add security headers to all responses

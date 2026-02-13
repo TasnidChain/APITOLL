@@ -8,6 +8,7 @@ import {
   deleteTool,
   getToolsBySeller,
   getToolById,
+  getSellerByApiKey,
 } from '../db/queries'
 
 const app = new Hono<Env>()
@@ -29,12 +30,29 @@ const toolSchema = z.object({
   mcpToolSpec: z.record(z.unknown()).optional(),
 })
 
-// Middleware to get seller from header
+// Middleware to authenticate seller via API key
+// Accepts: X-Seller-Key header (preferred) or X-Seller-ID (legacy, deprecated)
 async function requireSeller(c: Context, next: Next) {
+  const apiKey = c.req.header('X-Seller-Key') || c.req.header('Authorization')?.replace('Bearer ', '')
+
+  if (apiKey) {
+    // Preferred: validate against sellers table
+    const seller = await getSellerByApiKey(apiKey)
+    if (!seller) {
+      return c.json({ error: 'Invalid seller API key' }, 401)
+    }
+    c.set('sellerId', seller.id)
+    return next()
+  }
+
+  // Legacy fallback: X-Seller-ID header (for backward compatibility during migration)
+  // TODO: Remove this fallback after all sellers migrate to API key auth
   const sellerId = c.req.header('X-Seller-ID')
   if (!sellerId) {
-    return c.json({ error: 'Missing X-Seller-ID header' }, 401)
+    return c.json({ error: 'Missing authentication. Provide X-Seller-Key header with your seller API key.' }, 401)
   }
+
+  console.warn(`⚠️  Seller ${sellerId} using deprecated X-Seller-ID auth — migrate to X-Seller-Key`)
   c.set('sellerId', sellerId)
   await next()
 }

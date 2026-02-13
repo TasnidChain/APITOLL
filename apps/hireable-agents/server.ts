@@ -24,10 +24,20 @@ import { dataAnalystSchema, dataAnalyst } from './tools/data-analyst'
 
 // ── Server Config ────────────────────────────────────────────
 
-const WALLET = process.env.WALLET_ADDRESS || process.env.SELLER_WALLET || '0x2955B6a41a2d10A5cC5C8A4a144829502a73B0a5'
+const WALLET = process.env.WALLET_ADDRESS || process.env.SELLER_WALLET
+if (!WALLET) {
+  console.error('❌ WALLET_ADDRESS or SELLER_WALLET environment variable is required.')
+  console.error('   Usage: WALLET_ADDRESS=0x... npm start')
+  process.exit(1)
+}
+
 const PORT = process.env.PORT || 3005
 const DISCOVERY_URL = process.env.DISCOVERY_URL || 'https://apitoll.com/api/discover'
 const SELLER_ID = process.env.SELLER_ID || 'hireable-agents'
+
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['https://apitoll.com', 'https://dashboard.apitoll.com', 'https://api.apitoll.com']
 
 // ── MCP Server ───────────────────────────────────────────────
 
@@ -121,12 +131,31 @@ server.paidTool(
 const app = express()
 app.use(express.json({ limit: '5mb' }))
 
-// CORS
-app.use((_req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
+// CORS — restrict origins in production
+app.use((req, res, next) => {
+  const origin = req.headers.origin || ''
+  if (process.env.NODE_ENV === 'production') {
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin)
+      res.setHeader('Vary', 'Origin')
+    }
+    // No header = browser blocks cross-origin (safe default)
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*')
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Payment, Authorization')
-  if (_req.method === 'OPTIONS') return res.status(204).end()
+  if (req.method === 'OPTIONS') return res.status(204).end()
+  next()
+})
+
+// Security Headers
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
+  res.setHeader('X-XSS-Protection', '1; mode=block')
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
   next()
 })
 
