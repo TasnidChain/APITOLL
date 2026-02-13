@@ -11,6 +11,8 @@
  *   code_eval     — $0.01  — Sandboxed JavaScript execution
  *   lead_enrich   — $0.08  — Full domain/company intelligence
  *   data_analyst  — $0.02  — JSON/CSV statistical analysis
+ *
+ * @version 0.1.0-beta.5
  */
 
 import express from 'express'
