@@ -2,6 +2,7 @@ FROM node:20-slim
 
 WORKDIR /app
 
+# Hireable Agents MCP Server
 # Install tsx globally for running TypeScript directly
 RUN npm install -g tsx
 
