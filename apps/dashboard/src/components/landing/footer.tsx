@@ -17,7 +17,6 @@ const footerLinks = {
   ],
   Company: [
     { label: 'Twitter / X', href: 'https://x.com/apitoll' },
-    { label: 'Discord', href: 'https://discord.gg/apitoll' },
     { label: 'Terms of Service', href: '/terms' },
     { label: 'Privacy Policy', href: '/privacy' },
   ],

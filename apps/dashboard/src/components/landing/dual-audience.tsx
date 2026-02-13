@@ -11,7 +11,7 @@ const buyerBenefits = [
 const sellerBenefits = [
   'Monetize any API with 3 lines of code',
   'Instant USDC settlement, no invoicing',
-  'Zero chargebacks, guaranteed revenue',
+  'Non-reversible on-chain settlement',
   'Analytics dashboard with latency metrics',
   'Featured listings in the marketplace',
 ]

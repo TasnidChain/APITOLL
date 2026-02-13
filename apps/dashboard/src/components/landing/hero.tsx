@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight, ExternalLink } from 'lucide-react'
+import { CopyableCurl } from './copyable-curl'
 
 export function Hero() {
   return (
@@ -86,8 +87,8 @@ export function Hero() {
           </div>
           <div className="h-8 w-px bg-slate-800 hidden sm:block" />
           <div className="text-center">
-            <p className="text-2xl font-bold text-white">0</p>
-            <p className="text-xs text-slate-500">Chargebacks ever</p>
+            <p className="text-2xl font-bold text-emerald-400">&#10003;</p>
+            <p className="text-xs text-slate-500">Non-reversible settlement</p>
           </div>
         </div>
 
@@ -132,6 +133,9 @@ export function Hero() {
               </div>
             </div>
           </div>
+
+          {/* Copyable curl command */}
+          <CopyableCurl />
         </div>
       </div>
     </section>

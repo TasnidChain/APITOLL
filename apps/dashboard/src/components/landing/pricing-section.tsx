@@ -7,49 +7,35 @@ const plans = [
     name: 'Free',
     price: '$0',
     period: 'forever',
-    description: 'Perfect for getting started',
+    description: 'Everything you need to get started',
     features: [
-      '1,000 API calls / day',
-      '1 agent wallet',
-      '2 seller integrations',
-      '7-day analytics',
+      '10,000 API calls / day',
+      '3 agent wallets',
+      '5 seller integrations',
+      '30-day analytics',
+      'Custom policies & webhooks',
       'Community support',
     ],
-    cta: 'Get Started',
+    cta: 'Get Started Free',
+    href: '/dashboard',
     popular: false,
   },
   {
-    name: 'Pro',
-    price: '$49',
-    period: '/month',
-    description: 'For growing businesses',
-    features: [
-      '100,000 API calls / day',
-      '10 agent wallets',
-      '25 seller integrations',
-      '90-day analytics',
-      'Custom policies & webhooks',
-      'Featured seller listings',
-      'Priority support',
-    ],
-    cta: 'Start Pro Trial',
-    popular: true,
-  },
-  {
     name: 'Enterprise',
-    price: '$499',
-    period: '/month',
+    price: 'Custom',
+    period: '',
     description: 'For large-scale operations',
     features: [
       'Unlimited API calls',
-      'Unlimited agents',
-      'Unlimited sellers',
+      'Unlimited agents & sellers',
       '365-day analytics',
       'Revenue dashboard',
       'Custom integrations & SLA',
+      'Featured seller listings',
       'Dedicated support',
     ],
-    cta: 'Contact Sales',
+    cta: 'Contact Us',
+    href: 'mailto:tex@apitoll.com',
     popular: false,
   },
 ]
@@ -69,12 +55,12 @@ export function PricingSection() {
             Simple, transparent pricing
           </h2>
           <p className="mt-4 text-lg text-slate-400">
-            Start free. Scale as your agents grow. 3% transaction fee on all plans.
+            Start free. 3% transaction fee. Talk to us when you need more.
           </p>
         </div>
 
         {/* Cards */}
-        <div className="mx-auto mt-16 grid max-w-5xl gap-6 lg:grid-cols-3">
+        <div className="mx-auto mt-16 grid max-w-3xl gap-6 lg:grid-cols-2">
           {plans.map((plan) => (
             <div
               key={plan.name}
@@ -100,21 +86,26 @@ export function PricingSection() {
 
               <div className="mt-6 flex items-baseline gap-1">
                 <span className="text-4xl font-bold text-white">{plan.price}</span>
-                <span className="text-sm text-slate-400">{plan.period}</span>
+                {plan.period && <span className="text-sm text-slate-400">{plan.period}</span>}
               </div>
 
-              <Link
-                href="/dashboard"
-                className={cn(
-                  'mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-all',
-                  plan.popular
-                    ? 'bg-white text-slate-950 hover:bg-slate-200'
-                    : 'border border-slate-700 bg-slate-800/50 text-white hover:bg-slate-800'
-                )}
-              >
-                {plan.cta}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+              {plan.href.startsWith('mailto:') ? (
+                <a
+                  href={plan.href}
+                  className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-slate-800"
+                >
+                  {plan.cta}
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              ) : (
+                <Link
+                  href={plan.href}
+                  className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition-all hover:bg-slate-200"
+                >
+                  {plan.cta}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
 
               <ul className="mt-8 space-y-3">
                 {plan.features.map((feature) => (

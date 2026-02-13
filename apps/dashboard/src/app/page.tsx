@@ -4,6 +4,7 @@ import { LiveTicker } from '@/components/landing/live-ticker'
 import { HowItWorks } from '@/components/landing/how-it-works'
 import { Features } from '@/components/landing/features'
 import { DualAudience } from '@/components/landing/dual-audience'
+import { RevenueCalculator } from '@/components/landing/revenue-calculator'
 import { Comparison } from '@/components/landing/comparison'
 import { CodeShowcase } from '@/components/landing/code-showcase'
 import { SwarmPitch } from '@/components/landing/swarm-pitch'
@@ -20,6 +21,7 @@ export default function LandingPage() {
       <LiveTicker />
       <HowItWorks />
       <DualAudience />
+      <RevenueCalculator />
       <Features />
       <Comparison />
       <CodeShowcase />

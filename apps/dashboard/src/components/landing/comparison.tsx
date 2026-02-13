@@ -14,8 +14,8 @@ const rows = [
     paypal: false,
   },
   {
-    feature: 'Chargebacks',
-    apitoll: 'None',
+    feature: 'Reversible payments',
+    apitoll: 'No (on-chain finality)',
     stripe: 'Yes',
     paypal: 'Yes',
   },
