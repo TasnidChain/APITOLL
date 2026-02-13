@@ -19,6 +19,7 @@ COPY apps/seller-api/package.json apps/seller-api/package.json
 COPY apps/agent-client/package.json apps/agent-client/package.json
 COPY apps/indexer/package.json apps/indexer/package.json
 COPY apps/discovery/package.json apps/discovery/package.json
+COPY apps/hireable-agents/package.json apps/hireable-agents/package.json
 
 # Install all deps (monorepo-aware)
 RUN npm ci --ignore-scripts
