@@ -172,7 +172,13 @@ export async function POST(req: NextRequest) {
     // Save evolution state via Convex HTTP endpoint (evolution.saveState is internalMutation)
     // ------------------------------------------------------------------
     const newMutations = Array.isArray(mutations) ? mutations : [];
-    const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(".cloud", ".site") || "";
+    const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(".cloud", ".site");
+    if (!convexSiteUrl) {
+      return NextResponse.json(
+        { error: "Convex URL not configured" },
+        { status: 500 }
+      );
+    }
 
     const saveRes = await fetch(`${convexSiteUrl}/api/evolution/save`, {
       method: "POST",

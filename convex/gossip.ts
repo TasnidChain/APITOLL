@@ -28,7 +28,13 @@ export const recordGossip = internalMutation({
     });
 
     // Upsert the aggregated gossip entry
-    const key = `${args.host}${new URL(args.endpoint).pathname}`;
+    let pathname: string;
+    try {
+      pathname = new URL(args.endpoint).pathname;
+    } catch {
+      pathname = args.endpoint;
+    }
+    const key = `${args.host}${pathname}`;
     const existing = await ctx.db
       .query("gossip")
       .withIndex("by_endpoint", (q) => q.eq("endpoint", key))

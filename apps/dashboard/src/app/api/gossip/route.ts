@@ -105,7 +105,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Record gossip via Convex HTTP endpoint (gossip.recordGossip is internalMutation)
-    const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(".cloud", ".site") || "";
+    const convexSiteUrl = process.env.NEXT_PUBLIC_CONVEX_URL?.replace(".cloud", ".site");
+    if (!convexSiteUrl) {
+      return NextResponse.json(
+        { error: "Convex URL not configured" },
+        { status: 500 }
+      );
+    }
     const gossipRes = await fetch(`${convexSiteUrl}/api/gossip`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -137,8 +137,13 @@ export async function verifyPayment(
     };
 
     if (result.valid || result.success) {
-      const amount = requirements[0]
-        ? usdcFromSmallestUnit(requirements[0].maxAmountRequired)
+      // Find the requirement matching the actual payment network
+      const matchedRequirement = requirements.find(
+        (r) => r.network === paymentPayload.network
+      ) || requirements[0];
+
+      const amount = matchedRequirement
+        ? usdcFromSmallestUnit(matchedRequirement.maxAmountRequired)
         : "0";
 
       // Calculate fee breakdown for the verified amount
@@ -148,10 +153,10 @@ export async function verifyPayment(
         valid: true,
         receipt: {
           txHash: result.txHash || result.transaction?.hash || "",
-          chain: detectChainFromNetwork(paymentPayload.network || requirements[0]?.network),
+          chain: detectChainFromNetwork(paymentPayload.network || matchedRequirement?.network),
           amount,
           from: result.from || paymentPayload.from || "",
-          to: requirements[0]?.payTo || "",
+          to: matchedRequirement?.payTo || "",
           timestamp: new Date().toISOString(),
           blockNumber: result.blockNumber,
         },
