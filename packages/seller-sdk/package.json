@@ -1,6 +1,6 @@
 {
   "name": "@apitoll/seller-sdk",
-  "version": "0.1.0-beta.5",
+  "version": "0.1.0-beta.6",
   "description": "x402 payment middleware for API and MCP tool monetization. Add per-request micropayments in 3 lines of code.",
   "license": "MIT",
   "type": "module",
@@ -15,7 +15,11 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "sideEffects": false,
   "engines": {
     "node": ">=18"
@@ -35,9 +39,17 @@
     "dev": "tsc --watch",
     "test": "vitest"
   },
-  "keywords": ["x402", "micropayments", "agent", "mcp", "usdc", "stablecoin", "api-monetization"],
+  "keywords": [
+    "x402",
+    "micropayments",
+    "agent",
+    "mcp",
+    "usdc",
+    "stablecoin",
+    "api-monetization"
+  ],
   "dependencies": {
-    "@apitoll/shared": "0.1.0-beta.5"
+    "@apitoll/shared": "0.1.0-beta.6"
   },
   "peerDependencies": {
     "express": ">=4.0.0",
@@ -45,9 +57,15 @@
     "redis": ">=4.0.0"
   },
   "peerDependenciesMeta": {
-    "express": { "optional": true },
-    "hono": { "optional": true },
-    "redis": { "optional": true }
+    "express": {
+      "optional": true
+    },
+    "hono": {
+      "optional": true
+    },
+    "redis": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "typescript": "^5.4.0",

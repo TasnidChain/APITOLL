@@ -39,10 +39,10 @@ export function PlatformTab() {
       <Section title="NPM Packages">
         <div className="space-y-3">
           {[
-            { name: '@apitoll/shared', version: '0.1.0-beta.5', description: 'Shared types & utilities' },
-            { name: '@apitoll/seller-sdk', version: '0.1.0-beta.5', description: 'Express/Hono middleware for sellers' },
-            { name: '@apitoll/buyer-sdk', version: '0.1.0-beta.5', description: 'Agent wallet & payment SDK' },
-            { name: '@apitoll/mcp-server', version: '0.1.0-beta.5', description: 'Monetize MCP tools with x402 payments' },
+            { name: '@apitoll/shared', version: '0.1.0-beta.6', description: 'Shared types & utilities' },
+            { name: '@apitoll/seller-sdk', version: '0.1.0-beta.6', description: 'Express/Hono middleware for sellers' },
+            { name: '@apitoll/buyer-sdk', version: '0.1.0-beta.6', description: 'Agent wallet & payment SDK' },
+            { name: '@apitoll/mcp-server', version: '0.1.0-beta.6', description: 'Monetize MCP tools with x402 payments' },
           ].map((pkg) => (
             <div
               key={pkg.name}

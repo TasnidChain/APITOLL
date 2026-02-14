@@ -1,6 +1,6 @@
 {
   "name": "@apitoll/shared",
-  "version": "0.1.0-beta.5",
+  "version": "0.1.0-beta.6",
   "description": "Shared types and utilities for API Toll packages",
   "license": "MIT",
   "type": "module",
@@ -15,7 +15,11 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "sideEffects": false,
   "engines": {
     "node": ">=18"
@@ -35,7 +39,14 @@
     "dev": "tsc --watch",
     "test": "vitest"
   },
-  "keywords": ["x402", "types", "usdc", "micropayments", "agent", "shared"],
+  "keywords": [
+    "x402",
+    "types",
+    "usdc",
+    "micropayments",
+    "agent",
+    "shared"
+  ],
   "devDependencies": {
     "typescript": "^5.4.0"
   }
