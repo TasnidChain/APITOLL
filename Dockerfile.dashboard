@@ -28,10 +28,10 @@ RUN npm ci --ignore-scripts
 FROM base AS builder
 WORKDIR /app
 
-# Copy all node_modules from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+# Copy entire deps stage (node_modules at all levels including nested workspace deps)
+COPY --from=deps /app/ ./
 
-# Copy source files needed for build
+# Copy source files on top (overwriting package.json placeholders with full source)
 COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/shared/ packages/shared/
 COPY apps/dashboard/ apps/dashboard/
