@@ -56,6 +56,7 @@ const upsertPaymentRef = makeFunctionReference<"mutation">("facilitator:upsertPa
 const updatePaymentStatusRef = makeFunctionReference<"mutation">("facilitator:updatePaymentStatus");
 const getActivePaymentsRef = makeFunctionReference<"query">("facilitator:getActivePayments");
 const getByIdempotencyKeyRef = makeFunctionReference<"query">("facilitator:getByIdempotencyKey");
+const validateApiKeyRef = makeFunctionReference<"query">("facilitator:validateApiKey");
 
 // Shared secret for Convex facilitator functions (defense-in-depth)
 const FACILITATOR_CONVEX_SECRET = process.env.FACILITATOR_CONVEX_SECRET || '';
@@ -78,8 +79,8 @@ const SOLANA_PRIVATE_KEY = process.env.SOLANA_PRIVATE_KEY || ''; // Optional: en
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
 const API_KEYS = (process.env.FACILITATOR_API_KEYS || '').split(',').filter(Boolean);
-if (API_KEYS.length === 0 && process.env.NODE_ENV === 'production') {
-  logger.fatal('FACILITATOR_API_KEYS must be set in production — refusing to start in open auth mode');
+if (API_KEYS.length === 0 && !CONVEX_URL && process.env.NODE_ENV === 'production') {
+  logger.fatal('FACILITATOR_API_KEYS or CONVEX_URL must be set in production — refusing to start in open auth mode');
   process.exit(1);
 }
 
@@ -461,7 +462,7 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 
-function requireAuth(req: Request, res: Response, next: NextFunction) {
+async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Missing Authorization header (Bearer <api-key>)' });
@@ -469,20 +470,37 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 
   const providedKey = authHeader.slice(7);
 
-  // If no API keys configured, allow all (development mode)
-  if (API_KEYS.length === 0) {
+  // If no API keys configured and no Convex, allow all (development mode)
+  if (API_KEYS.length === 0 && !convexClient) {
     logger.warn('No FACILITATOR_API_KEYS configured — running in open mode (development only)');
     (req as AuthenticatedRequest).apiKey = 'dev';
     return next();
   }
 
-  const isValid = API_KEYS.some((key) => secureCompare(key, providedKey));
-  if (!isValid) {
-    return res.status(403).json({ error: 'Invalid API key' });
+  // 1. Check static FACILITATOR_API_KEYS first (fast path)
+  const isStaticValid = API_KEYS.some((key) => secureCompare(key, providedKey));
+  if (isStaticValid) {
+    (req as AuthenticatedRequest).apiKey = providedKey.slice(0, 8) + '...';
+    return next();
   }
 
-  (req as AuthenticatedRequest).apiKey = providedKey.slice(0, 8) + '...'; // truncated for logging
-  next();
+  // 2. Check Convex DB for org_ keys (dashboard-issued keys)
+  if (convexClient && FACILITATOR_CONVEX_SECRET) {
+    try {
+      const result = await convexClient.query(validateApiKeyRef, {
+        _secret: FACILITATOR_CONVEX_SECRET,
+        apiKey: providedKey,
+      });
+      if (result?.valid) {
+        (req as AuthenticatedRequest).apiKey = providedKey.slice(0, 8) + '...';
+        return next();
+      }
+    } catch (err: unknown) {
+      logger.error({ error: err instanceof Error ? err.message : String(err) }, 'Convex API key validation failed');
+    }
+  }
+
+  return res.status(403).json({ error: 'Invalid API key' });
 }
 
 
@@ -1126,8 +1144,10 @@ process.on('uncaughtException', (error) => {
 if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
   server = app.listen(PORT, async () => {
     logger.info({ port: PORT }, 'API Toll Facilitator listening');
-    if (API_KEYS.length === 0) {
-      logger.warn('No FACILITATOR_API_KEYS set — running in open mode (development only)');
+    if (API_KEYS.length === 0 && !convexClient) {
+      logger.warn('No FACILITATOR_API_KEYS set and no Convex — running in open mode (development only)');
+    } else if (API_KEYS.length === 0) {
+      logger.info('No FACILITATOR_API_KEYS set — validating keys via Convex DB only');
     }
     if (ALLOWED_ORIGINS.length === 0) {
       logger.warn('No ALLOWED_ORIGINS set — CORS allows all origins (development only)');

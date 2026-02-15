@@ -163,6 +163,27 @@ export const getPayment = query({
 });
 
 /**
+ * Validate an org API key.
+ * Called by the facilitator's requireAuth middleware to check
+ * if a Bearer token matches an active organization API key.
+ * Returns { valid: true, orgId } or { valid: false }.
+ */
+export const validateApiKey = query({
+  args: { _secret: v.string(), apiKey: v.string() },
+  handler: async (ctx, args) => {
+    validateFacilitatorSecret(args._secret);
+    const org = await ctx.db
+      .query("organizations")
+      .withIndex("by_api_key", (q) => q.eq("apiKey", args.apiKey))
+      .first();
+    if (org) {
+      return { valid: true as const, orgId: org._id };
+    }
+    return { valid: false as const };
+  },
+});
+
+/**
  * Get all active (pending/processing) payments.
  * Used on facilitator startup to recover in-flight payments.
  */
