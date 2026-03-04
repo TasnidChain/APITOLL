@@ -83,6 +83,10 @@ if (API_KEYS.length === 0 && !CONVEX_URL && process.env.NODE_ENV === 'production
   logger.fatal('FACILITATOR_API_KEYS or CONVEX_URL must be set in production — refusing to start in open auth mode');
   process.exit(1);
 }
+if (CONVEX_URL && !FACILITATOR_CONVEX_SECRET) {
+  logger.fatal('FACILITATOR_CONVEX_SECRET must be set when CONVEX_URL is configured — dashboard-issued API keys will not validate without it');
+  process.exit(1);
+}
 
 // ─── Platform Fee Configuration ──────────────────────────────────────
 // The facilitator collects a platform fee on every custodial payment.
@@ -485,7 +489,7 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   // 2. Check Convex DB for org_ keys (dashboard-issued keys)
-  if (convexClient && FACILITATOR_CONVEX_SECRET) {
+  if (convexClient) {
     try {
       const result = await convexClient.query(validateApiKeyRef, {
         _secret: FACILITATOR_CONVEX_SECRET,

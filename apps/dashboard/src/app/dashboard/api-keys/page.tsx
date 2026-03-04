@@ -154,7 +154,7 @@ app.get('/api/v1/search', (req, res) => {
 app.listen(3000)`
 
   const curlCode = `# Make a paid API request with your org API key
-curl -X POST https://api.apitoll.com/v1/pay \\
+curl -X POST https://pay.apitoll.com/pay \\
   -H "Authorization: Bearer ${orgApiKey ?? 'YOUR_ORG_API_KEY'}" \\
   -H "Content-Type: application/json" \\
   -d '{
